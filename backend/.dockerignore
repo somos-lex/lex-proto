@@ -1,6 +1,8 @@
 bin/
 obj/
-Migrations/*.Designer.cs
+lex.db
+lex.db-shm
+lex.db-wal
 *.db
 *.db-shm
 *.db-wal
@@ -8,3 +10,6 @@ appsettings.Development.json
 .vs/
 .vscode/
 *.user
+.git
+Dockerfile
+.dockerignore
