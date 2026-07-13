@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Lex.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InicialSchema : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,9 +16,9 @@ namespace Lex.Api.Migrations
                 name: "rol",
                 columns: table => new
                 {
-                    rol_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", nullable: false)
+                    rol_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -28,9 +29,9 @@ namespace Lex.Api.Migrations
                 name: "tipo_institucion",
                 columns: table => new
                 {
-                    tipo_institucion_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", nullable: false)
+                    tipo_institucion_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -41,10 +42,10 @@ namespace Lex.Api.Migrations
                 name: "tipo_servicio",
                 columns: table => new
                 {
-                    tipo_servicio_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", nullable: false),
-                    requiere_supervision = table.Column<bool>(type: "INTEGER", nullable: false)
+                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false),
+                    requiere_supervision = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -55,14 +56,14 @@ namespace Lex.Api.Migrations
                 name: "usuario",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    email = table.Column<string>(type: "TEXT", nullable: false),
-                    password_hash = table.Column<string>(type: "TEXT", nullable: false),
-                    nombre_completo = table.Column<string>(type: "TEXT", nullable: false),
-                    telefono = table.Column<string>(type: "TEXT", nullable: true),
-                    fecha_registro = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    activo = table.Column<bool>(type: "INTEGER", nullable: false)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    email = table.Column<string>(type: "text", nullable: false),
+                    password_hash = table.Column<string>(type: "text", nullable: false),
+                    nombre_completo = table.Column<string>(type: "text", nullable: false),
+                    telefono = table.Column<string>(type: "text", nullable: true),
+                    fecha_registro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    activo = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -73,12 +74,12 @@ namespace Lex.Api.Migrations
                 name: "institucion",
                 columns: table => new
                 {
-                    institucion_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", nullable: false),
-                    tipo_institucion_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    provincia = table.Column<string>(type: "TEXT", nullable: true),
-                    ciudad = table.Column<string>(type: "TEXT", nullable: true)
+                    institucion_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false),
+                    tipo_institucion_id = table.Column<int>(type: "integer", nullable: false),
+                    provincia = table.Column<string>(type: "text", nullable: true),
+                    ciudad = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -95,10 +96,10 @@ namespace Lex.Api.Migrations
                 name: "perfil_agencia",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    nombre_agencia = table.Column<string>(type: "TEXT", nullable: true),
-                    rubro = table.Column<string>(type: "TEXT", nullable: true),
-                    sitio_web = table.Column<string>(type: "TEXT", nullable: true)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    nombre_agencia = table.Column<string>(type: "text", nullable: true),
+                    rubro = table.Column<string>(type: "text", nullable: true),
+                    sitio_web = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -115,8 +116,8 @@ namespace Lex.Api.Migrations
                 name: "perfil_cliente",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    tipo_cliente = table.Column<int>(type: "INTEGER", nullable: false)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    tipo_cliente = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -133,12 +134,12 @@ namespace Lex.Api.Migrations
                 name: "perfil_estudiante",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    bio = table.Column<string>(type: "TEXT", nullable: true),
-                    anio_cursado = table.Column<int>(type: "INTEGER", nullable: true),
-                    calificacion_promedio = table.Column<decimal>(type: "TEXT", precision: 3, scale: 2, nullable: false),
-                    cantidad_trabajos = table.Column<int>(type: "INTEGER", nullable: false),
-                    disponible = table.Column<bool>(type: "INTEGER", nullable: false)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    bio = table.Column<string>(type: "text", nullable: true),
+                    anio_cursado = table.Column<int>(type: "integer", nullable: true),
+                    calificacion_promedio = table.Column<decimal>(type: "numeric(3,2)", precision: 3, scale: 2, nullable: false),
+                    cantidad_trabajos = table.Column<int>(type: "integer", nullable: false),
+                    disponible = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -155,8 +156,8 @@ namespace Lex.Api.Migrations
                 name: "usuario_rol",
                 columns: table => new
                 {
-                    rol_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false)
+                    rol_id = table.Column<int>(type: "integer", nullable: false),
+                    usuario_id = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -179,11 +180,11 @@ namespace Lex.Api.Migrations
                 name: "carrera",
                 columns: table => new
                 {
-                    carrera_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    nombre = table.Column<string>(type: "TEXT", nullable: false),
-                    institucion_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    area_conocimiento = table.Column<string>(type: "TEXT", nullable: true)
+                    carrera_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false),
+                    institucion_id = table.Column<int>(type: "integer", nullable: false),
+                    area_conocimiento = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -200,10 +201,10 @@ namespace Lex.Api.Migrations
                 name: "datos_empresa",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    razon_social = table.Column<string>(type: "TEXT", nullable: true),
-                    cuit = table.Column<string>(type: "TEXT", nullable: true),
-                    rubro = table.Column<string>(type: "TEXT", nullable: true)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    razon_social = table.Column<string>(type: "text", nullable: true),
+                    cuit = table.Column<string>(type: "text", nullable: true),
+                    rubro = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -220,8 +221,8 @@ namespace Lex.Api.Migrations
                 name: "datos_particular",
                 columns: table => new
                 {
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    dni = table.Column<string>(type: "TEXT", nullable: true)
+                    usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    dni = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -238,12 +239,12 @@ namespace Lex.Api.Migrations
                 name: "pacientes",
                 columns: table => new
                 {
-                    paciente_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    cliente_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    nombre_completo = table.Column<string>(type: "TEXT", nullable: false),
-                    edad = table.Column<int>(type: "INTEGER", nullable: true),
-                    notas = table.Column<string>(type: "TEXT", nullable: true)
+                    paciente_id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    cliente_id = table.Column<int>(type: "integer", nullable: false),
+                    nombre_completo = table.Column<string>(type: "text", nullable: false),
+                    edad = table.Column<int>(type: "integer", nullable: true),
+                    notas = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -260,16 +261,16 @@ namespace Lex.Api.Migrations
                 name: "solicitud",
                 columns: table => new
                 {
-                    id_solicitud = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    cliente_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "INTEGER", nullable: true),
-                    titulo = table.Column<string>(type: "TEXT", nullable: false),
-                    descripcion = table.Column<string>(type: "TEXT", nullable: true),
-                    presupuesto_estimado = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: true),
-                    estado = table.Column<int>(type: "INTEGER", nullable: false),
-                    fecha_creacion = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    fecha_cierre = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    id_solicitud = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    cliente_id = table.Column<int>(type: "integer", nullable: false),
+                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: true),
+                    titulo = table.Column<string>(type: "text", nullable: false),
+                    descripcion = table.Column<string>(type: "text", nullable: true),
+                    presupuesto_estimado = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true),
+                    estado = table.Column<int>(type: "integer", nullable: false),
+                    fecha_creacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    fecha_cierre = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -292,16 +293,17 @@ namespace Lex.Api.Migrations
                 name: "servicio",
                 columns: table => new
                 {
-                    id_servicio = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    estudiante_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    titulo = table.Column<string>(type: "TEXT", nullable: false),
-                    descripcion = table.Column<string>(type: "TEXT", nullable: true),
-                    precio = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: false),
-                    tiempo_entrega_dias = table.Column<int>(type: "INTEGER", nullable: true),
-                    activo = table.Column<bool>(type: "INTEGER", nullable: false),
-                    fecha_publicacion = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    id_servicio = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    estudiante_id = table.Column<int>(type: "integer", nullable: false),
+                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: false),
+                    titulo = table.Column<string>(type: "text", nullable: false),
+                    descripcion = table.Column<string>(type: "text", nullable: true),
+                    imagen_url = table.Column<string>(type: "text", nullable: true),
+                    precio = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
+                    tiempo_entrega_dias = table.Column<int>(type: "integer", nullable: true),
+                    activo = table.Column<bool>(type: "boolean", nullable: false),
+                    fecha_publicacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -324,11 +326,11 @@ namespace Lex.Api.Migrations
                 name: "estudiante_carrera",
                 columns: table => new
                 {
-                    estudiante_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    carrera_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    estado_verificacion = table.Column<int>(type: "INTEGER", nullable: false),
-                    fecha_verificacion = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    documento_comprobante = table.Column<string>(type: "TEXT", nullable: true)
+                    estudiante_id = table.Column<int>(type: "integer", nullable: false),
+                    carrera_id = table.Column<int>(type: "integer", nullable: false),
+                    estado_verificacion = table.Column<int>(type: "integer", nullable: false),
+                    fecha_verificacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    documento_comprobante = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -351,14 +353,14 @@ namespace Lex.Api.Migrations
                 name: "postulacion",
                 columns: table => new
                 {
-                    id_postulacion = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    id_solicitud = table.Column<int>(type: "INTEGER", nullable: false),
-                    estudiante_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    mensaje = table.Column<string>(type: "TEXT", nullable: true),
-                    monto_propuesto = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: true),
-                    estado = table.Column<int>(type: "INTEGER", nullable: false),
-                    fecha_postulacion = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    id_postulacion = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_solicitud = table.Column<int>(type: "integer", nullable: false),
+                    estudiante_id = table.Column<int>(type: "integer", nullable: false),
+                    mensaje = table.Column<string>(type: "text", nullable: true),
+                    monto_propuesto = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true),
+                    estado = table.Column<int>(type: "integer", nullable: false),
+                    fecha_postulacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -381,20 +383,20 @@ namespace Lex.Api.Migrations
                 name: "trabajo",
                 columns: table => new
                 {
-                    id_trabajo = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    estudiante_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    cliente_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "INTEGER", nullable: true),
-                    origen = table.Column<int>(type: "INTEGER", nullable: false),
-                    id_servicio = table.Column<int>(type: "INTEGER", nullable: true),
-                    id_postulacion = table.Column<int>(type: "INTEGER", nullable: true),
-                    paciente_id = table.Column<int>(type: "INTEGER", nullable: true),
-                    estado = table.Column<int>(type: "INTEGER", nullable: false),
-                    monto = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: false),
-                    fecha_creacion = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    fecha_inicio = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    fecha_fin = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    id_trabajo = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    estudiante_id = table.Column<int>(type: "integer", nullable: false),
+                    cliente_id = table.Column<int>(type: "integer", nullable: false),
+                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: true),
+                    origen = table.Column<int>(type: "integer", nullable: false),
+                    id_servicio = table.Column<int>(type: "integer", nullable: true),
+                    id_postulacion = table.Column<int>(type: "integer", nullable: true),
+                    paciente_id = table.Column<int>(type: "integer", nullable: true),
+                    estado = table.Column<int>(type: "integer", nullable: false),
+                    monto = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
+                    fecha_creacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    fecha_inicio = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    fecha_fin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -441,14 +443,14 @@ namespace Lex.Api.Migrations
                 name: "consentimiento",
                 columns: table => new
                 {
-                    id_consentimiento = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    id_trabajo = table.Column<int>(type: "INTEGER", nullable: false),
-                    paciente_id = table.Column<int>(type: "INTEGER", nullable: true),
-                    texto_consentimiento = table.Column<string>(type: "TEXT", nullable: true),
-                    aceptado = table.Column<bool>(type: "INTEGER", nullable: false),
-                    fecha_aceptacion = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    supervisor_responsable = table.Column<string>(type: "TEXT", nullable: true)
+                    id_consentimiento = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    paciente_id = table.Column<int>(type: "integer", nullable: true),
+                    texto_consentimiento = table.Column<string>(type: "text", nullable: true),
+                    aceptado = table.Column<bool>(type: "boolean", nullable: false),
+                    fecha_aceptacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    supervisor_responsable = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -471,17 +473,17 @@ namespace Lex.Api.Migrations
                 name: "pago",
                 columns: table => new
                 {
-                    id_pago = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    id_trabajo = table.Column<int>(type: "INTEGER", nullable: false),
-                    monto_total = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: false),
-                    porcentaje_comision = table.Column<decimal>(type: "TEXT", precision: 5, scale: 2, nullable: false),
-                    comision_lex = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: false),
-                    monto_estudiante = table.Column<decimal>(type: "TEXT", precision: 12, scale: 2, nullable: false),
-                    estado = table.Column<int>(type: "INTEGER", nullable: false),
-                    metodo_pago = table.Column<string>(type: "TEXT", nullable: true),
-                    fecha_retencion = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    fecha_liberacion = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    id_pago = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    monto_total = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
+                    porcentaje_comision = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    comision_lex = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
+                    monto_estudiante = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
+                    estado = table.Column<int>(type: "integer", nullable: false),
+                    metodo_pago = table.Column<string>(type: "text", nullable: true),
+                    fecha_retencion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    fecha_liberacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -498,14 +500,14 @@ namespace Lex.Api.Migrations
                 name: "resena",
                 columns: table => new
                 {
-                    id_resena = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    id_trabajo = table.Column<int>(type: "INTEGER", nullable: false),
-                    autor_usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    receptor_usuario_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    puntaje = table.Column<int>(type: "INTEGER", nullable: false),
-                    comentario = table.Column<string>(type: "TEXT", nullable: true),
-                    fecha = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    id_resena = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    autor_usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    receptor_usuario_id = table.Column<int>(type: "integer", nullable: false),
+                    puntaje = table.Column<int>(type: "integer", nullable: false),
+                    comentario = table.Column<string>(type: "text", nullable: true),
+                    fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -534,13 +536,13 @@ namespace Lex.Api.Migrations
                 name: "trabajo_historial",
                 columns: table => new
                 {
-                    id_historial = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    id_trabajo = table.Column<int>(type: "INTEGER", nullable: false),
-                    estado_anterior = table.Column<int>(type: "INTEGER", nullable: true),
-                    estado_nuevo = table.Column<int>(type: "INTEGER", nullable: false),
-                    fecha = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    usuario_id = table.Column<int>(type: "INTEGER", nullable: true)
+                    id_historial = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    estado_anterior = table.Column<int>(type: "integer", nullable: true),
+                    estado_nuevo = table.Column<int>(type: "integer", nullable: false),
+                    fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    usuario_id = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -567,7 +569,8 @@ namespace Lex.Api.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_consentimiento_id_trabajo",
                 table: "consentimiento",
-                column: "id_trabajo");
+                column: "id_trabajo",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_consentimiento_paciente_id",
@@ -592,7 +595,8 @@ namespace Lex.Api.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_pago_id_trabajo",
                 table: "pago",
-                column: "id_trabajo");
+                column: "id_trabajo",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_postulacion_estudiante_id",

@@ -5,39 +5,46 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Lex.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260614230000_InicialSchema")]
-    partial class InicialSchema
+    [Migration("20260713000640_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.19");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "8.0.19")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Lex.Api.Entities.Carrera", b =>
                 {
                     b.Property<int>("CarreraId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("carrera_id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CarreraId"));
+
                     b.Property<string>("AreaConocimiento")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("area_conocimiento");
 
                     b.Property<int>("InstitucionId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("institucion_id");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.HasKey("CarreraId");
@@ -51,36 +58,39 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdConsentimiento")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_consentimiento");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdConsentimiento"));
+
                     b.Property<bool>("Aceptado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("aceptado");
 
                     b.Property<DateTime?>("FechaAceptacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_aceptacion");
 
                     b.Property<int>("IdTrabajo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_trabajo");
 
                     b.Property<int?>("PacienteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("paciente_id");
 
                     b.Property<string>("SupervisorResponsable")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("supervisor_responsable");
 
                     b.Property<string>("TextoConsentimiento")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("texto_consentimiento");
 
                     b.HasKey("IdConsentimiento");
 
-                    b.HasIndex("IdTrabajo");
+                    b.HasIndex("IdTrabajo")
+                        .IsUnique();
 
                     b.HasIndex("PacienteId");
 
@@ -90,19 +100,19 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.DatosEmpresa", b =>
                 {
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<string>("Cuit")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("cuit");
 
                     b.Property<string>("RazonSocial")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("razon_social");
 
                     b.Property<string>("Rubro")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("rubro");
 
                     b.HasKey("UsuarioId");
@@ -113,11 +123,11 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.DatosParticular", b =>
                 {
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<string>("Dni")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("dni");
 
                     b.HasKey("UsuarioId");
@@ -128,23 +138,23 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.EstudianteCarrera", b =>
                 {
                     b.Property<int>("EstudianteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estudiante_id");
 
                     b.Property<int>("CarreraId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("carrera_id");
 
                     b.Property<string>("DocumentoComprobante")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("documento_comprobante");
 
                     b.Property<int>("EstadoVerificacion")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado_verificacion");
 
                     b.Property<DateTime?>("FechaVerificacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_verificacion");
 
                     b.HasKey("EstudianteId", "CarreraId");
@@ -158,24 +168,26 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("InstitucionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("institucion_id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InstitucionId"));
+
                     b.Property<string>("Ciudad")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("ciudad");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<string>("Provincia")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("provincia");
 
                     b.Property<int>("TipoInstitucionId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_institucion_id");
 
                     b.HasKey("InstitucionId");
@@ -189,24 +201,26 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("PacienteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("paciente_id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PacienteId"));
+
                     b.Property<int>("ClienteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<int?>("Edad")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("edad");
 
                     b.Property<string>("NombreCompleto")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre_completo");
 
                     b.Property<string>("Notas")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("notas");
 
                     b.HasKey("PacienteId");
@@ -220,52 +234,55 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdPago")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_pago");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPago"));
 
                     b.Property<decimal>("ComisionLex")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("comision_lex");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<DateTime?>("FechaLiberacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_liberacion");
 
                     b.Property<DateTime?>("FechaRetencion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_retencion");
 
                     b.Property<int>("IdTrabajo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_trabajo");
 
                     b.Property<string>("MetodoPago")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("metodo_pago");
 
                     b.Property<decimal>("MontoEstudiante")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("monto_estudiante");
 
                     b.Property<decimal>("MontoTotal")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("monto_total");
 
                     b.Property<decimal>("PorcentajeComision")
                         .HasPrecision(5, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("porcentaje_comision");
 
                     b.HasKey("IdPago");
 
-                    b.HasIndex("IdTrabajo");
+                    b.HasIndex("IdTrabajo")
+                        .IsUnique();
 
                     b.ToTable("pago");
                 });
@@ -273,19 +290,19 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.PerfilAgencia", b =>
                 {
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<string>("NombreAgencia")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre_agencia");
 
                     b.Property<string>("Rubro")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("rubro");
 
                     b.Property<string>("SitioWeb")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("sitio_web");
 
                     b.HasKey("UsuarioId");
@@ -296,11 +313,11 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.PerfilCliente", b =>
                 {
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<int>("TipoCliente")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_cliente");
 
                     b.HasKey("UsuarioId");
@@ -311,28 +328,28 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.PerfilEstudiante", b =>
                 {
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.Property<int?>("AnioCursado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("anio_cursado");
 
                     b.Property<string>("Bio")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("bio");
 
                     b.Property<decimal>("CalificacionPromedio")
                         .HasPrecision(3, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(3,2)")
                         .HasColumnName("calificacion_promedio");
 
                     b.Property<int>("CantidadTrabajos")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("cantidad_trabajos");
 
                     b.Property<bool>("Disponible")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("disponible");
 
                     b.HasKey("UsuarioId");
@@ -344,32 +361,34 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdPostulacion")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_postulacion");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPostulacion"));
+
                     b.Property<int>("Estado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<int>("EstudianteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estudiante_id");
 
                     b.Property<DateTime>("FechaPostulacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_postulacion");
 
                     b.Property<int>("IdSolicitud")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_solicitud");
 
                     b.Property<string>("Mensaje")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("mensaje");
 
                     b.Property<decimal?>("MontoPropuesto")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("monto_propuesto");
 
                     b.HasKey("IdPostulacion");
@@ -385,31 +404,33 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdResena")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_resena");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdResena"));
+
                     b.Property<int>("AutorUsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("autor_usuario_id");
 
                     b.Property<string>("Comentario")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("comentario");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
                     b.Property<int>("IdTrabajo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_trabajo");
 
                     b.Property<int>("Puntaje")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("puntaje");
 
                     b.Property<int>("ReceptorUsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("receptor_usuario_id");
 
                     b.HasKey("IdResena");
@@ -428,12 +449,14 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("RolId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("rol_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RolId"));
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.HasKey("RolId");
@@ -448,41 +471,47 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdServicio")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_servicio");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdServicio"));
+
                     b.Property<bool>("Activo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<int>("EstudianteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estudiante_id");
 
                     b.Property<DateTime>("FechaPublicacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_publicacion");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("imagen_url");
 
                     b.Property<decimal>("Precio")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("precio");
 
                     b.Property<int?>("TiempoEntregaDias")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tiempo_entrega_dias");
 
                     b.Property<int>("TipoServicioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_servicio_id");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("titulo");
 
                     b.HasKey("IdServicio");
@@ -498,41 +527,43 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdSolicitud")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_solicitud");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdSolicitud"));
+
                     b.Property<int>("ClienteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("descripcion");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<DateTime?>("FechaCierre")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_cierre");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_creacion");
 
                     b.Property<decimal?>("PresupuestoEstimado")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("presupuesto_estimado");
 
                     b.Property<int?>("TipoServicioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_servicio_id");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("titulo");
 
                     b.HasKey("IdSolicitud");
@@ -548,12 +579,14 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("TipoInstitucionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_institucion_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TipoInstitucionId"));
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.HasKey("TipoInstitucionId");
@@ -565,16 +598,18 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("TipoServicioId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_servicio_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TipoServicioId"));
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre");
 
                     b.Property<bool>("RequiereSupervision")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("requiere_supervision");
 
                     b.HasKey("TipoServicioId");
@@ -586,56 +621,58 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdTrabajo")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_trabajo");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdTrabajo"));
+
                     b.Property<int>("ClienteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("cliente_id");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado");
 
                     b.Property<int>("EstudianteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estudiante_id");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_creacion");
 
                     b.Property<DateTime?>("FechaFin")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_fin");
 
                     b.Property<DateTime?>("FechaInicio")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_inicio");
 
                     b.Property<int?>("IdPostulacion")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_postulacion");
 
                     b.Property<int?>("IdServicio")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_servicio");
 
                     b.Property<decimal>("Monto")
                         .HasPrecision(12, 2)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("monto");
 
                     b.Property<int>("Origen")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("origen");
 
                     b.Property<int?>("PacienteId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("paciente_id");
 
                     b.Property<int?>("TipoServicioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("tipo_servicio_id");
 
                     b.HasKey("IdTrabajo");
@@ -659,27 +696,29 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("IdHistorial")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_historial");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdHistorial"));
+
                     b.Property<int?>("EstadoAnterior")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado_anterior");
 
                     b.Property<int>("EstadoNuevo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("estado_nuevo");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
                     b.Property<int>("IdTrabajo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_trabajo");
 
                     b.Property<int?>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.HasKey("IdHistorial");
@@ -695,34 +734,36 @@ namespace Lex.Api.Migrations
                 {
                     b.Property<int>("UsuarioId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UsuarioId"));
+
                     b.Property<bool>("Activo")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("email");
 
                     b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_registro");
 
                     b.Property<string>("NombreCompleto")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("nombre_completo");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("password_hash");
 
                     b.Property<string>("Telefono")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("telefono");
 
                     b.HasKey("UsuarioId");
@@ -736,11 +777,11 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.UsuarioRol", b =>
                 {
                     b.Property<int>("RolId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("rol_id");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
                     b.HasKey("RolId", "UsuarioId");
@@ -764,8 +805,8 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.Consentimiento", b =>
                 {
                     b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
-                        .WithMany("Consentimientos")
-                        .HasForeignKey("IdTrabajo")
+                        .WithOne("Consentimiento")
+                        .HasForeignKey("Lex.Api.Entities.Consentimiento", "IdTrabajo")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -845,8 +886,8 @@ namespace Lex.Api.Migrations
             modelBuilder.Entity("Lex.Api.Entities.Pago", b =>
                 {
                     b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
-                        .WithMany("Pagos")
-                        .HasForeignKey("IdTrabajo")
+                        .WithOne("Pago")
+                        .HasForeignKey("Lex.Api.Entities.Pago", "IdTrabajo")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1130,11 +1171,11 @@ namespace Lex.Api.Migrations
 
             modelBuilder.Entity("Lex.Api.Entities.Trabajo", b =>
                 {
-                    b.Navigation("Consentimientos");
+                    b.Navigation("Consentimiento");
 
                     b.Navigation("Historiales");
 
-                    b.Navigation("Pagos");
+                    b.Navigation("Pago");
 
                     b.Navigation("Resenas");
                 });

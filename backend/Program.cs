@@ -11,9 +11,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- EF Core: SQLite (archivo lex.db) ---
+// --- EF Core: PostgreSQL (Npgsql) ---
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // --- Servicios de aplicacion ---
 builder.Services.AddScoped<IAuthService, AuthService>();
