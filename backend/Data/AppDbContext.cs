@@ -27,9 +27,14 @@ public class AppDbContext : DbContext
     public DbSet<DatosEmpresa> DatosEmpresas => Set<DatosEmpresa>();
     public DbSet<PerfilAgencia> PerfilesAgencia => Set<PerfilAgencia>();
 
-    // --- Bloque 5: Catalogo de servicios ---
-    public DbSet<TipoServicio> TiposServicio => Set<TipoServicio>();
+    // --- Bloque 5: Servicios (jerarquia TPT) + catalogo cerrado ---
     public DbSet<Servicio> Servicios => Set<Servicio>();
+    public DbSet<ServicioProyectoCerrado> ServiciosProyectoCerrado => Set<ServicioProyectoCerrado>();
+    public DbSet<ServicioClase> ServiciosClase => Set<ServicioClase>();
+    public DbSet<ServicioSalud> ServiciosSalud => Set<ServicioSalud>();
+    public DbSet<CatalogoServicio> CatalogoServicios => Set<CatalogoServicio>();
+    public DbSet<CatalogoServicioCarrera> CatalogoServicioCarreras => Set<CatalogoServicioCarrera>();
+    public DbSet<ProfesionalSupervisor> ProfesionalesSupervisores => Set<ProfesionalSupervisor>();
 
     // --- Bloque 6: Demanda abierta ---
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
@@ -63,6 +68,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<EstudianteCarrera>()
             .HasKey(ec => new { ec.EstudianteId, ec.CarreraId });
+
+        modelBuilder.Entity<CatalogoServicioCarrera>()
+            .HasKey(cc => new { cc.CatalogoServicioId, cc.CarreraId });
 
         // ----------------------------------------------------------------
         // BLOQUE 1 — Identidad y roles
@@ -144,21 +152,85 @@ public class AppDbContext : DbContext
             .HasForeignKey<PerfilAgencia>(pa => pa.UsuarioId);
 
         // ----------------------------------------------------------------
-        // BLOQUE 5 — Catalogo de servicios
+        // BLOQUE 5 — Servicios: jerarquia TPT (Table Per Type)
+        //   servicio (base, abstracta) + una tabla por vertical concreta.
+        //   La PK de cada tabla hija es tambien FK a servicio.id (lo genera EF).
         // ----------------------------------------------------------------
+        modelBuilder.Entity<Servicio>().UseTptMappingStrategy();
+        modelBuilder.Entity<Servicio>().ToTable("servicio");
+        modelBuilder.Entity<ServicioProyectoCerrado>().ToTable("servicio_proyecto_cerrado");
+        modelBuilder.Entity<ServicioClase>().ToTable("servicio_clase");
+        modelBuilder.Entity<ServicioSalud>().ToTable("servicio_salud");
+
         modelBuilder.Entity<Servicio>()
             .HasOne(s => s.Estudiante)
             .WithMany(pe => pe.Servicios)
             .HasForeignKey(s => s.EstudianteId);
 
         modelBuilder.Entity<Servicio>()
-            .HasOne(s => s.TipoServicio)
-            .WithMany(t => t.Servicios)
-            .HasForeignKey(s => s.TipoServicioId);
-
-        modelBuilder.Entity<Servicio>()
             .Property(s => s.Precio)
             .HasPrecision(12, 2);
+
+        // --- ProyectoCerrado: catalogo cerrado ---
+        modelBuilder.Entity<ServicioProyectoCerrado>()
+            .HasOne(s => s.CatalogoServicio)
+            .WithMany()
+            .HasForeignKey(s => s.CatalogoServicioId);
+
+        modelBuilder.Entity<ServicioProyectoCerrado>()
+            .Property(s => s.FormatoEntrega)
+            .HasConversion<string>();
+
+        // --- Clase: catalogo libre (sin FK a CatalogoServicio) ---
+        modelBuilder.Entity<ServicioClase>()
+            .Property(s => s.Nivel)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ServicioClase>()
+            .Property(s => s.Modalidad)
+            .HasConversion<string>();
+
+        // --- Salud: catalogo cerrado + supervisor matriculado ---
+        modelBuilder.Entity<ServicioSalud>()
+            .HasOne(s => s.CatalogoServicio)
+            .WithMany()
+            .HasForeignKey(s => s.CatalogoServicioId);
+
+        modelBuilder.Entity<ServicioSalud>()
+            .HasOne(s => s.Supervisor)
+            .WithMany(p => p.ServiciosSalud)
+            .HasForeignKey(s => s.SupervisorId);
+
+        modelBuilder.Entity<ServicioSalud>()
+            .Property(s => s.Modalidad)
+            .HasConversion<string>();
+
+        // ----------------------------------------------------------------
+        // BLOQUE 5b — Catalogo cerrado de servicios permitidos
+        //   catalogo_servicio_carrera: PK compuesta + año minimo por carrera.
+        // ----------------------------------------------------------------
+        modelBuilder.Entity<CatalogoServicio>()
+            .Property(c => c.TipoServicio)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<CatalogoServicio>()
+            .HasIndex(c => c.Nombre)
+            .IsUnique();
+
+        modelBuilder.Entity<CatalogoServicioCarrera>()
+            .HasOne(cc => cc.CatalogoServicio)
+            .WithMany(c => c.Carreras)
+            .HasForeignKey(cc => cc.CatalogoServicioId);
+
+        modelBuilder.Entity<CatalogoServicioCarrera>()
+            .HasOne(cc => cc.Carrera)
+            .WithMany()
+            .HasForeignKey(cc => cc.CarreraId);
+
+        modelBuilder.Entity<ProfesionalSupervisor>()
+            .HasOne(p => p.Institucion)
+            .WithMany()
+            .HasForeignKey(p => p.InstitucionId);
 
         // ----------------------------------------------------------------
         // BLOQUE 6 — Demanda abierta (solicitud -> postulacion)
@@ -168,10 +240,10 @@ public class AppDbContext : DbContext
             .WithMany(pc => pc.Solicitudes)
             .HasForeignKey(s => s.ClienteId);
 
+        // Ya no es FK a tipo_servicio: es la vertical que pide el cliente, como string.
         modelBuilder.Entity<Solicitud>()
-            .HasOne(s => s.TipoServicio)
-            .WithMany(t => t.Solicitudes)
-            .HasForeignKey(s => s.TipoServicioId);
+            .Property(s => s.TipoServicio)
+            .HasConversion<string>();
 
         modelBuilder.Entity<Solicitud>()
             .Property(s => s.PresupuestoEstimado)
@@ -180,7 +252,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Postulacion>()
             .HasOne(p => p.Solicitud)
             .WithMany(s => s.Postulaciones)
-            .HasForeignKey(p => p.IdSolicitud);
+            .HasForeignKey(p => p.SolicitudId);
 
         modelBuilder.Entity<Postulacion>()
             .HasOne(p => p.Estudiante)
@@ -201,7 +273,7 @@ public class AppDbContext : DbContext
 
         // ----------------------------------------------------------------
         // BLOQUE 8 — Motor transaccional (trabajo + historial)
-        //   FKs nullable: Servicio, Postulacion, Paciente, TipoServicio.
+        //   FKs nullable: Servicio, Postulacion, Paciente.
         // ----------------------------------------------------------------
         modelBuilder.Entity<Trabajo>()
             .HasOne(t => t.Estudiante)
@@ -214,19 +286,14 @@ public class AppDbContext : DbContext
             .HasForeignKey(t => t.ClienteId);
 
         modelBuilder.Entity<Trabajo>()
-            .HasOne(t => t.TipoServicio)
-            .WithMany(ts => ts.Trabajos)
-            .HasForeignKey(t => t.TipoServicioId);
-
-        modelBuilder.Entity<Trabajo>()
             .HasOne(t => t.Servicio)
             .WithMany(s => s.Trabajos)
-            .HasForeignKey(t => t.IdServicio);
+            .HasForeignKey(t => t.ServicioId);
 
         modelBuilder.Entity<Trabajo>()
             .HasOne(t => t.Postulacion)
             .WithMany(p => p.Trabajos)
-            .HasForeignKey(t => t.IdPostulacion);
+            .HasForeignKey(t => t.PostulacionId);
 
         modelBuilder.Entity<Trabajo>()
             .HasOne(t => t.Paciente)
@@ -240,7 +307,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TrabajoHistorial>()
             .HasOne(h => h.Trabajo)
             .WithMany(t => t.Historiales)
-            .HasForeignKey(h => h.IdTrabajo);
+            .HasForeignKey(h => h.TrabajoId);
 
         modelBuilder.Entity<TrabajoHistorial>()
             .HasOne(h => h.Usuario)
@@ -255,7 +322,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Pago>()
             .HasOne(p => p.Trabajo)
             .WithOne(t => t.Pago)
-            .HasForeignKey<Pago>(p => p.IdTrabajo);
+            .HasForeignKey<Pago>(p => p.TrabajoId);
 
         modelBuilder.Entity<Pago>().Property(p => p.MontoTotal).HasPrecision(12, 2);
         modelBuilder.Entity<Pago>().Property(p => p.PorcentajeComision).HasPrecision(5, 2);
@@ -269,7 +336,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Consentimiento>()
             .HasOne(c => c.Trabajo)
             .WithOne(t => t.Consentimiento)
-            .HasForeignKey<Consentimiento>(c => c.IdTrabajo);
+            .HasForeignKey<Consentimiento>(c => c.TrabajoId);
 
         modelBuilder.Entity<Consentimiento>()
             .HasOne(c => c.Paciente)
@@ -284,7 +351,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Resena>()
             .HasOne(r => r.Trabajo)
             .WithMany(t => t.Resenas)
-            .HasForeignKey(r => r.IdTrabajo);
+            .HasForeignKey(r => r.TrabajoId);
 
         modelBuilder.Entity<Resena>()
             .HasOne(r => r.Autor)
@@ -297,7 +364,7 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.ReceptorUsuarioId);
 
         modelBuilder.Entity<Resena>()
-            .HasIndex(r => new { r.IdTrabajo, r.AutorUsuarioId })
+            .HasIndex(r => new { r.TrabajoId, r.AutorUsuarioId })
             .IsUnique();
 
         // ----------------------------------------------------------------

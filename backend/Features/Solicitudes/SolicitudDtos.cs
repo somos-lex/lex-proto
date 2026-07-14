@@ -13,18 +13,18 @@ public class CrearSolicitudRequest
 
     public decimal? PresupuestoEstimado { get; set; }
 
-    public int? TipoServicioId { get; set; }
+    // Vertical que busca el cliente. Ya no es un id contra tipo_servicio: es el enum.
+    public TipoServicio? TipoServicio { get; set; }
 }
 
 public class SolicitudResponse
 {
-    public int IdSolicitud { get; set; }
+    public int Id { get; set; }
 
     public int ClienteId { get; set; }
     public string ClienteNombre { get; set; } = null!;
 
-    public int? TipoServicioId { get; set; }
-    public string? TipoServicioNombre { get; set; }
+    public TipoServicio? TipoServicio { get; set; }
 
     public string Titulo { get; set; } = null!;
     public string? Descripcion { get; set; }

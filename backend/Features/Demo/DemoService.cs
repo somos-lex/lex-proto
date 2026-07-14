@@ -47,7 +47,16 @@ public class DemoService : IDemoService
     // ---------------------------------------------------------------------
 
     private record EstudianteSeed(string Email, string Nombre, string Carrera, int Anio, string Bio);
-    private record ServicioSeed(string Key, string EstudianteEmail, string Tipo, string Titulo, string Descripcion, decimal Precio, int Dias, string FotoId);
+
+    // Una definicion por vertical: con el catalogo cerrado, ProyectoCerrado y Salud
+    // ya no son texto libre — cada servicio referencia una entrada del catalogo.
+    private record ServicioPcSeed(string Key, string EstudianteEmail, string CatalogoNombre, string Titulo,
+        string Descripcion, decimal Precio, int PlazoDias, FormatoEntrega Formato, string FotoId);
+    private record ServicioClaseSeed(string Key, string EstudianteEmail, string Titulo, string Descripcion,
+        string Materia, NivelClase Nivel, ModalidadClase Modalidad, int Duracion, decimal Precio,
+        bool EsPaquete, int? Sesiones, string FotoId);
+    private record ServicioSaludSeed(string Key, string EstudianteEmail, string CatalogoNombre, string SupervisorMatricula,
+        string Titulo, string Descripcion, decimal Precio, ModalidadSalud Modalidad, int Duracion, string FotoId);
 
     // Imágenes de portada: usamos URLs DIRECTAS y fijas de Unsplash
     // (images.unsplash.com/photo-<id>) en vez del viejo formato Source
@@ -72,36 +81,44 @@ public class DemoService : IDemoService
         new("martina@demo.com",   "Martina Díaz",      "Licenciatura en Marketing",                   3, "Bilingüe en inglés. Doy clases conversacionales y gestiono redes sociales."),
         new("benjamin@demo.com",  "Benjamín Torres",   "Profesorado de Matemática",                   2, "Futuro profe de matemática. Doy apoyo en cálculo, álgebra y preparación de finales."),
         new("agustina@demo.com",  "Agustina Romero",   "Diseño de Indumentaria",                      4, "Diseñadora e ilustradora. Hago flyers, ilustración digital y asesoría de imagen."),
+        new("florencia@demo.com", "Florencia Aguirre", "Veterinaria",                                 4, "Practicante de veterinaria. Atiendo mascotas bajo supervisión de profesionales matriculados."),
     };
 
-    // 18 servicios repartidos: 8 Digital, 5 Clase, 3 Salud, 2 Otro.
-    private static readonly ServicioSeed[] Servicios =
+    // Servicios de PROYECTO CERRADO: cada uno referencia una entrada del catalogo
+    // habilitada para la carrera del estudiante, con su año minimo ya alcanzado.
+    private static readonly ServicioPcSeed[] ServiciosPc =
     {
-        // --- Digital ---
-        new("logo",        "camila@demo.com",   "Digital", "Diseño de logo profesional",            "Diseño de logo a medida con 3 propuestas iniciales, hasta 2 rondas de cambios y archivos finales en alta calidad.", 25000m, 5,  "1626785774573-4b799315345d"),
-        new("identidad",   "camila@demo.com",   "Digital", "Identidad de marca completa",           "Logo, paleta de colores, tipografías y manual de marca básico para tu emprendimiento.", 60000m, 10, "1558655146-9f40138edfeb"),
-        new("fotos",       "camila@demo.com",   "Otro",    "Sesión de fotos de producto",           "Sesión fotográfica de productos para catálogo o redes, con edición y entrega de 20 fotos.", 30000m, 7,  "1606107557195-0e29a4b5b4aa"),
-        new("web",         "mateo@demo.com",    "Digital", "Desarrollo de sitio web autogestionable", "Sitio web responsivo y autogestionable, con formulario de contacto y optimización para buscadores.", 180000m, 21, "1461749280684-dccba630e2f6"),
-        new("video",       "tomas@demo.com",    "Digital", "Edición de video para redes",           "Edición de reels y videos cortos para Instagram/TikTok, con subtítulos, música y transiciones.", 18000m, 4,  "1574717024653-61fd2cf4d44d"),
-        new("community",   "tomas@demo.com",    "Digital", "Community management mensual",          "Gestión de redes por un mes: calendario de contenido, 12 publicaciones y respuesta a mensajes.", 45000m, 30, "1611926653458-09294b3142bf"),
-        new("redes",       "martina@demo.com",  "Digital", "Gestión de redes y contenido",          "Estrategia de contenido, diseño de placas y programación de publicaciones para tu marca.", 40000m, 30, "1563986768609-322da13575f3"),
-        new("ilustracion", "agustina@demo.com", "Digital", "Ilustración digital / flyer",           "Ilustración digital personalizada o diseño de flyer para eventos y promociones.", 15000m, 3,  "1611532736597-de2d4265fba3"),
+        // Camila — Diseño Gráfico (4° año)
+        new("logo",        "camila@demo.com", "Diseño de logotipo",                  "Diseño de logo profesional",              "Diseño de logo a medida con 3 propuestas iniciales, hasta 2 rondas de cambios y archivos finales en alta calidad.", 25000m,  5, FormatoEntrega.Archivos, "1626785774573-4b799315345d"),
+        new("identidad",   "camila@demo.com", "Identidad de marca completa",         "Identidad de marca completa",             "Logo, paleta de colores, tipografías y manual de marca básico para tu emprendimiento.", 60000m, 10, FormatoEntrega.Ambos,    "1558655146-9f40138edfeb"),
+        new("ilustracion", "camila@demo.com", "Ilustración digital",                 "Ilustración digital / flyer",             "Ilustración digital personalizada o diseño de flyer para eventos y promociones.", 15000m,  3, FormatoEntrega.Archivos, "1611532736597-de2d4265fba3"),
 
-        // --- Clase ---
-        new("planilla",    "lucia@demo.com",    "Digital", "Armado de planilla de costos en Excel", "Planilla de costos y precios automatizada en Excel, lista para usar y con instructivo.", 20000m, 5,  "1554224155-6726b3ff858f"),
-        new("programacion","mateo@demo.com",    "Clase",   "Apoyo en programación (Python/Java)",   "Clases particulares de programación: estructuras, POO y resolución de trabajos prácticos.", 8000m, 2,  "1515879218367-8466d910aaa4"),
-        new("ingles",      "martina@demo.com",  "Clase",   "Clases de inglés conversacional",       "Clases de inglés conversacional adaptadas a tu nivel, con material y práctica oral.", 7000m, 1,  "1543002588-bfa74002ed7e"),
-        new("calculo",     "benjamin@demo.com", "Clase",   "Apoyo en cálculo y álgebra",           "Apoyo escolar y universitario en cálculo, álgebra y preparación de exámenes finales.", 6500m, 1,  "1635070041078-e363dbe005cb"),
-        new("anatomia",    "juan@demo.com",     "Clase",   "Clases de anatomía para ingresantes",   "Clases de anatomía orientadas a ingresantes de carreras de salud, con material de estudio.", 7500m, 2,  "1530026405186-ed1f139313f8"),
-        new("contabilidad","lucia@demo.com",    "Clase",   "Apoyo en contabilidad e impuestos",     "Apoyo en contabilidad básica, monotributo e impuestos para estudiantes y emprendedores.", 9000m, 2,  "1554224154-26032ffc0d07"),
+        // Mateo — Licenciatura en Sistemas de Información (5° año)
+        new("web",         "mateo@demo.com",  "Desarrollo de sitio web informativo", "Desarrollo de sitio web autogestionable", "Sitio web responsivo y autogestionable, con formulario de contacto y optimización para buscadores.", 180000m, 21, FormatoEntrega.Link,     "1461749280684-dccba630e2f6"),
+        new("ecommerce",   "mateo@demo.com",  "Desarrollo de e-commerce",            "Tienda online completa",                  "Tienda online con catálogo de productos, carrito de compras y pasarela de pago integrada.", 250000m, 30, FormatoEntrega.Link,     "1563013544-824ae1b704d3"),
+        new("basedatos",   "mateo@demo.com",  "Base de datos y modelado",            "Modelado de base de datos",               "Modelo de datos, diagrama entidad-relación y script de creación listo para producción.", 45000m,  7, FormatoEntrega.Archivos, "1544383835-bda2bc66a55d"),
+    };
 
-        // --- Salud (requieren supervisión) ---
-        new("odontologico","sofia@demo.com",    "Salud",   "Control odontológico de práctica supervisada", "Control y limpieza odontológica realizada como práctica supervisada por un profesional matriculado.", 12000m, 3,  "1606811841689-23dfddce3e95"),
-        new("signos",      "juan@demo.com",     "Salud",   "Control de signos vitales supervisado", "Control de signos vitales y orientación, realizado bajo supervisión de un profesional matriculado.", 10000m, 2,  "1530497610245-94d3c16cda28"),
-        new("enfermeria",  "valentina@demo.com","Salud",   "Sesión de cuidados de enfermería supervisada", "Curaciones y cuidados de enfermería a domicilio, supervisados por un profesional matriculado.", 11000m, 2,  "1576091160399-112ba8d25d1d"),
+    // Servicios de CLASE: vertical de catalogo LIBRE (materia y nivel a texto libre).
+    private static readonly ServicioClaseSeed[] ServiciosClase =
+    {
+        new("programacion", "mateo@demo.com",     "Apoyo en programación (Python/Java)", "Clases particulares de programación: estructuras, POO y resolución de trabajos prácticos.", "Programación", NivelClase.Universitario, ModalidadClase.Online,     90, 8000m, false, null, "1515879218367-8466d910aaa4"),
+        new("ingles",       "martina@demo.com",   "Clases de inglés conversacional",     "Clases de inglés conversacional adaptadas a tu nivel, con material y práctica oral.",       "Inglés",       NivelClase.Adulto,        ModalidadClase.Ambas,      60, 7000m, true,     8, "1543002588-bfa74002ed7e"),
+        new("calculo",      "benjamin@demo.com",  "Apoyo en cálculo y álgebra",          "Apoyo escolar y universitario en cálculo, álgebra y preparación de exámenes finales.",      "Matemática",   NivelClase.Universitario, ModalidadClase.Online,     60, 6500m, false, null, "1635070041078-e363dbe005cb"),
+        new("anatomia",     "juan@demo.com",      "Clases de anatomía para ingresantes", "Clases de anatomía orientadas a ingresantes de carreras de salud, con material de estudio.", "Anatomía",     NivelClase.Universitario, ModalidadClase.Presencial, 90, 7500m, false, null, "1530026405186-ed1f139313f8"),
+        new("contabilidad", "lucia@demo.com",     "Apoyo en contabilidad e impuestos",   "Apoyo en contabilidad básica, monotributo e impuestos para estudiantes y emprendedores.",   "Contabilidad", NivelClase.Universitario, ModalidadClase.Ambas,      60, 9000m, false, null, "1554224154-26032ffc0d07"),
+    };
 
-        // --- Otro ---
-        new("imagen",      "agustina@demo.com", "Otro",    "Asesoría de imagen personal",          "Asesoría de imagen y estilo personal: análisis de colorimetría y armado de looks.", 14000m, 5,  "1490481651871-ab68de25d43d"),
+    // Servicios de SALUD: catalogo cerrado + supervisor matriculado obligatorio.
+    private static readonly ServicioSaludSeed[] ServiciosSalud =
+    {
+        // Sofía — Odontología (5° año), supervisada por el Dr. Juan Ramírez (MP 12345)
+        new("odonto-consulta", "sofia@demo.com",     "Consulta odontológica básica",           "12345", "Consulta odontológica de práctica supervisada", "Consulta y diagnóstico odontológico inicial, realizado como práctica supervisada por un profesional matriculado.", 12000m, ModalidadSalud.Consultorio, 45, "1606811841689-23dfddce3e95"),
+        new("odonto-higiene",  "sofia@demo.com",     "Higiene bucal completa",                 "12345", "Higiene bucal completa supervisada",            "Limpieza y profilaxis bucal completa, realizada bajo supervisión de un profesional matriculado.", 15000m, ModalidadSalud.Consultorio, 60, "1588776814546-1ffcf47267a5"),
+
+        // Florencia — Veterinaria (4° año), supervisada por la Dra. María Gómez (MP 67890)
+        new("vet-consulta",    "florencia@demo.com", "Consulta clínica general (Veterinaria)", "67890", "Consulta clínica veterinaria supervisada",      "Consulta clínica general de tu mascota, realizada bajo supervisión de un profesional matriculado.", 10000m, ModalidadSalud.Ambas,     40, "1548767797-d8c844163c4c"),
+        new("vet-vacunas",     "florencia@demo.com", "Aplicación de vacunas (Veterinaria)",    "67890", "Plan de vacunación supervisado",                "Aplicación del plan de vacunación de tu mascota, bajo supervisión de un profesional matriculado.", 8000m, ModalidadSalud.Domicilio, 30, "1576201836106-db1758fd1c97"),
     };
 
     // ---------------------------------------------------------------------
@@ -118,8 +135,14 @@ public class DemoService : IDemoService
 
         // Catálogos base (ya sembrados por DbSeeder).
         var roles = await _db.Roles.ToDictionaryAsync(r => r.Nombre, r => r.RolId);
-        var tipos = await _db.TiposServicio.ToDictionaryAsync(t => t.Nombre, t => t.TipoServicioId);
         var carreras = await _db.Carreras.ToListAsync();
+        var catalogo = await _db.CatalogoServicios.ToDictionaryAsync(c => c.Nombre, c => c.Id);
+        var supervisores = await _db.ProfesionalesSupervisores.ToDictionaryAsync(p => p.Matricula, p => p.Id);
+
+        int CatalogoId(string n) => catalogo.TryGetValue(n, out var id)
+            ? id : throw new InvalidOperationException($"Falta la entrada de catálogo '{n}'. ¿Se ejecutó DbSeeder?");
+        int SupervisorId(string m) => supervisores.TryGetValue(m, out var id)
+            ? id : throw new InvalidOperationException($"Falta el supervisor con matrícula '{m}'. ¿Se ejecutó DbSeeder?");
 
         int RolId(string n) => roles.TryGetValue(n, out var id)
             ? id : throw new InvalidOperationException($"Falta el rol base '{n}'. ¿Se ejecutó DbSeeder?");
@@ -249,30 +272,81 @@ public class DemoService : IDemoService
         _db.Pacientes.AddRange(lucasPaz, martinaPaz);
 
         // 5) Servicios (entidades directas, para controlar la fecha de publicación).
+        //    Con TPT, cada vertical se instancia con su subclase concreta.
         var servicioIds = new Dictionary<string, int>();
         int idxSrv = 0;
-        foreach (var s in Servicios)
+
+        foreach (var s in ServiciosPc)
         {
-            var servicio = new Servicio
+            _db.ServiciosProyectoCerrado.Add(new ServicioProyectoCerrado
             {
                 EstudianteId = estudianteIds[s.EstudianteEmail],
-                TipoServicioId = tipos[s.Tipo],
                 Titulo = s.Titulo,
                 Descripcion = s.Descripcion,
                 ImagenUrl = FotoUrl(s.FotoId),
                 Precio = s.Precio,
-                TiempoEntregaDias = s.Dias,
                 Activo = true,
-                FechaPublicacion = ahora.AddDays(-100 + idxSrv) // todos antes del trabajo más viejo
-            };
-            _db.Servicios.Add(servicio);
-            servicioIds[s.Key] = 0;
+                FechaPublicacion = ahora.AddDays(-100 + idxSrv),
+                CatalogoServicioId = CatalogoId(s.CatalogoNombre),
+                PlazoEntregaDias = s.PlazoDias,
+                RevisionesIncluidas = 2,
+                FormatoEntrega = s.Formato
+            });
             idxSrv++;
         }
+
+        foreach (var s in ServiciosClase)
+        {
+            _db.ServiciosClase.Add(new ServicioClase
+            {
+                EstudianteId = estudianteIds[s.EstudianteEmail],
+                Titulo = s.Titulo,
+                Descripcion = s.Descripcion,
+                ImagenUrl = FotoUrl(s.FotoId),
+                Precio = s.Precio,
+                Activo = true,
+                FechaPublicacion = ahora.AddDays(-100 + idxSrv),
+                Materia = s.Materia,
+                Nivel = s.Nivel,
+                Modalidad = s.Modalidad,
+                DuracionMinutosSesion = s.Duracion,
+                EsPaquete = s.EsPaquete,
+                CantidadSesionesPaquete = s.Sesiones
+            });
+            idxSrv++;
+        }
+
+        foreach (var s in ServiciosSalud)
+        {
+            _db.ServiciosSalud.Add(new ServicioSalud
+            {
+                EstudianteId = estudianteIds[s.EstudianteEmail],
+                Titulo = s.Titulo,
+                Descripcion = s.Descripcion,
+                ImagenUrl = FotoUrl(s.FotoId),
+                Precio = s.Precio,
+                Activo = true,
+                FechaPublicacion = ahora.AddDays(-100 + idxSrv),
+                CatalogoServicioId = CatalogoId(s.CatalogoNombre),
+                SupervisorId = SupervisorId(s.SupervisorMatricula),
+                Modalidad = s.Modalidad,
+                DuracionMinutosSesion = s.Duracion
+            });
+            idxSrv++;
+        }
+
         await _db.SaveChangesAsync();
 
-        foreach (var s in Servicios)
-            servicioIds[s.Key] = await _db.Servicios.Where(x => x.Titulo == s.Titulo && x.EstudianteId == estudianteIds[s.EstudianteEmail]).Select(x => x.IdServicio).FirstAsync();
+        // Resolvemos los ids reales por (titulo, estudiante).
+        foreach (var (key, email, titulo) in ServiciosPc.Select(x => (x.Key, x.EstudianteEmail, x.Titulo))
+            .Concat(ServiciosClase.Select(x => (x.Key, x.EstudianteEmail, x.Titulo)))
+            .Concat(ServiciosSalud.Select(x => (x.Key, x.EstudianteEmail, x.Titulo))))
+        {
+            servicioIds[key] = await _db.Servicios
+                .Where(x => x.Titulo == titulo && x.EstudianteId == estudianteIds[email])
+                .Select(x => x.Id)
+                .FirstAsync();
+        }
 
         // 6) Trabajos: se crean y avanzan con TrabajoService (máquina de estados +
         //    escrow + comisión real) y luego se retrodatan las fechas.
@@ -282,29 +356,29 @@ public class DemoService : IDemoService
         var t2 = await CrearTrabajoAsync(empresaId,  servicioIds["web"],          EstadoTrabajo.Completado, ahora.AddDays(-38), 18);
         var t3 = await CrearTrabajoAsync(robertoId,  servicioIds["calculo"],      EstadoTrabajo.Completado, ahora.AddDays(-30), 2);
         var t4 = await CrearTrabajoAsync(robertoId,  servicioIds["anatomia"],     EstadoTrabajo.Completado, ahora.AddDays(-28), 3);
-        var t5 = await CrearTrabajoAsync(empresaId,  servicioIds["community"],    EstadoTrabajo.Completado, ahora.AddDays(-24), 12);
+        var t5 = await CrearTrabajoAsync(empresaId,  servicioIds["ecommerce"],    EstadoTrabajo.Completado, ahora.AddDays(-24), 12);
         var t6 = await CrearTrabajoAsync(diegoId,    servicioIds["ingles"],       EstadoTrabajo.Completado, ahora.AddDays(-16), 2);
         // --- Salud completo (el diferenciador): paciente + consentimiento + supervisor ---
-        var t7 = await CrearTrabajoSaludAsync(veronicaId, servicioIds["odontologico"], lucasPaz.PacienteId, EstadoTrabajo.Completado, "Dra. María Acosta (MP 1234)", ahora.AddDays(-12), 3);
+        var t7 = await CrearTrabajoSaludAsync(veronicaId, servicioIds["odonto-consulta"], lucasPaz.PacienteId, EstadoTrabajo.Completado, "Dr. Juan Ramírez (MP 12345)", ahora.AddDays(-12), 3);
 
         // --- En curso (pago Retenido) ---
         var t8 = await CrearTrabajoAsync(empresaId, servicioIds["identidad"],  EstadoTrabajo.EnCurso, ahora.AddDays(-6), 0);
         var t9 = await CrearTrabajoAsync(robertoId, servicioIds["ilustracion"], EstadoTrabajo.EnCurso, ahora.AddDays(-4), 0);
 
         // --- Aceptado (pago Retenido) ---
-        var t10 = await CrearTrabajoAsync(diegoId, servicioIds["video"], EstadoTrabajo.Aceptado, ahora.AddDays(-3), 0);
+        var t10 = await CrearTrabajoAsync(diegoId, servicioIds["basedatos"], EstadoTrabajo.Aceptado, ahora.AddDays(-3), 0);
 
         // --- Pendientes (sin pago) ---
         var t11 = await CrearTrabajoAsync(veronicaId, servicioIds["contabilidad"], EstadoTrabajo.Pendiente, ahora.AddDays(-2), 0);
         // Salud pendiente: consentimiento aceptado, todavía sin supervisor (lo asigna el estudiante al aceptar).
-        var t12 = await CrearTrabajoSaludAsync(veronicaId, servicioIds["enfermeria"], martinaPaz.PacienteId, EstadoTrabajo.Pendiente, null, ahora.AddDays(-1), 0);
+        var t12 = await CrearTrabajoSaludAsync(veronicaId, servicioIds["odonto-higiene"], martinaPaz.PacienteId, EstadoTrabajo.Pendiente, null, ahora.AddDays(-1), 0);
 
         // 7) Reseñas bidireccionales en los completados (mayormente 4-5, alguna 3).
         await ResenarAsync(t1, diegoId,    5, "Quedó espectacular el logo, súper profesional y atento a los cambios.", 5, "Cliente claro con lo que buscaba, un gusto trabajar así.");
         await ResenarAsync(t2, empresaId,  5, "La web quedó impecable y entregó antes de lo pactado.",                  4, "Buena comunicación durante todo el proyecto, recomendable.");
         await ResenarAsync(t3, robertoId,  4, "Muy claro explicando, me destrabó cálculo para el final.",              5, "Alumno muy aplicado y comprometido.");
         await ResenarAsync(t4, robertoId,  4, "Buenas clases de anatomía, bien organizado el material.",               3, "Llegó tarde a una clase pero después todo bien.");
-        await ResenarAsync(t5, empresaId,  3, "Buen trabajo en redes, aunque tardó en responder algunos mensajes.",   4, "Todo en orden, pagos puntuales.");
+        await ResenarAsync(t5, empresaId,  3, "Buena la tienda online, aunque tardó en responder algunos mensajes.", 4, "Todo en orden, pagos puntuales.");
         await ResenarAsync(t6, diegoId,    5, "Excelentes clases de inglés, muy didáctica y paciente.",               5, "Muy comprometido con la práctica, mejoró un montón.");
         await ResenarAsync(t7, veronicaId, 5, "Muy profesional y cuidadosa, todo realizado bajo supervisión. Confiable.", 5, "Paciente colaborador, gracias por la confianza.");
 
@@ -334,10 +408,10 @@ public class DemoService : IDemoService
     private async Task<(int Id, int EstudianteId)> CrearTrabajoAsync(
         int clienteId, int servicioId, EstadoTrabajo objetivo, DateTime creado, int durDias)
     {
-        var trabajo = await _trabajos.ContratarServicioAsync(clienteId, new ContratarServicioRequest { IdServicio = servicioId });
-        await AvanzarAsync(trabajo.IdTrabajo, trabajo.EstudianteId, clienteId, objetivo, null);
-        await RetrodatarAsync(trabajo.IdTrabajo, creado, durDias);
-        return (trabajo.IdTrabajo, trabajo.EstudianteId);
+        var trabajo = await _trabajos.ContratarServicioAsync(clienteId, new ContratarServicioRequest { ServicioId = servicioId });
+        await AvanzarAsync(trabajo.Id, trabajo.EstudianteId, clienteId, objetivo, null);
+        await RetrodatarAsync(trabajo.Id, creado, durDias);
+        return (trabajo.Id, trabajo.EstudianteId);
     }
 
     // Igual, pero para servicios de Salud (con paciente + consentimiento + supervisor).
@@ -346,13 +420,13 @@ public class DemoService : IDemoService
     {
         var trabajo = await _trabajos.ContratarServicioSaludAsync(clienteId, new ContratarServicioSaludRequest
         {
-            IdServicio = servicioId,
+            ServicioId = servicioId,
             PacienteId = pacienteId,
             ConsentimientoAceptado = true
         });
-        await AvanzarAsync(trabajo.IdTrabajo, trabajo.EstudianteId, clienteId, objetivo, supervisor);
-        await RetrodatarAsync(trabajo.IdTrabajo, creado, durDias);
-        return (trabajo.IdTrabajo, trabajo.EstudianteId);
+        await AvanzarAsync(trabajo.Id, trabajo.EstudianteId, clienteId, objetivo, supervisor);
+        await RetrodatarAsync(trabajo.Id, creado, durDias);
+        return (trabajo.Id, trabajo.EstudianteId);
     }
 
     // Recorre las transiciones permitidas hasta el estado objetivo, respetando
@@ -376,9 +450,9 @@ public class DemoService : IDemoService
         var rCliente = await _resenas.CrearAsync(clienteId, trabajo.Id, new CrearResenaRequest { Puntaje = puntajeCliente, Comentario = comentarioCliente });
         var rEstudiante = await _resenas.CrearAsync(trabajo.EstudianteId, trabajo.Id, new CrearResenaRequest { Puntaje = puntajeEstudiante, Comentario = comentarioEstudiante });
 
-        var fin = await _db.Trabajos.Where(t => t.IdTrabajo == trabajo.Id).Select(t => t.FechaFin).FirstAsync() ?? DateTime.UtcNow;
-        var e1 = await _db.Resenas.FindAsync(rCliente.IdResena);
-        var e2 = await _db.Resenas.FindAsync(rEstudiante.IdResena);
+        var fin = await _db.Trabajos.Where(t => t.Id == trabajo.Id).Select(t => t.FechaFin).FirstAsync() ?? DateTime.UtcNow;
+        var e1 = await _db.Resenas.FindAsync(rCliente.Id);
+        var e2 = await _db.Resenas.FindAsync(rEstudiante.Id);
         if (e1 is not null) e1.Fecha = fin.AddDays(1);
         if (e2 is not null) e2.Fecha = fin.AddDays(2);
     }
@@ -392,7 +466,7 @@ public class DemoService : IDemoService
             .Include(x => x.Historiales)
             .Include(x => x.Pago)
             .Include(x => x.Consentimiento)
-            .FirstAsync(x => x.IdTrabajo == idTrabajo);
+            .FirstAsync(x => x.Id == idTrabajo);
 
         t.FechaCreacion = creado;
         var hPend = t.Historiales.FirstOrDefault(h => h.EstadoNuevo == EstadoTrabajo.Pendiente);
@@ -443,23 +517,23 @@ public class DemoService : IDemoService
         // Trabajos cuyos participantes son demo (estudiante o cliente).
         var trabajoIds = await _db.Trabajos
             .Where(t => demoUserIds.Contains(t.EstudianteId) || demoUserIds.Contains(t.ClienteId))
-            .Select(t => t.IdTrabajo)
+            .Select(t => t.Id)
             .ToListAsync();
 
         // Solicitudes / postulaciones demo (por si se agregan en el futuro).
         var solicitudIds = await _db.Solicitudes
             .Where(s => demoUserIds.Contains(s.ClienteId))
-            .Select(s => s.IdSolicitud)
+            .Select(s => s.Id)
             .ToListAsync();
 
-        _db.Resenas.RemoveRange(_db.Resenas.Where(r => trabajoIds.Contains(r.IdTrabajo)
+        _db.Resenas.RemoveRange(_db.Resenas.Where(r => trabajoIds.Contains(r.TrabajoId)
             || demoUserIds.Contains(r.AutorUsuarioId) || demoUserIds.Contains(r.ReceptorUsuarioId)));
-        _db.Consentimientos.RemoveRange(_db.Consentimientos.Where(c => trabajoIds.Contains(c.IdTrabajo)));
-        _db.Pagos.RemoveRange(_db.Pagos.Where(p => trabajoIds.Contains(p.IdTrabajo)));
-        _db.TrabajoHistoriales.RemoveRange(_db.TrabajoHistoriales.Where(h => trabajoIds.Contains(h.IdTrabajo) || (h.UsuarioId != null && demoUserIds.Contains(h.UsuarioId.Value))));
-        _db.Trabajos.RemoveRange(_db.Trabajos.Where(t => trabajoIds.Contains(t.IdTrabajo)));
-        _db.Postulaciones.RemoveRange(_db.Postulaciones.Where(p => solicitudIds.Contains(p.IdSolicitud) || demoUserIds.Contains(p.EstudianteId)));
-        _db.Solicitudes.RemoveRange(_db.Solicitudes.Where(s => solicitudIds.Contains(s.IdSolicitud)));
+        _db.Consentimientos.RemoveRange(_db.Consentimientos.Where(c => trabajoIds.Contains(c.TrabajoId)));
+        _db.Pagos.RemoveRange(_db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)));
+        _db.TrabajoHistoriales.RemoveRange(_db.TrabajoHistoriales.Where(h => trabajoIds.Contains(h.TrabajoId) || (h.UsuarioId != null && demoUserIds.Contains(h.UsuarioId.Value))));
+        _db.Trabajos.RemoveRange(_db.Trabajos.Where(t => trabajoIds.Contains(t.Id)));
+        _db.Postulaciones.RemoveRange(_db.Postulaciones.Where(p => solicitudIds.Contains(p.SolicitudId) || demoUserIds.Contains(p.EstudianteId)));
+        _db.Solicitudes.RemoveRange(_db.Solicitudes.Where(s => solicitudIds.Contains(s.Id)));
         _db.Servicios.RemoveRange(_db.Servicios.Where(s => demoUserIds.Contains(s.EstudianteId)));
         _db.Pacientes.RemoveRange(_db.Pacientes.Where(p => demoUserIds.Contains(p.ClienteId)));
         _db.EstudianteCarreras.RemoveRange(_db.EstudianteCarreras.Where(ec => demoUserIds.Contains(ec.EstudianteId)));
@@ -500,13 +574,13 @@ public class DemoService : IDemoService
 
         var trabajos = await _db.Trabajos
             .Where(t => demoUserIds.Contains(t.EstudianteId) || demoUserIds.Contains(t.ClienteId))
-            .Select(t => new { t.IdTrabajo, t.Estado })
+            .Select(t => new { t.Id, t.Estado })
             .ToListAsync();
-        var trabajoIds = trabajos.Select(t => t.IdTrabajo).ToList();
+        var trabajoIds = trabajos.Select(t => t.Id).ToList();
 
-        var resenas = await _db.Resenas.CountAsync(r => trabajoIds.Contains(r.IdTrabajo));
+        var resenas = await _db.Resenas.CountAsync(r => trabajoIds.Contains(r.TrabajoId));
 
-        var pagos = await _db.Pagos.Where(p => trabajoIds.Contains(p.IdTrabajo)).Select(p => new { p.Estado, p.ComisionLex }).ToListAsync();
+        var pagos = await _db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)).Select(p => new { p.Estado, p.ComisionLex }).ToListAsync();
 
         return new DemoSeedResponse
         {

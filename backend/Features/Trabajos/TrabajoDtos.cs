@@ -6,14 +6,14 @@ namespace Lex.Api.Features.Trabajos;
 public class ContratarServicioRequest
 {
     [Required]
-    public int IdServicio { get; set; }
+    public int ServicioId { get; set; }
 }
 
 // Flujo 3 (Salud): contratacion directa de un servicio que requiere supervision.
 public class ContratarServicioSaludRequest
 {
     [Required]
-    public int IdServicio { get; set; }
+    public int ServicioId { get; set; }
 
     [Required]
     public int PacienteId { get; set; }
@@ -36,7 +36,7 @@ public class CambiarEstadoRequest
 
 public class ConsentimientoResponse
 {
-    public int IdConsentimiento { get; set; }
+    public int Id { get; set; }
     public int? PacienteId { get; set; }
     public string? PacienteNombre { get; set; }
     public string? TextoConsentimiento { get; set; }
@@ -47,7 +47,7 @@ public class ConsentimientoResponse
 
 public class TrabajoHistorialResponse
 {
-    public int IdHistorial { get; set; }
+    public int Id { get; set; }
     public EstadoTrabajo? EstadoAnterior { get; set; }
     public EstadoTrabajo EstadoNuevo { get; set; }
     public DateTime Fecha { get; set; }
@@ -56,7 +56,7 @@ public class TrabajoHistorialResponse
 
 public class TrabajoResponse
 {
-    public int IdTrabajo { get; set; }
+    public int Id { get; set; }
 
     public int EstudianteId { get; set; }
     public string EstudianteNombre { get; set; } = null!;
@@ -64,12 +64,12 @@ public class TrabajoResponse
     public int ClienteId { get; set; }
     public string ClienteNombre { get; set; } = null!;
 
-    public int? TipoServicioId { get; set; }
-    public string? TipoServicioNombre { get; set; }
+    // TODO Sub-hito 1.2: el tipo queda implícito en la subclase concreta
+    // (TrabajoProyectoCerrado / TrabajoClase / TrabajoSalud) cuando Trabajo pase a TPT.
 
     public OrigenTrabajo Origen { get; set; }
-    public int? IdServicio { get; set; }
-    public int? IdPostulacion { get; set; }
+    public int? ServicioId { get; set; }
+    public int? PostulacionId { get; set; }
     public int? PacienteId { get; set; }
 
     public EstadoTrabajo Estado { get; set; }

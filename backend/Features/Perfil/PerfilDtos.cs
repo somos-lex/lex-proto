@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Lex.Api.Domain.Enums;
 
 using Lex.Api.Features.Resenas;
-using Lex.Api.Features.Servicios;
+using Lex.Api.Features.Servicios.Shared;
 
 namespace Lex.Api.Features.Perfil;
 

@@ -17,14 +17,10 @@ public class SolicitudService : ISolicitudService
 
     public async Task<SolicitudResponse> CrearAsync(int clienteId, CrearSolicitudRequest request)
     {
-        if (request.TipoServicioId is int tipo &&
-            !await _db.TiposServicio.AnyAsync(t => t.TipoServicioId == tipo))
-            throw new BadRequestException($"El tipo de servicio {tipo} no existe.");
-
         var solicitud = new Solicitud
         {
             ClienteId = clienteId,
-            TipoServicioId = request.TipoServicioId,
+            TipoServicio = request.TipoServicio,
             Titulo = request.Titulo.Trim(),
             Descripcion = request.Descripcion?.Trim(),
             PresupuestoEstimado = request.PresupuestoEstimado,
@@ -35,15 +31,15 @@ public class SolicitudService : ISolicitudService
         _db.Solicitudes.Add(solicitud);
         await _db.SaveChangesAsync();
 
-        return await ObtenerAsync(solicitud.IdSolicitud);
+        return await ObtenerAsync(solicitud.Id);
     }
 
-    public async Task<IReadOnlyList<SolicitudResponse>> ListarAbiertasAsync(int? tipoServicioId, string? texto)
+    public async Task<IReadOnlyList<SolicitudResponse>> ListarAbiertasAsync(TipoServicio? tipo, string? texto)
     {
         var query = _db.Solicitudes.AsNoTracking().Where(s => s.Estado == EstadoSolicitud.Abierta);
 
-        if (tipoServicioId is int tipo)
-            query = query.Where(s => s.TipoServicioId == tipo);
+        if (tipo is TipoServicio t2)
+            query = query.Where(s => s.TipoServicio == t2);
 
         if (!string.IsNullOrWhiteSpace(texto))
         {
@@ -60,7 +56,7 @@ public class SolicitudService : ISolicitudService
     public async Task<SolicitudResponse> ObtenerAsync(int idSolicitud)
     {
         return await _db.Solicitudes.AsNoTracking()
-            .Where(s => s.IdSolicitud == idSolicitud)
+            .Where(s => s.Id == idSolicitud)
             .Select(Proyeccion)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe la solicitud {idSolicitud}.");
@@ -73,11 +69,10 @@ public class SolicitudService : ISolicitudService
             .OrderByDescending(s => s.FechaCreacion)
             .Select(s => new SolicitudMiaResponse
             {
-                IdSolicitud = s.IdSolicitud,
+                Id = s.Id,
                 ClienteId = s.ClienteId,
                 ClienteNombre = s.Cliente.Usuario.NombreCompleto,
-                TipoServicioId = s.TipoServicioId,
-                TipoServicioNombre = s.TipoServicio != null ? s.TipoServicio.Nombre : null,
+                TipoServicio = s.TipoServicio,
                 Titulo = s.Titulo,
                 Descripcion = s.Descripcion,
                 PresupuestoEstimado = s.PresupuestoEstimado,
@@ -91,7 +86,7 @@ public class SolicitudService : ISolicitudService
 
     public async Task CerrarAsync(int clienteId, int idSolicitud)
     {
-        var solicitud = await _db.Solicitudes.FirstOrDefaultAsync(s => s.IdSolicitud == idSolicitud)
+        var solicitud = await _db.Solicitudes.FirstOrDefaultAsync(s => s.Id == idSolicitud)
             ?? throw new NotFoundException($"No existe la solicitud {idSolicitud}.");
 
         if (solicitud.ClienteId != clienteId)
@@ -105,11 +100,10 @@ public class SolicitudService : ISolicitudService
     private static readonly System.Linq.Expressions.Expression<Func<Solicitud, SolicitudResponse>> Proyeccion =
         s => new SolicitudResponse
         {
-            IdSolicitud = s.IdSolicitud,
+            Id = s.Id,
             ClienteId = s.ClienteId,
             ClienteNombre = s.Cliente.Usuario.NombreCompleto,
-            TipoServicioId = s.TipoServicioId,
-            TipoServicioNombre = s.TipoServicio != null ? s.TipoServicio.Nombre : null,
+            TipoServicio = s.TipoServicio,
             Titulo = s.Titulo,
             Descripcion = s.Descripcion,
             PresupuestoEstimado = s.PresupuestoEstimado,

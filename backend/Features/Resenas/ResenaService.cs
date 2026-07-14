@@ -21,7 +21,7 @@ public class ResenaService : IResenaService
         if (puntaje is < 1 or > 5)
             throw new BadRequestException("El puntaje debe estar entre 1 y 5.");
 
-        var trabajo = await _db.Trabajos.FirstOrDefaultAsync(t => t.IdTrabajo == idTrabajo)
+        var trabajo = await _db.Trabajos.FirstOrDefaultAsync(t => t.Id == idTrabajo)
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
 
         // Solo las partes pueden reseñar; el receptor es la otra parte.
@@ -38,13 +38,13 @@ public class ResenaService : IResenaService
 
         // Una sola reseña por autor por trabajo (lo refuerza el indice unico).
         var yaResenado = await _db.Resenas
-            .AnyAsync(r => r.IdTrabajo == idTrabajo && r.AutorUsuarioId == autorId);
+            .AnyAsync(r => r.TrabajoId == idTrabajo && r.AutorUsuarioId == autorId);
         if (yaResenado)
             throw new BadRequestException("Ya dejaste una reseña para este trabajo.");
 
         var resena = new Resena
         {
-            IdTrabajo = idTrabajo,
+            TrabajoId = idTrabajo,
             AutorUsuarioId = autorId,
             ReceptorUsuarioId = receptorId,
             Puntaje = puntaje,
@@ -67,7 +67,7 @@ public class ResenaService : IResenaService
             throw new BadRequestException("Ya dejaste una reseña para este trabajo.");
         }
 
-        return await ObtenerAsync(resena.IdResena);
+        return await ObtenerAsync(resena.Id);
     }
 
     public async Task<IReadOnlyList<ResenaResponse>> ListarRecibidasAsync(int usuarioId)
@@ -82,7 +82,7 @@ public class ResenaService : IResenaService
     public async Task<IReadOnlyList<ResenaResponse>> ListarPorTrabajoAsync(int usuarioId, int idTrabajo)
     {
         var trabajo = await _db.Trabajos.AsNoTracking()
-            .Where(t => t.IdTrabajo == idTrabajo)
+            .Where(t => t.Id == idTrabajo)
             .Select(t => new { t.EstudianteId, t.ClienteId })
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -91,7 +91,7 @@ public class ResenaService : IResenaService
             throw new ForbiddenException("No participás en este trabajo.");
 
         return await _db.Resenas.AsNoTracking()
-            .Where(r => r.IdTrabajo == idTrabajo)
+            .Where(r => r.TrabajoId == idTrabajo)
             .OrderByDescending(r => r.Fecha)
             .Select(Proyeccion)
             .ToListAsync();
@@ -119,7 +119,7 @@ public class ResenaService : IResenaService
     private async Task<ResenaResponse> ObtenerAsync(int idResena)
     {
         return await _db.Resenas.AsNoTracking()
-            .Where(r => r.IdResena == idResena)
+            .Where(r => r.Id == idResena)
             .Select(Proyeccion)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe la reseña {idResena}.");
@@ -128,8 +128,8 @@ public class ResenaService : IResenaService
     private static readonly System.Linq.Expressions.Expression<Func<Resena, ResenaResponse>> Proyeccion =
         r => new ResenaResponse
         {
-            IdResena = r.IdResena,
-            IdTrabajo = r.IdTrabajo,
+            Id = r.Id,
+            TrabajoId = r.TrabajoId,
             AutorUsuarioId = r.AutorUsuarioId,
             AutorNombre = r.Autor.NombreCompleto,
             ReceptorUsuarioId = r.ReceptorUsuarioId,

@@ -6,7 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lex.Api.Features.Postulaciones;
 
 // Las rutas cruzan /solicitudes y /postulaciones, por eso no hay [Route] a nivel de clase.
+/// <summary>
+/// [PAUSADO - Sub-hito 1.1] Módulo de Solicitudes (postulaciones) está en revisión de diseño.
+/// Se decidirá su forma final en un sub-hito posterior, alineado con el catálogo cerrado.
+/// </summary>
 [ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
+[Authorize(Roles = "Admin")]
 public class PostulacionController : ControllerBase
 {
     private readonly IPostulacionService _postulaciones;
@@ -18,7 +24,6 @@ public class PostulacionController : ControllerBase
 
     /// <summary>Un estudiante se postula a una solicitud abierta.</summary>
     [HttpPost("api/solicitudes/{idSolicitud:int}/postulaciones")]
-    [Authorize(Roles = "Estudiante")]
     [ProducesResponseType(typeof(PostulacionResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> Postularse(int idSolicitud, [FromBody] CrearPostulacionRequest request)
     {
@@ -28,7 +33,6 @@ public class PostulacionController : ControllerBase
 
     /// <summary>El cliente dueño ve las postulaciones recibidas en su solicitud.</summary>
     [HttpGet("api/solicitudes/{idSolicitud:int}/postulaciones")]
-    [Authorize(Roles = "Cliente")]
     [ProducesResponseType(typeof(IEnumerable<PostulacionRecibidaResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Recibidas(int idSolicitud)
     {
@@ -37,7 +41,6 @@ public class PostulacionController : ControllerBase
 
     /// <summary>Las postulaciones enviadas por el estudiante autenticado.</summary>
     [HttpGet("api/postulaciones/mias")]
-    [Authorize(Roles = "Estudiante")]
     [ProducesResponseType(typeof(IEnumerable<PostulacionResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Mias()
     {
@@ -46,11 +49,10 @@ public class PostulacionController : ControllerBase
 
     /// <summary>El cliente dueño acepta una postulación: cierra la solicitud y crea el trabajo.</summary>
     [HttpPost("api/postulaciones/{id:int}/aceptar")]
-    [Authorize(Roles = "Cliente")]
     [ProducesResponseType(typeof(TrabajoResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> Aceptar(int id)
     {
         var trabajo = await _postulaciones.AceptarAsync(User.GetUsuarioId(), id);
-        return Created($"/api/trabajos/{trabajo.IdTrabajo}", trabajo);
+        return Created($"/api/trabajos/{trabajo.Id}", trabajo);
     }
 }

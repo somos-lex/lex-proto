@@ -5,13 +5,13 @@ using Lex.Api.Domain.Enums;
 namespace Lex.Api.Domain.Entities;
 
 // Motor transaccional. Un trabajo nace de un servicio directo O de una
-// postulacion aceptada: por eso IdServicio, IdPostulacion y PacienteId son NULLABLE.
+// postulacion aceptada: por eso ServicioId, PostulacionId y PacienteId son NULLABLE.
 [Table("trabajo")]
 public class Trabajo
 {
     [Key]
-    [Column("id_trabajo")]
-    public int IdTrabajo { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
     [Column("estudiante_id")]
     public int EstudianteId { get; set; }
@@ -19,17 +19,17 @@ public class Trabajo
     [Column("cliente_id")]
     public int ClienteId { get; set; }
 
-    [Column("tipo_servicio_id")]
-    public int? TipoServicioId { get; set; }
+    // TODO Sub-hito 1.2: el tipo queda implícito en la subclase
+    // (TrabajoProyectoCerrado / TrabajoClase / TrabajoSalud) cuando Trabajo pase a TPT.
 
     [Column("origen")]
     public OrigenTrabajo Origen { get; set; } = OrigenTrabajo.Directo;
 
-    [Column("id_servicio")]
-    public int? IdServicio { get; set; }
+    [Column("servicio_id")]
+    public int? ServicioId { get; set; }
 
-    [Column("id_postulacion")]
-    public int? IdPostulacion { get; set; }
+    [Column("postulacion_id")]
+    public int? PostulacionId { get; set; }
 
     [Column("paciente_id")]
     public int? PacienteId { get; set; }
@@ -52,7 +52,6 @@ public class Trabajo
     // Navegacion
     public PerfilEstudiante Estudiante { get; set; } = null!;
     public PerfilCliente Cliente { get; set; } = null!;
-    public TipoServicio? TipoServicio { get; set; }
     public Servicio? Servicio { get; set; }
     public Postulacion? Postulacion { get; set; }
     public Paciente? Paciente { get; set; }

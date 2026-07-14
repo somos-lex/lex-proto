@@ -39,8 +39,8 @@ public class TrabajoService : ITrabajoService
         if (!esCliente)
             throw new ForbiddenException("Solo los clientes pueden contratar servicios.");
 
-        var servicio = await _db.Servicios.FirstOrDefaultAsync(s => s.IdServicio == request.IdServicio)
-            ?? throw new NotFoundException($"No existe el servicio {request.IdServicio}.");
+        var servicio = await _db.Servicios.FirstOrDefaultAsync(s => s.Id == request.ServicioId)
+            ?? throw new NotFoundException($"No existe el servicio {request.ServicioId}.");
 
         if (!servicio.Activo)
             throw new BadRequestException("El servicio no está disponible para contratar.");
@@ -53,10 +53,10 @@ public class TrabajoService : ITrabajoService
         {
             EstudianteId = servicio.EstudianteId,
             ClienteId = clienteId,
-            TipoServicioId = servicio.TipoServicioId,   // se copia del servicio
+            // TODO Sub-hito 1.2: el tipo queda implícito en la subclase concreta cuando Trabajo pase a TPT.
             Origen = OrigenTrabajo.Directo,
-            IdServicio = servicio.IdServicio,
-            IdPostulacion = null,
+            ServicioId = servicio.Id,
+            PostulacionId = null,
             PacienteId = null,
             Estado = EstadoTrabajo.Pendiente,
             Monto = servicio.Precio,
@@ -75,7 +75,7 @@ public class TrabajoService : ITrabajoService
         _db.Trabajos.Add(trabajo);
         await _db.SaveChangesAsync();
 
-        return await ObtenerInternoAsync(trabajo.IdTrabajo);
+        return await ObtenerInternoAsync(trabajo.Id);
     }
 
     public async Task<TrabajoResponse> ContratarServicioSaludAsync(int clienteId, ContratarServicioSaludRequest request)
@@ -87,12 +87,11 @@ public class TrabajoService : ITrabajoService
 
         // 1) El servicio debe existir.
         var servicio = await _db.Servicios
-            .Include(s => s.TipoServicio)
-            .FirstOrDefaultAsync(s => s.IdServicio == request.IdServicio)
-            ?? throw new NotFoundException($"No existe el servicio {request.IdServicio}.");
+            .FirstOrDefaultAsync(s => s.Id == request.ServicioId)
+            ?? throw new NotFoundException($"No existe el servicio {request.ServicioId}.");
 
-        // 2) Su tipo de servicio debe requerir supervision (area Salud).
-        if (!servicio.TipoServicio.RequiereSupervision)
+        // 2) Debe ser de la vertical Salud: con TPT, eso es su subclase concreta.
+        if (servicio is not ServicioSalud)
             throw new BadRequestException("Este servicio no es del área de salud, usá el endpoint de contratación normal.");
 
         if (!servicio.Activo)
@@ -116,10 +115,10 @@ public class TrabajoService : ITrabajoService
         {
             EstudianteId = servicio.EstudianteId,
             ClienteId = clienteId,
-            TipoServicioId = servicio.TipoServicioId,   // se copia del servicio
+            // TODO Sub-hito 1.2: el tipo queda implícito en la subclase concreta cuando Trabajo pase a TPT.
             Origen = OrigenTrabajo.Directo,
-            IdServicio = servicio.IdServicio,
-            IdPostulacion = null,
+            ServicioId = servicio.Id,
+            PostulacionId = null,
             PacienteId = paciente.PacienteId,
             Estado = EstadoTrabajo.Pendiente,
             Monto = servicio.Precio,
@@ -149,7 +148,7 @@ public class TrabajoService : ITrabajoService
         _db.Trabajos.Add(trabajo);
         await _db.SaveChangesAsync();
 
-        return await ObtenerInternoAsync(trabajo.IdTrabajo);
+        return await ObtenerInternoAsync(trabajo.Id);
     }
 
     public async Task<IReadOnlyList<TrabajoResponse>> ListarMiosAsync(int usuarioId)
@@ -165,7 +164,7 @@ public class TrabajoService : ITrabajoService
     public async Task<TrabajoResponse> ObtenerAsync(int usuarioId, int idTrabajo)
     {
         var trabajo = await _db.Trabajos.AsNoTracking()
-            .Where(t => t.IdTrabajo == idTrabajo)
+            .Where(t => t.Id == idTrabajo)
             .Select(t => new { t.EstudianteId, t.ClienteId })
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -181,7 +180,7 @@ public class TrabajoService : ITrabajoService
         var trabajo = await _db.Trabajos
             .Include(t => t.Consentimiento)
             .Include(t => t.Pago)
-            .FirstOrDefaultAsync(t => t.IdTrabajo == idTrabajo)
+            .FirstOrDefaultAsync(t => t.Id == idTrabajo)
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
 
         // El usuario debe ser parte del trabajo (estudiante o cliente).
@@ -245,7 +244,7 @@ public class TrabajoService : ITrabajoService
     public async Task<IReadOnlyList<TrabajoHistorialResponse>> ListarHistorialAsync(int usuarioId, int idTrabajo)
     {
         var trabajo = await _db.Trabajos.AsNoTracking()
-            .Where(t => t.IdTrabajo == idTrabajo)
+            .Where(t => t.Id == idTrabajo)
             .Select(t => new { t.EstudianteId, t.ClienteId })
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -254,11 +253,11 @@ public class TrabajoService : ITrabajoService
             throw new ForbiddenException("No participás en este trabajo.");
 
         return await _db.TrabajoHistoriales.AsNoTracking()
-            .Where(h => h.IdTrabajo == idTrabajo)
+            .Where(h => h.TrabajoId == idTrabajo)
             .OrderBy(h => h.Fecha)
             .Select(h => new TrabajoHistorialResponse
             {
-                IdHistorial = h.IdHistorial,
+                Id = h.Id,
                 EstadoAnterior = h.EstadoAnterior,
                 EstadoNuevo = h.EstadoNuevo,
                 Fecha = h.Fecha,
@@ -335,7 +334,7 @@ public class TrabajoService : ITrabajoService
     private async Task<TrabajoResponse> ObtenerInternoAsync(int idTrabajo)
     {
         return await _db.Trabajos.AsNoTracking()
-            .Where(t => t.IdTrabajo == idTrabajo)
+            .Where(t => t.Id == idTrabajo)
             .Select(Proyeccion)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -344,16 +343,14 @@ public class TrabajoService : ITrabajoService
     private static readonly System.Linq.Expressions.Expression<Func<Trabajo, TrabajoResponse>> Proyeccion =
         t => new TrabajoResponse
         {
-            IdTrabajo = t.IdTrabajo,
+            Id = t.Id,
             EstudianteId = t.EstudianteId,
             EstudianteNombre = t.Estudiante.Usuario.NombreCompleto,
             ClienteId = t.ClienteId,
             ClienteNombre = t.Cliente.Usuario.NombreCompleto,
-            TipoServicioId = t.TipoServicioId,
-            TipoServicioNombre = t.TipoServicio != null ? t.TipoServicio.Nombre : null,
             Origen = t.Origen,
-            IdServicio = t.IdServicio,
-            IdPostulacion = t.IdPostulacion,
+            ServicioId = t.ServicioId,
+            PostulacionId = t.PostulacionId,
             PacienteId = t.PacienteId,
             Estado = t.Estado,
             Monto = t.Monto,
@@ -362,7 +359,7 @@ public class TrabajoService : ITrabajoService
             FechaFin = t.FechaFin,
             Consentimiento = t.Consentimiento == null ? null : new ConsentimientoResponse
             {
-                IdConsentimiento = t.Consentimiento.IdConsentimiento,
+                Id = t.Consentimiento.Id,
                 PacienteId = t.Consentimiento.PacienteId,
                 PacienteNombre = t.Consentimiento.Paciente != null ? t.Consentimiento.Paciente.NombreCompleto : null,
                 TextoConsentimiento = t.Consentimiento.TextoConsentimiento,

@@ -4,8 +4,8 @@ namespace Lex.Api.Features.Pagos;
 
 public class PagoResponse
 {
-    public int IdPago { get; set; }
-    public int IdTrabajo { get; set; }
+    public int Id { get; set; }
+    public int TrabajoId { get; set; }
     public decimal MontoTotal { get; set; }
     public decimal PorcentajeComision { get; set; } // 10.00 = 10%
     public decimal ComisionLex { get; set; }

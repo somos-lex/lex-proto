@@ -8,11 +8,11 @@ namespace Lex.Api.Domain.Entities;
 public class Postulacion
 {
     [Key]
-    [Column("id_postulacion")]
-    public int IdPostulacion { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("id_solicitud")]
-    public int IdSolicitud { get; set; }
+    [Column("solicitud_id")]
+    public int SolicitudId { get; set; }
 
     [Column("estudiante_id")]
     public int EstudianteId { get; set; }

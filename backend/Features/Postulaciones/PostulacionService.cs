@@ -23,7 +23,7 @@ public class PostulacionService : IPostulacionService
         if (request.MontoPropuesto <= 0)
             throw new BadRequestException("El monto propuesto debe ser mayor a 0.");
 
-        var solicitud = await _db.Solicitudes.FirstOrDefaultAsync(s => s.IdSolicitud == idSolicitud)
+        var solicitud = await _db.Solicitudes.FirstOrDefaultAsync(s => s.Id == idSolicitud)
             ?? throw new NotFoundException($"No existe la solicitud {idSolicitud}.");
 
         if (solicitud.Estado != EstadoSolicitud.Abierta)
@@ -33,13 +33,13 @@ public class PostulacionService : IPostulacionService
             throw new ForbiddenException("Tu usuario no tiene un perfil de estudiante.");
 
         var yaPostulado = await _db.Postulaciones
-            .AnyAsync(p => p.IdSolicitud == idSolicitud && p.EstudianteId == estudianteId);
+            .AnyAsync(p => p.SolicitudId == idSolicitud && p.EstudianteId == estudianteId);
         if (yaPostulado)
             throw new BadRequestException("Ya te postulaste a esta solicitud.");
 
         var postulacion = new Postulacion
         {
-            IdSolicitud = idSolicitud,
+            SolicitudId = idSolicitud,
             EstudianteId = estudianteId,
             Mensaje = request.Mensaje?.Trim(),
             MontoPropuesto = request.MontoPropuesto,
@@ -50,13 +50,13 @@ public class PostulacionService : IPostulacionService
         _db.Postulaciones.Add(postulacion);
         await _db.SaveChangesAsync();
 
-        return await ObtenerMiaAsync(postulacion.IdPostulacion);
+        return await ObtenerMiaAsync(postulacion.Id);
     }
 
     public async Task<IReadOnlyList<PostulacionRecibidaResponse>> ListarRecibidasAsync(int clienteId, int idSolicitud)
     {
         var solicitud = await _db.Solicitudes.AsNoTracking()
-            .Where(s => s.IdSolicitud == idSolicitud)
+            .Where(s => s.Id == idSolicitud)
             .Select(s => new { s.ClienteId })
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe la solicitud {idSolicitud}.");
@@ -65,12 +65,12 @@ public class PostulacionService : IPostulacionService
             throw new ForbiddenException("No sos el dueño de esta solicitud.");
 
         return await _db.Postulaciones.AsNoTracking()
-            .Where(p => p.IdSolicitud == idSolicitud)
+            .Where(p => p.SolicitudId == idSolicitud)
             .OrderByDescending(p => p.FechaPostulacion)
             .Select(p => new PostulacionRecibidaResponse
             {
-                IdPostulacion = p.IdPostulacion,
-                IdSolicitud = p.IdSolicitud,
+                Id = p.Id,
+                SolicitudId = p.SolicitudId,
                 EstudianteId = p.EstudianteId,
                 EstudianteNombre = p.Estudiante.Usuario.NombreCompleto,
                 EstudianteCalificacion = p.Estudiante.CalificacionPromedio,
@@ -95,7 +95,7 @@ public class PostulacionService : IPostulacionService
     {
         var postulacion = await _db.Postulaciones
             .Include(p => p.Solicitud)
-            .FirstOrDefaultAsync(p => p.IdPostulacion == idPostulacion)
+            .FirstOrDefaultAsync(p => p.Id == idPostulacion)
             ?? throw new NotFoundException($"No existe la postulación {idPostulacion}.");
 
         var solicitud = postulacion.Solicitud;
@@ -110,10 +110,10 @@ public class PostulacionService : IPostulacionService
 
         // Aceptar esta postulación y rechazar las demás de la misma solicitud.
         var postulaciones = await _db.Postulaciones
-            .Where(p => p.IdSolicitud == solicitud.IdSolicitud)
+            .Where(p => p.SolicitudId == solicitud.Id)
             .ToListAsync();
         foreach (var p in postulaciones)
-            p.Estado = p.IdPostulacion == idPostulacion
+            p.Estado = p.Id == idPostulacion
                 ? EstadoPostulacion.Aceptada
                 : EstadoPostulacion.Rechazada;
 
@@ -126,10 +126,11 @@ public class PostulacionService : IPostulacionService
         {
             EstudianteId = postulacion.EstudianteId,
             ClienteId = solicitud.ClienteId,
-            TipoServicioId = solicitud.TipoServicioId,   // se copia de la solicitud
+            // TODO Sub-hito 1.2: el tipo del trabajo (solicitud.TipoServicio) queda
+            // implícito en la subclase concreta cuando Trabajo pase a TPT.
             Origen = OrigenTrabajo.Postulacion,
-            IdServicio = null,
-            IdPostulacion = postulacion.IdPostulacion,
+            ServicioId = null,
+            PostulacionId = postulacion.Id,
             PacienteId = null,
             Estado = EstadoTrabajo.Pendiente,
             Monto = postulacion.MontoPropuesto ?? 0m,
@@ -146,13 +147,13 @@ public class PostulacionService : IPostulacionService
         _db.Trabajos.Add(trabajo);
         await _db.SaveChangesAsync();
 
-        return await _trabajos.ObtenerAsync(clienteId, trabajo.IdTrabajo);
+        return await _trabajos.ObtenerAsync(clienteId, trabajo.Id);
     }
 
     private async Task<PostulacionResponse> ObtenerMiaAsync(int idPostulacion)
     {
         return await _db.Postulaciones.AsNoTracking()
-            .Where(p => p.IdPostulacion == idPostulacion)
+            .Where(p => p.Id == idPostulacion)
             .Select(Proyeccion)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe la postulación {idPostulacion}.");
@@ -161,8 +162,8 @@ public class PostulacionService : IPostulacionService
     private static readonly System.Linq.Expressions.Expression<Func<Postulacion, PostulacionResponse>> Proyeccion =
         p => new PostulacionResponse
         {
-            IdPostulacion = p.IdPostulacion,
-            IdSolicitud = p.IdSolicitud,
+            Id = p.Id,
+            SolicitudId = p.SolicitudId,
             SolicitudTitulo = p.Solicitud.Titulo,
             EstudianteId = p.EstudianteId,
             Mensaje = p.Mensaje,

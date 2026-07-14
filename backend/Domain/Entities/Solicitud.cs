@@ -8,14 +8,16 @@ namespace Lex.Api.Domain.Entities;
 public class Solicitud
 {
     [Key]
-    [Column("id_solicitud")]
-    public int IdSolicitud { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
     [Column("cliente_id")]
     public int ClienteId { get; set; }
 
-    [Column("tipo_servicio_id")]
-    public int? TipoServicioId { get; set; }
+    // Vertical que busca el cliente. Es input directo del usuario (no derivado),
+    // por eso se persiste. Se guarda como string (ver AppDbContext).
+    [Column("tipo_servicio")]
+    public TipoServicio? TipoServicio { get; set; }
 
     [Column("titulo")]
     public string Titulo { get; set; } = null!;
@@ -37,6 +39,5 @@ public class Solicitud
 
     // Navegacion
     public PerfilCliente Cliente { get; set; } = null!;
-    public TipoServicio? TipoServicio { get; set; }
     public ICollection<Postulacion> Postulaciones { get; set; } = new List<Postulacion>();
 }

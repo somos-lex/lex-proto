@@ -9,11 +9,11 @@ namespace Lex.Api.Domain.Entities;
 public class Pago
 {
     [Key]
-    [Column("id_pago")]
-    public int IdPago { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("id_trabajo")]
-    public int IdTrabajo { get; set; }
+    [Column("trabajo_id")]
+    public int TrabajoId { get; set; }
 
     [Column("monto_total")]
     public decimal MontoTotal { get; set; }

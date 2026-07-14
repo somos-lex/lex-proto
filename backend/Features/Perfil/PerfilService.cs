@@ -1,7 +1,7 @@
 using Lex.Api.Common;
 using Lex.Api.Data;
 using Lex.Api.Features.Resenas;
-using Lex.Api.Features.Servicios;
+using Lex.Api.Features.Servicios.Shared;
 using Lex.Api.Domain.Entities;
 using Lex.Api.Domain.Enums;
 using Microsoft.EntityFrameworkCore;

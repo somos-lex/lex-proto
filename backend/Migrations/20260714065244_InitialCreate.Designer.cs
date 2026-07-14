@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lex.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260713000640_InitialCreate")]
+    [Migration("20260714065244_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace Lex.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Lex.Api.Entities.Carrera", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Carrera", b =>
                 {
                     b.Property<int>("CarreraId")
                         .ValueGeneratedOnAdd()
@@ -54,14 +54,83 @@ namespace Lex.Api.Migrations
                     b.ToTable("carrera");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Consentimiento", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.CatalogoServicio", b =>
                 {
-                    b.Property<int>("IdConsentimiento")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_consentimiento");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdConsentimiento"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("descripcion");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("text")
+                        .HasColumnName("observaciones");
+
+                    b.Property<bool>("RequiereSupervisor")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requiere_supervisor");
+
+                    b.Property<string>("TipoServicio")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tipo_servicio");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
+                    b.ToTable("catalogo_servicio");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.CatalogoServicioCarrera", b =>
+                {
+                    b.Property<int>("CatalogoServicioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("catalogo_servicio_id");
+
+                    b.Property<int>("CarreraId")
+                        .HasColumnType("integer")
+                        .HasColumnName("carrera_id");
+
+                    b.Property<int>("AnioMinimo")
+                        .HasColumnType("integer")
+                        .HasColumnName("anio_minimo");
+
+                    b.HasKey("CatalogoServicioId", "CarreraId");
+
+                    b.HasIndex("CarreraId");
+
+                    b.ToTable("catalogo_servicio_carrera");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Consentimiento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Aceptado")
                         .HasColumnType("boolean")
@@ -70,10 +139,6 @@ namespace Lex.Api.Migrations
                     b.Property<DateTime?>("FechaAceptacion")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_aceptacion");
-
-                    b.Property<int>("IdTrabajo")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_trabajo");
 
                     b.Property<int?>("PacienteId")
                         .HasColumnType("integer")
@@ -87,17 +152,21 @@ namespace Lex.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("texto_consentimiento");
 
-                    b.HasKey("IdConsentimiento");
+                    b.Property<int>("TrabajoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trabajo_id");
 
-                    b.HasIndex("IdTrabajo")
-                        .IsUnique();
+                    b.HasKey("Id");
 
                     b.HasIndex("PacienteId");
+
+                    b.HasIndex("TrabajoId")
+                        .IsUnique();
 
                     b.ToTable("consentimiento");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.DatosEmpresa", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.DatosEmpresa", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -120,7 +189,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("datos_empresa");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.DatosParticular", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.DatosParticular", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -135,7 +204,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("datos_particular");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.EstudianteCarrera", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.EstudianteCarrera", b =>
                 {
                     b.Property<int>("EstudianteId")
                         .HasColumnType("integer")
@@ -164,7 +233,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("estudiante_carrera");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Institucion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>
                 {
                     b.Property<int>("InstitucionId")
                         .ValueGeneratedOnAdd()
@@ -197,7 +266,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("institucion");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Paciente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Paciente", b =>
                 {
                     b.Property<int>("PacienteId")
                         .ValueGeneratedOnAdd()
@@ -230,14 +299,14 @@ namespace Lex.Api.Migrations
                     b.ToTable("pacientes");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Pago", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Pago", b =>
                 {
-                    b.Property<int>("IdPago")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_pago");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPago"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("ComisionLex")
                         .HasPrecision(12, 2)
@@ -255,10 +324,6 @@ namespace Lex.Api.Migrations
                     b.Property<DateTime?>("FechaRetencion")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_retencion");
-
-                    b.Property<int>("IdTrabajo")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_trabajo");
 
                     b.Property<string>("MetodoPago")
                         .HasColumnType("text")
@@ -279,15 +344,19 @@ namespace Lex.Api.Migrations
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("porcentaje_comision");
 
-                    b.HasKey("IdPago");
+                    b.Property<int>("TrabajoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trabajo_id");
 
-                    b.HasIndex("IdTrabajo")
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrabajoId")
                         .IsUnique();
 
                     b.ToTable("pago");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilAgencia", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilAgencia", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -310,7 +379,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("perfil_agencia");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilCliente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilCliente", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -325,7 +394,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("perfil_cliente");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilEstudiante", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilEstudiante", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .HasColumnType("integer")
@@ -357,14 +426,14 @@ namespace Lex.Api.Migrations
                     b.ToTable("perfil_estudiante");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Postulacion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Postulacion", b =>
                 {
-                    b.Property<int>("IdPostulacion")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_postulacion");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPostulacion"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Estado")
                         .HasColumnType("integer")
@@ -378,10 +447,6 @@ namespace Lex.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_postulacion");
 
-                    b.Property<int>("IdSolicitud")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_solicitud");
-
                     b.Property<string>("Mensaje")
                         .HasColumnType("text")
                         .HasColumnName("mensaje");
@@ -391,23 +456,74 @@ namespace Lex.Api.Migrations
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("monto_propuesto");
 
-                    b.HasKey("IdPostulacion");
+                    b.Property<int>("SolicitudId")
+                        .HasColumnType("integer")
+                        .HasColumnName("solicitud_id");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("EstudianteId");
 
-                    b.HasIndex("IdSolicitud");
+                    b.HasIndex("SolicitudId");
 
                     b.ToTable("postulacion");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Resena", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>
                 {
-                    b.Property<int>("IdResena")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_resena");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdResena"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<string>("Especialidad")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("especialidad");
+
+                    b.Property<DateTime>("FechaAlta")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_alta");
+
+                    b.Property<int?>("InstitucionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("institucion_id");
+
+                    b.Property<string>("Matricula")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("matricula");
+
+                    b.Property<string>("NombreCompleto")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_completo");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("text")
+                        .HasColumnName("observaciones");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitucionId");
+
+                    b.ToTable("profesional_supervisor");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Resena", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("AutorUsuarioId")
                         .HasColumnType("integer")
@@ -421,10 +537,6 @@ namespace Lex.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
-                    b.Property<int>("IdTrabajo")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_trabajo");
-
                     b.Property<int>("Puntaje")
                         .HasColumnType("integer")
                         .HasColumnName("puntaje");
@@ -433,19 +545,23 @@ namespace Lex.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("receptor_usuario_id");
 
-                    b.HasKey("IdResena");
+                    b.Property<int>("TrabajoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("trabajo_id");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("AutorUsuarioId");
 
                     b.HasIndex("ReceptorUsuarioId");
 
-                    b.HasIndex("IdTrabajo", "AutorUsuarioId")
+                    b.HasIndex("TrabajoId", "AutorUsuarioId")
                         .IsUnique();
 
                     b.ToTable("resena");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Rol", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Rol", b =>
                 {
                     b.Property<int>("RolId")
                         .ValueGeneratedOnAdd()
@@ -467,20 +583,21 @@ namespace Lex.Api.Migrations
                     b.ToTable("rol");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Servicio", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Servicio", b =>
                 {
-                    b.Property<int>("IdServicio")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_servicio");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdServicio"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean")
                         .HasColumnName("activo");
 
                     b.Property<string>("Descripcion")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("descripcion");
 
@@ -501,36 +618,28 @@ namespace Lex.Api.Migrations
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("precio");
 
-                    b.Property<int?>("TiempoEntregaDias")
-                        .HasColumnType("integer")
-                        .HasColumnName("tiempo_entrega_dias");
-
-                    b.Property<int>("TipoServicioId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tipo_servicio_id");
-
                     b.Property<string>("Titulo")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("titulo");
 
-                    b.HasKey("IdServicio");
+                    b.HasKey("Id");
 
                     b.HasIndex("EstudianteId");
 
-                    b.HasIndex("TipoServicioId");
+                    b.ToTable("servicio", (string)null);
 
-                    b.ToTable("servicio");
+                    b.UseTptMappingStrategy();
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Solicitud", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Solicitud", b =>
                 {
-                    b.Property<int>("IdSolicitud")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_solicitud");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdSolicitud"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer")
@@ -557,25 +666,23 @@ namespace Lex.Api.Migrations
                         .HasColumnType("numeric(12,2)")
                         .HasColumnName("presupuesto_estimado");
 
-                    b.Property<int?>("TipoServicioId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tipo_servicio_id");
+                    b.Property<string>("TipoServicio")
+                        .HasColumnType("text")
+                        .HasColumnName("tipo_servicio");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("titulo");
 
-                    b.HasKey("IdSolicitud");
+                    b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
-
-                    b.HasIndex("TipoServicioId");
 
                     b.ToTable("solicitud");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TipoInstitucion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.TipoInstitucion", b =>
                 {
                     b.Property<int>("TipoInstitucionId")
                         .ValueGeneratedOnAdd()
@@ -594,37 +701,14 @@ namespace Lex.Api.Migrations
                     b.ToTable("tipo_institucion");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TipoServicio", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Trabajo", b =>
                 {
-                    b.Property<int>("TipoServicioId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("tipo_servicio_id");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TipoServicioId"));
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nombre");
-
-                    b.Property<bool>("RequiereSupervision")
-                        .HasColumnType("boolean")
-                        .HasColumnName("requiere_supervision");
-
-                    b.HasKey("TipoServicioId");
-
-                    b.ToTable("tipo_servicio");
-                });
-
-            modelBuilder.Entity("Lex.Api.Entities.Trabajo", b =>
-                {
-                    b.Property<int>("IdTrabajo")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id_trabajo");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdTrabajo"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("integer")
@@ -650,14 +734,6 @@ namespace Lex.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_inicio");
 
-                    b.Property<int?>("IdPostulacion")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_postulacion");
-
-                    b.Property<int?>("IdServicio")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_servicio");
-
                     b.Property<decimal>("Monto")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
@@ -671,35 +747,37 @@ namespace Lex.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("paciente_id");
 
-                    b.Property<int?>("TipoServicioId")
+                    b.Property<int?>("PostulacionId")
                         .HasColumnType("integer")
-                        .HasColumnName("tipo_servicio_id");
+                        .HasColumnName("postulacion_id");
 
-                    b.HasKey("IdTrabajo");
+                    b.Property<int?>("ServicioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("servicio_id");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("EstudianteId");
 
-                    b.HasIndex("IdPostulacion");
-
-                    b.HasIndex("IdServicio");
-
                     b.HasIndex("PacienteId");
 
-                    b.HasIndex("TipoServicioId");
+                    b.HasIndex("PostulacionId");
+
+                    b.HasIndex("ServicioId");
 
                     b.ToTable("trabajo");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TrabajoHistorial", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.TrabajoHistorial", b =>
                 {
-                    b.Property<int>("IdHistorial")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_historial");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdHistorial"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("EstadoAnterior")
                         .HasColumnType("integer")
@@ -713,24 +791,24 @@ namespace Lex.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha");
 
-                    b.Property<int>("IdTrabajo")
+                    b.Property<int>("TrabajoId")
                         .HasColumnType("integer")
-                        .HasColumnName("id_trabajo");
+                        .HasColumnName("trabajo_id");
 
                     b.Property<int?>("UsuarioId")
                         .HasColumnType("integer")
                         .HasColumnName("usuario_id");
 
-                    b.HasKey("IdHistorial");
+                    b.HasKey("Id");
 
-                    b.HasIndex("IdTrabajo");
+                    b.HasIndex("TrabajoId");
 
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("trabajo_historial");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Usuario", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .ValueGeneratedOnAdd()
@@ -774,7 +852,7 @@ namespace Lex.Api.Migrations
                     b.ToTable("usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.UsuarioRol", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.UsuarioRol", b =>
                 {
                     b.Property<int>("RolId")
                         .HasColumnType("integer")
@@ -791,9 +869,97 @@ namespace Lex.Api.Migrations
                     b.ToTable("usuario_rol");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Carrera", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioClase", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Institucion", "Institucion")
+                    b.HasBaseType("Lex.Api.Domain.Entities.Servicio");
+
+                    b.Property<int?>("CantidadSesionesPaquete")
+                        .HasColumnType("integer")
+                        .HasColumnName("cantidad_sesiones_paquete");
+
+                    b.Property<int>("DuracionMinutosSesion")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracion_minutos_sesion");
+
+                    b.Property<bool>("EsPaquete")
+                        .HasColumnType("boolean")
+                        .HasColumnName("es_paquete");
+
+                    b.Property<string>("Materia")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("materia");
+
+                    b.Property<string>("Modalidad")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("modalidad");
+
+                    b.Property<string>("Nivel")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nivel");
+
+                    b.ToTable("servicio_clase", (string)null);
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioProyectoCerrado", b =>
+                {
+                    b.HasBaseType("Lex.Api.Domain.Entities.Servicio");
+
+                    b.Property<int>("CatalogoServicioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("catalogo_servicio_id");
+
+                    b.Property<string>("FormatoEntrega")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("formato_entrega");
+
+                    b.Property<int>("PlazoEntregaDias")
+                        .HasColumnType("integer")
+                        .HasColumnName("plazo_entrega_dias");
+
+                    b.Property<int>("RevisionesIncluidas")
+                        .HasColumnType("integer")
+                        .HasColumnName("revisiones_incluidas");
+
+                    b.HasIndex("CatalogoServicioId");
+
+                    b.ToTable("servicio_proyecto_cerrado", (string)null);
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioSalud", b =>
+                {
+                    b.HasBaseType("Lex.Api.Domain.Entities.Servicio");
+
+                    b.Property<int>("CatalogoServicioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("catalogo_servicio_id");
+
+                    b.Property<int>("DuracionMinutosSesion")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracion_minutos_sesion");
+
+                    b.Property<string>("Modalidad")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("modalidad");
+
+                    b.Property<int>("SupervisorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("supervisor_id");
+
+                    b.HasIndex("CatalogoServicioId");
+
+                    b.HasIndex("SupervisorId");
+
+                    b.ToTable("servicio_salud", (string)null);
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Carrera", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.Institucion", "Institucion")
                         .WithMany("Carreras")
                         .HasForeignKey("InstitucionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -802,55 +968,74 @@ namespace Lex.Api.Migrations
                     b.Navigation("Institucion");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Consentimiento", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.CatalogoServicioCarrera", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
-                        .WithOne("Consentimiento")
-                        .HasForeignKey("Lex.Api.Entities.Consentimiento", "IdTrabajo")
+                    b.HasOne("Lex.Api.Domain.Entities.Carrera", "Carrera")
+                        .WithMany()
+                        .HasForeignKey("CarreraId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Paciente", "Paciente")
+                    b.HasOne("Lex.Api.Domain.Entities.CatalogoServicio", "CatalogoServicio")
+                        .WithMany("Carreras")
+                        .HasForeignKey("CatalogoServicioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Carrera");
+
+                    b.Navigation("CatalogoServicio");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Consentimiento", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.Paciente", "Paciente")
                         .WithMany("Consentimientos")
                         .HasForeignKey("PacienteId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Lex.Api.Domain.Entities.Trabajo", "Trabajo")
+                        .WithOne("Consentimiento")
+                        .HasForeignKey("Lex.Api.Domain.Entities.Consentimiento", "TrabajoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Paciente");
 
                     b.Navigation("Trabajo");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.DatosEmpresa", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.DatosEmpresa", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilCliente", "PerfilCliente")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "PerfilCliente")
                         .WithOne("DatosEmpresa")
-                        .HasForeignKey("Lex.Api.Entities.DatosEmpresa", "UsuarioId")
+                        .HasForeignKey("Lex.Api.Domain.Entities.DatosEmpresa", "UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("PerfilCliente");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.DatosParticular", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.DatosParticular", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilCliente", "PerfilCliente")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "PerfilCliente")
                         .WithOne("DatosParticular")
-                        .HasForeignKey("Lex.Api.Entities.DatosParticular", "UsuarioId")
+                        .HasForeignKey("Lex.Api.Domain.Entities.DatosParticular", "UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("PerfilCliente");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.EstudianteCarrera", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.EstudianteCarrera", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Carrera", "Carrera")
+                    b.HasOne("Lex.Api.Domain.Entities.Carrera", "Carrera")
                         .WithMany("EstudianteCarreras")
                         .HasForeignKey("CarreraId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.PerfilEstudiante", "Estudiante")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilEstudiante", "Estudiante")
                         .WithMany("EstudianteCarreras")
                         .HasForeignKey("EstudianteId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -861,9 +1046,9 @@ namespace Lex.Api.Migrations
                     b.Navigation("Estudiante");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Institucion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.TipoInstitucion", "TipoInstitucion")
+                    b.HasOne("Lex.Api.Domain.Entities.TipoInstitucion", "TipoInstitucion")
                         .WithMany("Instituciones")
                         .HasForeignKey("TipoInstitucionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -872,9 +1057,9 @@ namespace Lex.Api.Migrations
                     b.Navigation("TipoInstitucion");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Paciente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Paciente", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilCliente", "Cliente")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "Cliente")
                         .WithMany("Pacientes")
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -883,61 +1068,61 @@ namespace Lex.Api.Migrations
                     b.Navigation("Cliente");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Pago", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Pago", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
+                    b.HasOne("Lex.Api.Domain.Entities.Trabajo", "Trabajo")
                         .WithOne("Pago")
-                        .HasForeignKey("Lex.Api.Entities.Pago", "IdTrabajo")
+                        .HasForeignKey("Lex.Api.Domain.Entities.Pago", "TrabajoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Trabajo");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilAgencia", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilAgencia", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Usuario", "Usuario")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Usuario")
                         .WithOne("PerfilAgencia")
-                        .HasForeignKey("Lex.Api.Entities.PerfilAgencia", "UsuarioId")
+                        .HasForeignKey("Lex.Api.Domain.Entities.PerfilAgencia", "UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilCliente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilCliente", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Usuario", "Usuario")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Usuario")
                         .WithOne("PerfilCliente")
-                        .HasForeignKey("Lex.Api.Entities.PerfilCliente", "UsuarioId")
+                        .HasForeignKey("Lex.Api.Domain.Entities.PerfilCliente", "UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilEstudiante", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilEstudiante", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Usuario", "Usuario")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Usuario")
                         .WithOne("PerfilEstudiante")
-                        .HasForeignKey("Lex.Api.Entities.PerfilEstudiante", "UsuarioId")
+                        .HasForeignKey("Lex.Api.Domain.Entities.PerfilEstudiante", "UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Postulacion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Postulacion", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilEstudiante", "Estudiante")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilEstudiante", "Estudiante")
                         .WithMany("Postulaciones")
                         .HasForeignKey("EstudianteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Solicitud", "Solicitud")
+                    b.HasOne("Lex.Api.Domain.Entities.Solicitud", "Solicitud")
                         .WithMany("Postulaciones")
-                        .HasForeignKey("IdSolicitud")
+                        .HasForeignKey("SolicitudId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -946,23 +1131,33 @@ namespace Lex.Api.Migrations
                     b.Navigation("Solicitud");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Resena", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Usuario", "Autor")
+                    b.HasOne("Lex.Api.Domain.Entities.Institucion", "Institucion")
+                        .WithMany()
+                        .HasForeignKey("InstitucionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Institucion");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Resena", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Autor")
                         .WithMany("ResenasComoAutor")
                         .HasForeignKey("AutorUsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
-                        .WithMany("Resenas")
-                        .HasForeignKey("IdTrabajo")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Receptor")
+                        .WithMany("ResenasComoReceptor")
+                        .HasForeignKey("ReceptorUsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Usuario", "Receptor")
-                        .WithMany("ResenasComoReceptor")
-                        .HasForeignKey("ReceptorUsuarioId")
+                    b.HasOne("Lex.Api.Domain.Entities.Trabajo", "Trabajo")
+                        .WithMany("Resenas")
+                        .HasForeignKey("TrabajoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -973,75 +1168,55 @@ namespace Lex.Api.Migrations
                     b.Navigation("Trabajo");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Servicio", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Servicio", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilEstudiante", "Estudiante")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilEstudiante", "Estudiante")
                         .WithMany("Servicios")
                         .HasForeignKey("EstudianteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Lex.Api.Entities.TipoServicio", "TipoServicio")
-                        .WithMany("Servicios")
-                        .HasForeignKey("TipoServicioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Estudiante");
-
-                    b.Navigation("TipoServicio");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Solicitud", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Solicitud", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilCliente", "Cliente")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "Cliente")
                         .WithMany("Solicitudes")
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.TipoServicio", "TipoServicio")
-                        .WithMany("Solicitudes")
-                        .HasForeignKey("TipoServicioId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("Cliente");
-
-                    b.Navigation("TipoServicio");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Trabajo", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Trabajo", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.PerfilCliente", "Cliente")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "Cliente")
                         .WithMany("Trabajos")
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.PerfilEstudiante", "Estudiante")
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilEstudiante", "Estudiante")
                         .WithMany("Trabajos")
                         .HasForeignKey("EstudianteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Postulacion", "Postulacion")
-                        .WithMany("Trabajos")
-                        .HasForeignKey("IdPostulacion")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Lex.Api.Entities.Servicio", "Servicio")
-                        .WithMany("Trabajos")
-                        .HasForeignKey("IdServicio")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Lex.Api.Entities.Paciente", "Paciente")
+                    b.HasOne("Lex.Api.Domain.Entities.Paciente", "Paciente")
                         .WithMany("Trabajos")
                         .HasForeignKey("PacienteId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Lex.Api.Entities.TipoServicio", "TipoServicio")
+                    b.HasOne("Lex.Api.Domain.Entities.Postulacion", "Postulacion")
                         .WithMany("Trabajos")
-                        .HasForeignKey("TipoServicioId")
+                        .HasForeignKey("PostulacionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Lex.Api.Domain.Entities.Servicio", "Servicio")
+                        .WithMany("Trabajos")
+                        .HasForeignKey("ServicioId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Cliente");
@@ -1053,19 +1228,17 @@ namespace Lex.Api.Migrations
                     b.Navigation("Postulacion");
 
                     b.Navigation("Servicio");
-
-                    b.Navigation("TipoServicio");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TrabajoHistorial", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.TrabajoHistorial", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Trabajo", "Trabajo")
+                    b.HasOne("Lex.Api.Domain.Entities.Trabajo", "Trabajo")
                         .WithMany("Historiales")
-                        .HasForeignKey("IdTrabajo")
+                        .HasForeignKey("TrabajoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Usuario", "Usuario")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Usuario")
                         .WithMany("TrabajoHistoriales")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1075,15 +1248,15 @@ namespace Lex.Api.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.UsuarioRol", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.UsuarioRol", b =>
                 {
-                    b.HasOne("Lex.Api.Entities.Rol", "Rol")
+                    b.HasOne("Lex.Api.Domain.Entities.Rol", "Rol")
                         .WithMany("UsuarioRoles")
                         .HasForeignKey("RolId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Lex.Api.Entities.Usuario", "Usuario")
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "Usuario")
                         .WithMany("UsuarioRoles")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1094,24 +1267,80 @@ namespace Lex.Api.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Carrera", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioClase", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.Servicio", null)
+                        .WithOne()
+                        .HasForeignKey("Lex.Api.Domain.Entities.ServicioClase", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioProyectoCerrado", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.CatalogoServicio", "CatalogoServicio")
+                        .WithMany()
+                        .HasForeignKey("CatalogoServicioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.Servicio", null)
+                        .WithOne()
+                        .HasForeignKey("Lex.Api.Domain.Entities.ServicioProyectoCerrado", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CatalogoServicio");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ServicioSalud", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.CatalogoServicio", "CatalogoServicio")
+                        .WithMany()
+                        .HasForeignKey("CatalogoServicioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.Servicio", null)
+                        .WithOne()
+                        .HasForeignKey("Lex.Api.Domain.Entities.ServicioSalud", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.ProfesionalSupervisor", "Supervisor")
+                        .WithMany("ServiciosSalud")
+                        .HasForeignKey("SupervisorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CatalogoServicio");
+
+                    b.Navigation("Supervisor");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Carrera", b =>
                 {
                     b.Navigation("EstudianteCarreras");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Institucion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.CatalogoServicio", b =>
                 {
                     b.Navigation("Carreras");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Paciente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>
+                {
+                    b.Navigation("Carreras");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Paciente", b =>
                 {
                     b.Navigation("Consentimientos");
 
                     b.Navigation("Trabajos");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilCliente", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilCliente", b =>
                 {
                     b.Navigation("DatosEmpresa");
 
@@ -1124,7 +1353,7 @@ namespace Lex.Api.Migrations
                     b.Navigation("Trabajos");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.PerfilEstudiante", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PerfilEstudiante", b =>
                 {
                     b.Navigation("EstudianteCarreras");
 
@@ -1135,41 +1364,37 @@ namespace Lex.Api.Migrations
                     b.Navigation("Trabajos");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Postulacion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Postulacion", b =>
                 {
                     b.Navigation("Trabajos");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Rol", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>
+                {
+                    b.Navigation("ServiciosSalud");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Rol", b =>
                 {
                     b.Navigation("UsuarioRoles");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Servicio", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Servicio", b =>
                 {
                     b.Navigation("Trabajos");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Solicitud", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Solicitud", b =>
                 {
                     b.Navigation("Postulaciones");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TipoInstitucion", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.TipoInstitucion", b =>
                 {
                     b.Navigation("Instituciones");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.TipoServicio", b =>
-                {
-                    b.Navigation("Servicios");
-
-                    b.Navigation("Solicitudes");
-
-                    b.Navigation("Trabajos");
-                });
-
-            modelBuilder.Entity("Lex.Api.Entities.Trabajo", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Trabajo", b =>
                 {
                     b.Navigation("Consentimiento");
 
@@ -1180,7 +1405,7 @@ namespace Lex.Api.Migrations
                     b.Navigation("Resenas");
                 });
 
-            modelBuilder.Entity("Lex.Api.Entities.Usuario", b =>
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Usuario", b =>
                 {
                     b.Navigation("PerfilAgencia");
 

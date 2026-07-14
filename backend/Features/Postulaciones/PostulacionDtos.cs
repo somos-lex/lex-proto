@@ -15,8 +15,8 @@ public class CrearPostulacionRequest
 // Vista del estudiante (sus postulaciones) y respuesta al postularse.
 public class PostulacionResponse
 {
-    public int IdPostulacion { get; set; }
-    public int IdSolicitud { get; set; }
+    public int Id { get; set; }
+    public int SolicitudId { get; set; }
     public string SolicitudTitulo { get; set; } = null!;
     public int EstudianteId { get; set; }
     public string? Mensaje { get; set; }
@@ -28,8 +28,8 @@ public class PostulacionResponse
 // Vista del cliente dueño: incluye datos del estudiante postulante.
 public class PostulacionRecibidaResponse
 {
-    public int IdPostulacion { get; set; }
-    public int IdSolicitud { get; set; }
+    public int Id { get; set; }
+    public int SolicitudId { get; set; }
     public int EstudianteId { get; set; }
     public string EstudianteNombre { get; set; } = null!;
     public decimal EstudianteCalificacion { get; set; }

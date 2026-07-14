@@ -55,3 +55,50 @@ public enum EstadoPago
     Liberado = 1,
     Reembolsado = 2
 }
+
+/// <summary>
+/// Vertical de un servicio. Reemplaza a la vieja tabla lookup 'tipo_servicio':
+/// con la jerarquia TPT de Servicio, el tipo queda determinado por la subclase
+/// concreta. Se persiste como string donde hace falta guardarlo (catalogo, solicitud).
+/// </summary>
+public enum TipoServicio
+{
+    ProyectoCerrado,
+    Clase,
+    Salud
+}
+
+/// <summary>Como entrega el estudiante un proyecto cerrado. (servicio_proyecto_cerrado.formato_entrega)</summary>
+public enum FormatoEntrega
+{
+    Archivos,
+    Link,
+    Ambos
+}
+
+/// <summary>Nivel educativo al que apunta una clase. (servicio_clase.nivel)</summary>
+public enum NivelClase
+{
+    Primario,
+    Secundario,
+    Universitario,
+    Adulto,
+    Idioma,
+    Otro
+}
+
+/// <summary>Modalidad de cursada de una clase. (servicio_clase.modalidad)</summary>
+public enum ModalidadClase
+{
+    Online,
+    Presencial,
+    Ambas
+}
+
+/// <summary>Donde se presta un servicio de salud. (servicio_salud.modalidad)</summary>
+public enum ModalidadSalud
+{
+    Domicilio,
+    Consultorio,
+    Ambas
+}

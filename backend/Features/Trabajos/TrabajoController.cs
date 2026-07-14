@@ -25,7 +25,7 @@ public class TrabajoController : ControllerBase
     public async Task<IActionResult> ContratarServicio([FromBody] ContratarServicioRequest request)
     {
         var trabajo = await _trabajos.ContratarServicioAsync(User.GetUsuarioId(), request);
-        return CreatedAtAction(nameof(Obtener), new { id = trabajo.IdTrabajo }, trabajo);
+        return CreatedAtAction(nameof(Obtener), new { id = trabajo.Id }, trabajo);
     }
 
     /// <summary>Contratacion de Salud (Flujo 3): un cliente contrata un servicio que requiere supervision, para un paciente, aceptando el consentimiento.</summary>
@@ -35,7 +35,7 @@ public class TrabajoController : ControllerBase
     public async Task<IActionResult> ContratarServicioSalud([FromBody] ContratarServicioSaludRequest request)
     {
         var trabajo = await _trabajos.ContratarServicioSaludAsync(User.GetUsuarioId(), request);
-        return CreatedAtAction(nameof(Obtener), new { id = trabajo.IdTrabajo }, trabajo);
+        return CreatedAtAction(nameof(Obtener), new { id = trabajo.Id }, trabajo);
     }
 
     /// <summary>Trabajos donde participa el usuario autenticado (como estudiante o cliente).</summary>

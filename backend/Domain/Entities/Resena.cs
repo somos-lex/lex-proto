@@ -8,11 +8,11 @@ namespace Lex.Api.Domain.Entities;
 public class Resena
 {
     [Key]
-    [Column("id_resena")]
-    public int IdResena { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("id_trabajo")]
-    public int IdTrabajo { get; set; }
+    [Column("trabajo_id")]
+    public int TrabajoId { get; set; }
 
     [Column("autor_usuario_id")]
     public int AutorUsuarioId { get; set; }

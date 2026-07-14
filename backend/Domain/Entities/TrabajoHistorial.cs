@@ -9,11 +9,11 @@ namespace Lex.Api.Domain.Entities;
 public class TrabajoHistorial
 {
     [Key]
-    [Column("id_historial")]
-    public int IdHistorial { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("id_trabajo")]
-    public int IdTrabajo { get; set; }
+    [Column("trabajo_id")]
+    public int TrabajoId { get; set; }
 
     [Column("estado_anterior")]
     public EstadoTrabajo? EstadoAnterior { get; set; }

@@ -8,11 +8,11 @@ namespace Lex.Api.Domain.Entities;
 public class Consentimiento
 {
     [Key]
-    [Column("id_consentimiento")]
-    public int IdConsentimiento { get; set; }
+    [Column("id")]
+    public int Id { get; set; }
 
-    [Column("id_trabajo")]
-    public int IdTrabajo { get; set; }
+    [Column("trabajo_id")]
+    public int TrabajoId { get; set; }
 
     [Column("paciente_id")]
     public int? PacienteId { get; set; }

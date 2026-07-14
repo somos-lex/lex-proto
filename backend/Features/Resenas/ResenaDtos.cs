@@ -13,8 +13,8 @@ public class CrearResenaRequest
 
 public class ResenaResponse
 {
-    public int IdResena { get; set; }
-    public int IdTrabajo { get; set; }
+    public int Id { get; set; }
+    public int TrabajoId { get; set; }
 
     public int AutorUsuarioId { get; set; }
     public string AutorNombre { get; set; } = null!;

@@ -13,6 +13,25 @@ namespace Lex.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "catalogo_servicio",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre = table.Column<string>(type: "text", nullable: false),
+                    descripcion = table.Column<string>(type: "text", nullable: false),
+                    tipo_servicio = table.Column<string>(type: "text", nullable: false),
+                    requiere_supervisor = table.Column<bool>(type: "boolean", nullable: false),
+                    activo = table.Column<bool>(type: "boolean", nullable: false),
+                    observaciones = table.Column<string>(type: "text", nullable: true),
+                    fecha_creacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_catalogo_servicio", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "rol",
                 columns: table => new
                 {
@@ -36,20 +55,6 @@ namespace Lex.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_tipo_institucion", x => x.tipo_institucion_id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "tipo_servicio",
-                columns: table => new
-                {
-                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    nombre = table.Column<string>(type: "text", nullable: false),
-                    requiere_supervision = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_tipo_servicio", x => x.tipo_servicio_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -198,6 +203,31 @@ namespace Lex.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "profesional_supervisor",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    nombre_completo = table.Column<string>(type: "text", nullable: false),
+                    matricula = table.Column<string>(type: "text", nullable: false),
+                    especialidad = table.Column<string>(type: "text", nullable: false),
+                    institucion_id = table.Column<int>(type: "integer", nullable: true),
+                    activo = table.Column<bool>(type: "boolean", nullable: false),
+                    fecha_alta = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    observaciones = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_profesional_supervisor", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_profesional_supervisor_institucion_institucion_id",
+                        column: x => x.institucion_id,
+                        principalTable: "institucion",
+                        principalColumn: "institucion_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "datos_empresa",
                 columns: table => new
                 {
@@ -261,10 +291,10 @@ namespace Lex.Api.Migrations
                 name: "solicitud",
                 columns: table => new
                 {
-                    id_solicitud = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     cliente_id = table.Column<int>(type: "integer", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: true),
+                    tipo_servicio = table.Column<string>(type: "text", nullable: true),
                     titulo = table.Column<string>(type: "text", nullable: false),
                     descripcion = table.Column<string>(type: "text", nullable: true),
                     presupuesto_estimado = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true),
@@ -274,18 +304,12 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_solicitud", x => x.id_solicitud);
+                    table.PrimaryKey("PK_solicitud", x => x.id);
                     table.ForeignKey(
                         name: "FK_solicitud_perfil_cliente_cliente_id",
                         column: x => x.cliente_id,
                         principalTable: "perfil_cliente",
                         principalColumn: "usuario_id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_solicitud_tipo_servicio_tipo_servicio_id",
-                        column: x => x.tipo_servicio_id,
-                        principalTable: "tipo_servicio",
-                        principalColumn: "tipo_servicio_id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -293,32 +317,49 @@ namespace Lex.Api.Migrations
                 name: "servicio",
                 columns: table => new
                 {
-                    id_servicio = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     estudiante_id = table.Column<int>(type: "integer", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: false),
                     titulo = table.Column<string>(type: "text", nullable: false),
-                    descripcion = table.Column<string>(type: "text", nullable: true),
+                    descripcion = table.Column<string>(type: "text", nullable: false),
                     imagen_url = table.Column<string>(type: "text", nullable: true),
                     precio = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
-                    tiempo_entrega_dias = table.Column<int>(type: "integer", nullable: true),
                     activo = table.Column<bool>(type: "boolean", nullable: false),
                     fecha_publicacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_servicio", x => x.id_servicio);
+                    table.PrimaryKey("PK_servicio", x => x.id);
                     table.ForeignKey(
                         name: "FK_servicio_perfil_estudiante_estudiante_id",
                         column: x => x.estudiante_id,
                         principalTable: "perfil_estudiante",
                         principalColumn: "usuario_id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "catalogo_servicio_carrera",
+                columns: table => new
+                {
+                    catalogo_servicio_id = table.Column<int>(type: "integer", nullable: false),
+                    carrera_id = table.Column<int>(type: "integer", nullable: false),
+                    anio_minimo = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_catalogo_servicio_carrera", x => new { x.catalogo_servicio_id, x.carrera_id });
                     table.ForeignKey(
-                        name: "FK_servicio_tipo_servicio_tipo_servicio_id",
-                        column: x => x.tipo_servicio_id,
-                        principalTable: "tipo_servicio",
-                        principalColumn: "tipo_servicio_id",
+                        name: "FK_catalogo_servicio_carrera_carrera_carrera_id",
+                        column: x => x.carrera_id,
+                        principalTable: "carrera",
+                        principalColumn: "carrera_id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_catalogo_servicio_carrera_catalogo_servicio_catalogo_servic~",
+                        column: x => x.catalogo_servicio_id,
+                        principalTable: "catalogo_servicio",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -353,9 +394,9 @@ namespace Lex.Api.Migrations
                 name: "postulacion",
                 columns: table => new
                 {
-                    id_postulacion = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_solicitud = table.Column<int>(type: "integer", nullable: false),
+                    solicitud_id = table.Column<int>(type: "integer", nullable: false),
                     estudiante_id = table.Column<int>(type: "integer", nullable: false),
                     mensaje = table.Column<string>(type: "text", nullable: true),
                     monto_propuesto = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true),
@@ -364,7 +405,7 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_postulacion", x => x.id_postulacion);
+                    table.PrimaryKey("PK_postulacion", x => x.id);
                     table.ForeignKey(
                         name: "FK_postulacion_perfil_estudiante_estudiante_id",
                         column: x => x.estudiante_id,
@@ -372,25 +413,107 @@ namespace Lex.Api.Migrations
                         principalColumn: "usuario_id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_postulacion_solicitud_id_solicitud",
-                        column: x => x.id_solicitud,
+                        name: "FK_postulacion_solicitud_solicitud_id",
+                        column: x => x.solicitud_id,
                         principalTable: "solicitud",
-                        principalColumn: "id_solicitud",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "servicio_clase",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    materia = table.Column<string>(type: "text", nullable: false),
+                    nivel = table.Column<string>(type: "text", nullable: false),
+                    modalidad = table.Column<string>(type: "text", nullable: false),
+                    duracion_minutos_sesion = table.Column<int>(type: "integer", nullable: false),
+                    es_paquete = table.Column<bool>(type: "boolean", nullable: false),
+                    cantidad_sesiones_paquete = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_servicio_clase", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_servicio_clase_servicio_id",
+                        column: x => x.id,
+                        principalTable: "servicio",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "servicio_proyecto_cerrado",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    catalogo_servicio_id = table.Column<int>(type: "integer", nullable: false),
+                    plazo_entrega_dias = table.Column<int>(type: "integer", nullable: false),
+                    revisiones_incluidas = table.Column<int>(type: "integer", nullable: false),
+                    formato_entrega = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_servicio_proyecto_cerrado", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_servicio_proyecto_cerrado_catalogo_servicio_catalogo_servic~",
+                        column: x => x.catalogo_servicio_id,
+                        principalTable: "catalogo_servicio",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_servicio_proyecto_cerrado_servicio_id",
+                        column: x => x.id,
+                        principalTable: "servicio",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "servicio_salud",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false),
+                    catalogo_servicio_id = table.Column<int>(type: "integer", nullable: false),
+                    supervisor_id = table.Column<int>(type: "integer", nullable: false),
+                    modalidad = table.Column<string>(type: "text", nullable: false),
+                    duracion_minutos_sesion = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_servicio_salud", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_servicio_salud_catalogo_servicio_catalogo_servicio_id",
+                        column: x => x.catalogo_servicio_id,
+                        principalTable: "catalogo_servicio",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_servicio_salud_profesional_supervisor_supervisor_id",
+                        column: x => x.supervisor_id,
+                        principalTable: "profesional_supervisor",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_servicio_salud_servicio_id",
+                        column: x => x.id,
+                        principalTable: "servicio",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "trabajo",
                 columns: table => new
                 {
-                    id_trabajo = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     estudiante_id = table.Column<int>(type: "integer", nullable: false),
                     cliente_id = table.Column<int>(type: "integer", nullable: false),
-                    tipo_servicio_id = table.Column<int>(type: "integer", nullable: true),
                     origen = table.Column<int>(type: "integer", nullable: false),
-                    id_servicio = table.Column<int>(type: "integer", nullable: true),
-                    id_postulacion = table.Column<int>(type: "integer", nullable: true),
+                    servicio_id = table.Column<int>(type: "integer", nullable: true),
+                    postulacion_id = table.Column<int>(type: "integer", nullable: true),
                     paciente_id = table.Column<int>(type: "integer", nullable: true),
                     estado = table.Column<int>(type: "integer", nullable: false),
                     monto = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
@@ -400,7 +523,7 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trabajo", x => x.id_trabajo);
+                    table.PrimaryKey("PK_trabajo", x => x.id);
                     table.ForeignKey(
                         name: "FK_trabajo_pacientes_paciente_id",
                         column: x => x.paciente_id,
@@ -420,22 +543,16 @@ namespace Lex.Api.Migrations
                         principalColumn: "usuario_id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_trabajo_postulacion_id_postulacion",
-                        column: x => x.id_postulacion,
+                        name: "FK_trabajo_postulacion_postulacion_id",
+                        column: x => x.postulacion_id,
                         principalTable: "postulacion",
-                        principalColumn: "id_postulacion",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_trabajo_servicio_id_servicio",
-                        column: x => x.id_servicio,
+                        name: "FK_trabajo_servicio_servicio_id",
+                        column: x => x.servicio_id,
                         principalTable: "servicio",
-                        principalColumn: "id_servicio",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_trabajo_tipo_servicio_tipo_servicio_id",
-                        column: x => x.tipo_servicio_id,
-                        principalTable: "tipo_servicio",
-                        principalColumn: "tipo_servicio_id",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -443,9 +560,9 @@ namespace Lex.Api.Migrations
                 name: "consentimiento",
                 columns: table => new
                 {
-                    id_consentimiento = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    trabajo_id = table.Column<int>(type: "integer", nullable: false),
                     paciente_id = table.Column<int>(type: "integer", nullable: true),
                     texto_consentimiento = table.Column<string>(type: "text", nullable: true),
                     aceptado = table.Column<bool>(type: "boolean", nullable: false),
@@ -454,7 +571,7 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_consentimiento", x => x.id_consentimiento);
+                    table.PrimaryKey("PK_consentimiento", x => x.id);
                     table.ForeignKey(
                         name: "FK_consentimiento_pacientes_paciente_id",
                         column: x => x.paciente_id,
@@ -462,10 +579,10 @@ namespace Lex.Api.Migrations
                         principalColumn: "paciente_id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_consentimiento_trabajo_id_trabajo",
-                        column: x => x.id_trabajo,
+                        name: "FK_consentimiento_trabajo_trabajo_id",
+                        column: x => x.trabajo_id,
                         principalTable: "trabajo",
-                        principalColumn: "id_trabajo",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -473,9 +590,9 @@ namespace Lex.Api.Migrations
                 name: "pago",
                 columns: table => new
                 {
-                    id_pago = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    trabajo_id = table.Column<int>(type: "integer", nullable: false),
                     monto_total = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
                     porcentaje_comision = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     comision_lex = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
@@ -487,12 +604,12 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_pago", x => x.id_pago);
+                    table.PrimaryKey("PK_pago", x => x.id);
                     table.ForeignKey(
-                        name: "FK_pago_trabajo_id_trabajo",
-                        column: x => x.id_trabajo,
+                        name: "FK_pago_trabajo_trabajo_id",
+                        column: x => x.trabajo_id,
                         principalTable: "trabajo",
-                        principalColumn: "id_trabajo",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -500,9 +617,9 @@ namespace Lex.Api.Migrations
                 name: "resena",
                 columns: table => new
                 {
-                    id_resena = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    trabajo_id = table.Column<int>(type: "integer", nullable: false),
                     autor_usuario_id = table.Column<int>(type: "integer", nullable: false),
                     receptor_usuario_id = table.Column<int>(type: "integer", nullable: false),
                     puntaje = table.Column<int>(type: "integer", nullable: false),
@@ -511,12 +628,12 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_resena", x => x.id_resena);
+                    table.PrimaryKey("PK_resena", x => x.id);
                     table.ForeignKey(
-                        name: "FK_resena_trabajo_id_trabajo",
-                        column: x => x.id_trabajo,
+                        name: "FK_resena_trabajo_trabajo_id",
+                        column: x => x.trabajo_id,
                         principalTable: "trabajo",
-                        principalColumn: "id_trabajo",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_resena_usuario_autor_usuario_id",
@@ -536,9 +653,9 @@ namespace Lex.Api.Migrations
                 name: "trabajo_historial",
                 columns: table => new
                 {
-                    id_historial = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_trabajo = table.Column<int>(type: "integer", nullable: false),
+                    trabajo_id = table.Column<int>(type: "integer", nullable: false),
                     estado_anterior = table.Column<int>(type: "integer", nullable: true),
                     estado_nuevo = table.Column<int>(type: "integer", nullable: false),
                     fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -546,12 +663,12 @@ namespace Lex.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trabajo_historial", x => x.id_historial);
+                    table.PrimaryKey("PK_trabajo_historial", x => x.id);
                     table.ForeignKey(
-                        name: "FK_trabajo_historial_trabajo_id_trabajo",
-                        column: x => x.id_trabajo,
+                        name: "FK_trabajo_historial_trabajo_trabajo_id",
+                        column: x => x.trabajo_id,
                         principalTable: "trabajo",
-                        principalColumn: "id_trabajo",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_trabajo_historial_usuario_usuario_id",
@@ -567,15 +684,26 @@ namespace Lex.Api.Migrations
                 column: "institucion_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_consentimiento_id_trabajo",
-                table: "consentimiento",
-                column: "id_trabajo",
+                name: "IX_catalogo_servicio_nombre",
+                table: "catalogo_servicio",
+                column: "nombre",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_catalogo_servicio_carrera_carrera_id",
+                table: "catalogo_servicio_carrera",
+                column: "carrera_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_consentimiento_paciente_id",
                 table: "consentimiento",
                 column: "paciente_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_consentimiento_trabajo_id",
+                table: "consentimiento",
+                column: "trabajo_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_estudiante_carrera_carrera_id",
@@ -593,9 +721,9 @@ namespace Lex.Api.Migrations
                 column: "cliente_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_pago_id_trabajo",
+                name: "IX_pago_trabajo_id",
                 table: "pago",
-                column: "id_trabajo",
+                column: "trabajo_id",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -604,9 +732,14 @@ namespace Lex.Api.Migrations
                 column: "estudiante_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_postulacion_id_solicitud",
+                name: "IX_postulacion_solicitud_id",
                 table: "postulacion",
-                column: "id_solicitud");
+                column: "solicitud_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_profesional_supervisor_institucion_id",
+                table: "profesional_supervisor",
+                column: "institucion_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_resena_autor_usuario_id",
@@ -614,15 +747,15 @@ namespace Lex.Api.Migrations
                 column: "autor_usuario_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_resena_id_trabajo_autor_usuario_id",
-                table: "resena",
-                columns: new[] { "id_trabajo", "autor_usuario_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_resena_receptor_usuario_id",
                 table: "resena",
                 column: "receptor_usuario_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resena_trabajo_id_autor_usuario_id",
+                table: "resena",
+                columns: new[] { "trabajo_id", "autor_usuario_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_rol_nombre",
@@ -636,19 +769,24 @@ namespace Lex.Api.Migrations
                 column: "estudiante_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_servicio_tipo_servicio_id",
-                table: "servicio",
-                column: "tipo_servicio_id");
+                name: "IX_servicio_proyecto_cerrado_catalogo_servicio_id",
+                table: "servicio_proyecto_cerrado",
+                column: "catalogo_servicio_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_servicio_salud_catalogo_servicio_id",
+                table: "servicio_salud",
+                column: "catalogo_servicio_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_servicio_salud_supervisor_id",
+                table: "servicio_salud",
+                column: "supervisor_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_solicitud_cliente_id",
                 table: "solicitud",
                 column: "cliente_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_solicitud_tipo_servicio_id",
-                table: "solicitud",
-                column: "tipo_servicio_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_trabajo_cliente_id",
@@ -661,29 +799,24 @@ namespace Lex.Api.Migrations
                 column: "estudiante_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trabajo_id_postulacion",
-                table: "trabajo",
-                column: "id_postulacion");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_trabajo_id_servicio",
-                table: "trabajo",
-                column: "id_servicio");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_trabajo_paciente_id",
                 table: "trabajo",
                 column: "paciente_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trabajo_tipo_servicio_id",
+                name: "IX_trabajo_postulacion_id",
                 table: "trabajo",
-                column: "tipo_servicio_id");
+                column: "postulacion_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trabajo_historial_id_trabajo",
+                name: "IX_trabajo_servicio_id",
+                table: "trabajo",
+                column: "servicio_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_trabajo_historial_trabajo_id",
                 table: "trabajo_historial",
-                column: "id_trabajo");
+                column: "trabajo_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_trabajo_historial_usuario_id",
@@ -706,6 +839,9 @@ namespace Lex.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "catalogo_servicio_carrera");
+
+            migrationBuilder.DropTable(
                 name: "consentimiento");
 
             migrationBuilder.DropTable(
@@ -727,6 +863,15 @@ namespace Lex.Api.Migrations
                 name: "resena");
 
             migrationBuilder.DropTable(
+                name: "servicio_clase");
+
+            migrationBuilder.DropTable(
+                name: "servicio_proyecto_cerrado");
+
+            migrationBuilder.DropTable(
+                name: "servicio_salud");
+
+            migrationBuilder.DropTable(
                 name: "trabajo_historial");
 
             migrationBuilder.DropTable(
@@ -734,6 +879,12 @@ namespace Lex.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "carrera");
+
+            migrationBuilder.DropTable(
+                name: "catalogo_servicio");
+
+            migrationBuilder.DropTable(
+                name: "profesional_supervisor");
 
             migrationBuilder.DropTable(
                 name: "trabajo");
@@ -764,9 +915,6 @@ namespace Lex.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "perfil_cliente");
-
-            migrationBuilder.DropTable(
-                name: "tipo_servicio");
 
             migrationBuilder.DropTable(
                 name: "usuario");

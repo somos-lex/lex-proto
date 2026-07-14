@@ -18,7 +18,7 @@ public class PagoService : IPagoService
     {
         // Validamos participacion mirando el trabajo (existe siempre, aunque no haya pago).
         var trabajo = await _db.Trabajos.AsNoTracking()
-            .Where(t => t.IdTrabajo == idTrabajo)
+            .Where(t => t.Id == idTrabajo)
             .Select(t => new { t.EstudianteId, t.ClienteId })
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -27,7 +27,7 @@ public class PagoService : IPagoService
             throw new ForbiddenException("No participás en este trabajo.");
 
         return await _db.Pagos.AsNoTracking()
-            .Where(p => p.IdTrabajo == idTrabajo)
+            .Where(p => p.TrabajoId == idTrabajo)
             .Select(Proyeccion)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException($"El trabajo {idTrabajo} todavía no tiene un pago asociado.");
@@ -78,8 +78,8 @@ public class PagoService : IPagoService
     private static readonly System.Linq.Expressions.Expression<Func<Lex.Api.Domain.Entities.Pago, PagoResponse>> Proyeccion =
         p => new PagoResponse
         {
-            IdPago = p.IdPago,
-            IdTrabajo = p.IdTrabajo,
+            Id = p.Id,
+            TrabajoId = p.TrabajoId,
             MontoTotal = p.MontoTotal,
             PorcentajeComision = p.PorcentajeComision,
             ComisionLex = p.ComisionLex,
