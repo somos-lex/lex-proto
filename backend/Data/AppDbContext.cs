@@ -1,4 +1,4 @@
-using Lex.Api.Entities;
+using Lex.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lex.Api.Data;
