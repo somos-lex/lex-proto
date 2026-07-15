@@ -43,8 +43,11 @@ public class AppDbContext : DbContext
     // --- Bloque 7: Salud ---
     public DbSet<Paciente> Pacientes => Set<Paciente>();
 
-    // --- Bloque 8: Motor transaccional ---
+    // --- Bloque 8: Motor transaccional (jerarquia TPT) ---
     public DbSet<Trabajo> Trabajos => Set<Trabajo>();
+    public DbSet<TrabajoProyectoCerrado> TrabajosProyectoCerrado => Set<TrabajoProyectoCerrado>();
+    public DbSet<TrabajoClase> TrabajosClase => Set<TrabajoClase>();
+    public DbSet<TrabajoSalud> TrabajosSalud => Set<TrabajoSalud>();
     public DbSet<TrabajoHistorial> TrabajoHistoriales => Set<TrabajoHistorial>();
 
     // --- Bloque 9: Dinero ---
@@ -264,17 +267,28 @@ public class AppDbContext : DbContext
             .HasPrecision(12, 2);
 
         // ----------------------------------------------------------------
-        // BLOQUE 7 — Salud (pacientes)
+        // BLOQUE 7 — Salud (pacientes: Humano/Animal en la misma tabla)
         // ----------------------------------------------------------------
         modelBuilder.Entity<Paciente>()
-            .HasOne(p => p.Cliente)
+            .HasOne(p => p.ClienteResponsable)
             .WithMany(pc => pc.Pacientes)
-            .HasForeignKey(p => p.ClienteId);
+            .HasForeignKey(p => p.ClienteResponsableId);
+
+        modelBuilder.Entity<Paciente>()
+            .Property(p => p.Tipo)
+            .HasConversion<string>();
 
         // ----------------------------------------------------------------
-        // BLOQUE 8 — Motor transaccional (trabajo + historial)
-        //   FKs nullable: Servicio, Postulacion, Paciente.
+        // BLOQUE 8 — Motor transaccional: jerarquia TPT (Table Per Type)
+        //   trabajo (base, abstracta) + una tabla por vertical concreta.
+        //   La PK de cada tabla hija es tambien FK a trabajo.id (lo genera EF).
         // ----------------------------------------------------------------
+        modelBuilder.Entity<Trabajo>().UseTptMappingStrategy();
+        modelBuilder.Entity<Trabajo>().ToTable("trabajo");
+        modelBuilder.Entity<TrabajoProyectoCerrado>().ToTable("trabajo_proyecto_cerrado");
+        modelBuilder.Entity<TrabajoClase>().ToTable("trabajo_clase");
+        modelBuilder.Entity<TrabajoSalud>().ToTable("trabajo_salud");
+
         modelBuilder.Entity<Trabajo>()
             .HasOne(t => t.Estudiante)
             .WithMany(pe => pe.Trabajos)
@@ -291,18 +305,36 @@ public class AppDbContext : DbContext
             .HasForeignKey(t => t.ServicioId);
 
         modelBuilder.Entity<Trabajo>()
-            .HasOne(t => t.Postulacion)
-            .WithMany(p => p.Trabajos)
-            .HasForeignKey(t => t.PostulacionId);
-
-        modelBuilder.Entity<Trabajo>()
-            .HasOne(t => t.Paciente)
-            .WithMany(p => p.Trabajos)
-            .HasForeignKey(t => t.PacienteId);
-
-        modelBuilder.Entity<Trabajo>()
-            .Property(t => t.Monto)
+            .Property(t => t.PrecioAcordado)
             .HasPrecision(12, 2);
+
+        // Estado unificado, persistido como string.
+        modelBuilder.Entity<Trabajo>()
+            .Property(t => t.Estado)
+            .HasConversion<string>();
+
+        // Enums snapshot de cada vertical, persistidos como string.
+        modelBuilder.Entity<TrabajoProyectoCerrado>()
+            .Property(t => t.FormatoEntregaSnapshot)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TrabajoClase>()
+            .Property(t => t.NivelSnapshot)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TrabajoClase>()
+            .Property(t => t.ModalidadSnapshot)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TrabajoSalud>()
+            .Property(t => t.ModalidadSaludSnapshot)
+            .HasConversion<string>();
+
+        // Salud -> Paciente (FK real).
+        modelBuilder.Entity<TrabajoSalud>()
+            .HasOne(t => t.Paciente)
+            .WithMany(p => p.TrabajosSalud)
+            .HasForeignKey(t => t.PacienteId);
 
         modelBuilder.Entity<TrabajoHistorial>()
             .HasOne(h => h.Trabajo)
@@ -330,18 +362,25 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Pago>().Property(p => p.MontoEstudiante).HasPrecision(12, 2);
 
         // ----------------------------------------------------------------
-        // BLOQUE 10 — Consentimiento (Salud)
+        // BLOQUE 10 — Consentimiento (Salud): obligatorio para TrabajoSalud
         // ----------------------------------------------------------------
-        // 1->1: un trabajo tiene a lo sumo un consentimiento.
+        // 1->1: un consentimiento por trabajo de salud. El FK modelado vive en
+        // TrabajoSalud.ConsentimientoId (se llena al firmar); trabajo_salud_id es
+        // columna de evidencia con indice unico.
         modelBuilder.Entity<Consentimiento>()
-            .HasOne(c => c.Trabajo)
-            .WithOne(t => t.Consentimiento)
-            .HasForeignKey<Consentimiento>(c => c.TrabajoId);
+            .HasIndex(c => c.TrabajoSaludId)
+            .IsUnique();
+
+        modelBuilder.Entity<TrabajoSalud>()
+            .HasOne(t => t.Consentimiento)
+            .WithOne()
+            .HasForeignKey<TrabajoSalud>(t => t.ConsentimientoId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Consentimiento>()
-            .HasOne(c => c.Paciente)
-            .WithMany(p => p.Consentimientos)
-            .HasForeignKey(c => c.PacienteId);
+            .HasOne(c => c.AceptadoPor)
+            .WithMany()
+            .HasForeignKey(c => c.AceptadoPorUsuarioId);
 
         // ----------------------------------------------------------------
         // BLOQUE 11 — Reputacion (resena)

@@ -1,6 +1,6 @@
 using Lex.Api.Common;
 using Lex.Api.Data;
-using Lex.Api.Features.Trabajos;
+using Lex.Api.Features.Trabajos.Shared;
 using Lex.Api.Domain.Entities;
 using Lex.Api.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +10,10 @@ namespace Lex.Api.Features.Postulaciones;
 public class PostulacionService : IPostulacionService
 {
     private readonly AppDbContext _db;
-    private readonly ITrabajoService _trabajos;
 
-    public PostulacionService(AppDbContext db, ITrabajoService trabajos)
+    public PostulacionService(AppDbContext db)
     {
         _db = db;
-        _trabajos = trabajos;
     }
 
     public async Task<PostulacionResponse> CrearAsync(int estudianteId, int idSolicitud, CrearPostulacionRequest request)
@@ -91,63 +89,14 @@ public class PostulacionService : IPostulacionService
             .ToListAsync();
     }
 
-    public async Task<TrabajoResponse> AceptarAsync(int clienteId, int idPostulacion)
+    public Task<TrabajoResponse> AceptarAsync(int clienteId, int idPostulacion)
     {
-        var postulacion = await _db.Postulaciones
-            .Include(p => p.Solicitud)
-            .FirstOrDefaultAsync(p => p.Id == idPostulacion)
-            ?? throw new NotFoundException($"No existe la postulación {idPostulacion}.");
-
-        var solicitud = postulacion.Solicitud;
-
-        if (solicitud.ClienteId != clienteId)
-            throw new ForbiddenException("No sos el dueño de esta solicitud.");
-
-        if (solicitud.Estado != EstadoSolicitud.Abierta)
-            throw new BadRequestException("La solicitud ya no está abierta.");
-
-        var ahora = DateTime.UtcNow;
-
-        // Aceptar esta postulación y rechazar las demás de la misma solicitud.
-        var postulaciones = await _db.Postulaciones
-            .Where(p => p.SolicitudId == solicitud.Id)
-            .ToListAsync();
-        foreach (var p in postulaciones)
-            p.Estado = p.Id == idPostulacion
-                ? EstadoPostulacion.Aceptada
-                : EstadoPostulacion.Rechazada;
-
-        // Cerrar la solicitud.
-        solicitud.Estado = EstadoSolicitud.Cerrada;
-        solicitud.FechaCierre = ahora;
-
-        // Nace el trabajo con origen = Postulacion.
-        var trabajo = new Trabajo
-        {
-            EstudianteId = postulacion.EstudianteId,
-            ClienteId = solicitud.ClienteId,
-            // TODO Sub-hito 1.2: el tipo del trabajo (solicitud.TipoServicio) queda
-            // implícito en la subclase concreta cuando Trabajo pase a TPT.
-            Origen = OrigenTrabajo.Postulacion,
-            ServicioId = null,
-            PostulacionId = postulacion.Id,
-            PacienteId = null,
-            Estado = EstadoTrabajo.Pendiente,
-            Monto = postulacion.MontoPropuesto ?? 0m,
-            FechaCreacion = ahora
-        };
-        trabajo.Historiales.Add(new TrabajoHistorial
-        {
-            EstadoAnterior = null,
-            EstadoNuevo = EstadoTrabajo.Pendiente,
-            Fecha = ahora,
-            UsuarioId = clienteId
-        });
-
-        _db.Trabajos.Add(trabajo);
-        await _db.SaveChangesAsync();
-
-        return await _trabajos.ObtenerAsync(clienteId, trabajo.Id);
+        // [PAUSADO - Sub-hito 1.2] Con Trabajo convertido en jerarquia TPT atada a un
+        // Servicio concreto (ProyectoCerrado/Clase/Salud), el flujo postulacion->trabajo
+        // ya no mapea a un tipo unico. El modulo de Solicitudes/Postulaciones sigue
+        // pausado y su rediseño (incluida esta aceptacion) se define en un hito posterior.
+        throw new BadRequestException(
+            "El flujo de aceptación de postulaciones está pausado y se rediseñará en un sub-hito posterior.");
     }
 
     private async Task<PostulacionResponse> ObtenerMiaAsync(int idPostulacion)

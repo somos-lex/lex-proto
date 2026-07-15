@@ -22,7 +22,7 @@ public class PacienteController : ControllerBase
     public async Task<IActionResult> Crear([FromBody] CrearPacienteRequest request)
     {
         var paciente = await _pacientes.CrearAsync(User.GetUsuarioId(), request);
-        return CreatedAtAction(nameof(Obtener), new { id = paciente.PacienteId }, paciente);
+        return CreatedAtAction(nameof(Obtener), new { id = paciente.Id }, paciente);
     }
 
     /// <summary>Lista los pacientes del cliente autenticado.</summary>

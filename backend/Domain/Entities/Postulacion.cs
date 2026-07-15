@@ -32,5 +32,6 @@ public class Postulacion
     // Navegacion
     public Solicitud Solicitud { get; set; } = null!;
     public PerfilEstudiante Estudiante { get; set; } = null!;
-    public ICollection<Trabajo> Trabajos { get; set; } = new List<Trabajo>();
+    // Nota (Sub-hito 1.2): con Trabajo TPT atado a un Servicio, el flujo
+    // postulacion->trabajo queda pausado; ya no hay navegacion a Trabajo.
 }

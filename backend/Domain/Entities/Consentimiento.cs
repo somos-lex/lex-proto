@@ -3,7 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Lex.Api.Domain.Entities;
 
-// Consentimiento informado del turno clinico (area Salud). Cuelga del trabajo.
+// Consentimiento informado de un trabajo de Salud. La sola existencia del registro
+// implica aceptacion (ya no hay bool 'aceptado'): se crea cuando el cliente firma.
+// Relacion 1-1 con TrabajoSalud (UNIQUE en trabajo_salud_id).
 [Table("consentimiento")]
 public class Consentimiento
 {
@@ -11,25 +13,25 @@ public class Consentimiento
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("trabajo_id")]
-    public int TrabajoId { get; set; }
+    // Un consentimiento por trabajo de salud (indice unico en AppDbContext).
+    [Column("trabajo_salud_id")]
+    public int TrabajoSaludId { get; set; }
 
-    [Column("paciente_id")]
-    public int? PacienteId { get; set; }
+    // Texto que se le mostro al cliente para aceptar (generado por ConsentimientoTemplate).
+    [Column("texto_completo", TypeName = "text")]
+    public string TextoCompleto { get; set; } = null!;
 
-    [Column("texto_consentimiento")]
-    public string? TextoConsentimiento { get; set; }
-
-    [Column("aceptado")]
-    public bool Aceptado { get; set; }
+    // Usuario que hizo el click de aceptacion.
+    [Column("aceptado_por_usuario_id")]
+    public int AceptadoPorUsuarioId { get; set; }
 
     [Column("fecha_aceptacion")]
-    public DateTime? FechaAceptacion { get; set; }
+    public DateTime FechaAceptacion { get; set; }
 
-    [Column("supervisor_responsable")]
-    public string? SupervisorResponsable { get; set; } // profesional matriculado a cargo
+    // Evidencia tecnica: IP desde la que se acepto.
+    [Column("ip_aceptacion")]
+    public string? IpAceptacion { get; set; }
 
     // Navegacion
-    public Trabajo Trabajo { get; set; } = null!;
-    public Paciente? Paciente { get; set; }
+    public Usuario AceptadoPor { get; set; } = null!;
 }

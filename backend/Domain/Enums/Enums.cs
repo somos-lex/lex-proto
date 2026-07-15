@@ -31,21 +31,27 @@ public enum EstadoPostulacion
     Rechazada = 2
 }
 
-/// <summary>Origen del que nace un trabajo. (trabajo.origen)</summary>
-public enum OrigenTrabajo
-{
-    Directo = 0,      // desde un servicio
-    Postulacion = 1   // desde una postulacion aceptada
-}
-
-/// <summary>Estado del motor transaccional de un trabajo. (trabajo.estado)</summary>
+/// <summary>
+/// Estado del motor transaccional de un trabajo, unificado para las 3 verticales.
+/// Se persiste como string (trabajo.estado). El significado por vertical se documenta
+/// en README_ESTADOS_TRABAJO.md. La maquina de estados vive en TrabajoService (Shared).
+/// </summary>
 public enum EstadoTrabajo
 {
-    Pendiente = 0,
-    Aceptado = 1,
-    EnCurso = 2,
-    Completado = 3,
-    Cancelado = 4
+    Pendiente = 0,   // Cliente contrato, estudiante aun no acepto
+    Aceptado = 1,    // Estudiante acepto, aun no arranco
+    EnCurso = 2,     // Trabajo iniciado (Salud requiere consentimiento firmado)
+    Entregado = 3,   // Estudiante marco entrega (PC) o completo todas las sesiones (Clase/Salud)
+    Completado = 4,  // Cliente confirmo y libero pago
+    Cancelado = 5,   // Alguien cancelo antes de completar
+    Disputa = 6      // Conflicto que requiere resolucion (admin/mediador)
+}
+
+/// <summary>Subtipo de un paciente de Salud. (paciente.tipo). Se persiste como string.</summary>
+public enum TipoPaciente
+{
+    Humano,
+    Animal
 }
 
 /// <summary>Estado del pago en escrow. (pago.estado)</summary>

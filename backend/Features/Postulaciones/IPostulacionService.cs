@@ -1,4 +1,4 @@
-using Lex.Api.Features.Trabajos;
+using Lex.Api.Features.Trabajos.Shared;
 
 namespace Lex.Api.Features.Postulaciones;
 

@@ -1,4 +1,4 @@
-using Lex.Api.Features.Trabajos;
+using Lex.Api.Features.Trabajos.Shared;
 using Lex.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
