@@ -52,6 +52,7 @@ public class AppDbContext : DbContext
 
     // --- Bloque 9: Dinero ---
     public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<MovimientoPago> MovimientosPago => Set<MovimientoPago>();
 
     // --- Bloque 10: Salud (consentimiento) ---
     public DbSet<Consentimiento> Consentimientos => Set<Consentimiento>();
@@ -347,7 +348,7 @@ public class AppDbContext : DbContext
             .HasForeignKey(h => h.UsuarioId);
 
         // ----------------------------------------------------------------
-        // BLOQUE 9 — Dinero (pago / escrow)
+        // BLOQUE 9 — Dinero (pago / escrow + libro de movimientos)
         // ----------------------------------------------------------------
         // 1->1: un trabajo tiene a lo sumo un pago. El FK unico (indice unico
         // sobre id_trabajo) lo genera EF al usar WithOne + HasForeignKey<Pago>.
@@ -357,9 +358,27 @@ public class AppDbContext : DbContext
             .HasForeignKey<Pago>(p => p.TrabajoId);
 
         modelBuilder.Entity<Pago>().Property(p => p.MontoTotal).HasPrecision(12, 2);
-        modelBuilder.Entity<Pago>().Property(p => p.PorcentajeComision).HasPrecision(5, 2);
-        modelBuilder.Entity<Pago>().Property(p => p.ComisionLex).HasPrecision(12, 2);
-        modelBuilder.Entity<Pago>().Property(p => p.MontoEstudiante).HasPrecision(12, 2);
+        modelBuilder.Entity<Pago>().Property(p => p.PorcentajeComisionLex).HasPrecision(5, 2);
+        modelBuilder.Entity<Pago>().Property(p => p.MontoComisionCalculada).HasPrecision(12, 2);
+        modelBuilder.Entity<Pago>().Property(p => p.MontoAEstudiante).HasPrecision(12, 2);
+
+        // Estado del escrow como string.
+        modelBuilder.Entity<Pago>()
+            .Property(p => p.Estado)
+            .HasConversion<string>();
+
+        // --- Libro de movimientos (asientos contables del pago) ---
+        modelBuilder.Entity<MovimientoPago>().Property(m => m.Monto).HasPrecision(12, 2);
+
+        modelBuilder.Entity<MovimientoPago>()
+            .Property(m => m.Tipo)
+            .HasConversion<string>();
+
+        // Traza opcional al historial de estados del trabajo (sin navegacion inversa).
+        modelBuilder.Entity<MovimientoPago>()
+            .HasOne<TrabajoHistorial>()
+            .WithMany()
+            .HasForeignKey(m => m.TrabajoHistorialId);
 
         // ----------------------------------------------------------------
         // BLOQUE 10 — Consentimiento (Salud): obligatorio para TrabajoSalud
@@ -415,5 +434,14 @@ public class AppDbContext : DbContext
         {
             fk.DeleteBehavior = DeleteBehavior.Restrict;
         }
+
+        // Excepcion a la regla anterior: el libro de movimientos cuelga del pago; al
+        // borrar el pago se borran en cascada sus movimientos. Se declara despues del
+        // loop para que el Cascade no quede pisado por el Restrict global.
+        modelBuilder.Entity<MovimientoPago>()
+            .HasOne(m => m.Pago)
+            .WithMany(p => p.Movimientos)
+            .HasForeignKey(m => m.PagoId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

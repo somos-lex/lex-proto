@@ -4,7 +4,11 @@ using Lex.Api.Domain.Enums;
 
 namespace Lex.Api.Domain.Entities;
 
-// Escrow + take rate. estado: 0=Retenido, 1=Liberado, 2=Reembolsado.
+// Escrow de un trabajo. Guarda snapshots contractuales (monto y % de comisión al
+// momento de contratar) y el estado del escrow. El detalle contable de entradas y
+// salidas vive en el libro de movimientos (MovimientoPago). Relacion 1-1 con Trabajo
+// (indice UNIQUE en trabajo_id: un pago por trabajo).
+// La logica de liberacion/reembolso se integra en Sub-hito 1.3 Parte 2.
 [Table("pago")]
 public class Pago
 {
@@ -15,30 +19,32 @@ public class Pago
     [Column("trabajo_id")]
     public int TrabajoId { get; set; }
 
-    [Column("monto_total")]
+    // Snapshot del precio del trabajo (evidencia contractual).
+    [Column("monto_total", TypeName = "numeric(12,2)")]
     public decimal MontoTotal { get; set; }
 
-    [Column("porcentaje_comision")]
-    public decimal PorcentajeComision { get; set; } // ej. 10.00 = 10%
+    // Snapshot del % de comisión aplicado (ej. 10.00 = 10%).
+    [Column("porcentaje_comision_lex", TypeName = "numeric(5,2)")]
+    public decimal PorcentajeComisionLex { get; set; }
 
-    [Column("comision_lex")]
-    public decimal ComisionLex { get; set; }
+    // MontoTotal * PorcentajeComisionLex / 100.
+    [Column("monto_comision_calculada", TypeName = "numeric(12,2)")]
+    public decimal MontoComisionCalculada { get; set; }
 
-    [Column("monto_estudiante")]
-    public decimal MontoEstudiante { get; set; }
+    // MontoTotal - MontoComisionCalculada.
+    [Column("monto_a_estudiante", TypeName = "numeric(12,2)")]
+    public decimal MontoAEstudiante { get; set; }
 
     [Column("estado")]
     public EstadoPago Estado { get; set; } = EstadoPago.Retenido;
 
-    [Column("metodo_pago")]
-    public string? MetodoPago { get; set; }
-
-    [Column("fecha_retencion")]
-    public DateTime? FechaRetencion { get; set; }
+    [Column("fecha_creacion")]
+    public DateTime FechaCreacion { get; set; }
 
     [Column("fecha_liberacion")]
     public DateTime? FechaLiberacion { get; set; }
 
     // Navegacion
     public Trabajo Trabajo { get; set; } = null!;
+    public ICollection<MovimientoPago> Movimientos { get; set; } = new List<MovimientoPago>();
 }

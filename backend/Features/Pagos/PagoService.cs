@@ -37,7 +37,7 @@ public class PagoService : IPagoService
     {
         var pagos = await _db.Pagos.AsNoTracking()
             .Where(p => p.Trabajo.EstudianteId == estudianteId)
-            .OrderByDescending(p => p.FechaRetencion)
+            .OrderByDescending(p => p.FechaCreacion)
             .Select(Proyeccion)
             .ToListAsync();
 
@@ -53,15 +53,15 @@ public class PagoService : IPagoService
     {
         // Traemos las comisiones por estado; el agregado se hace en C# (decimal).
         var pagos = await _db.Pagos.AsNoTracking()
-            .Select(p => new { p.Estado, p.ComisionLex })
+            .Select(p => new { p.Estado, Comision = p.MontoComisionCalculada })
             .ToListAsync();
 
         var liberados = pagos.Where(p => p.Estado == EstadoPago.Liberado).ToList();
         var retenidos = pagos.Where(p => p.Estado == EstadoPago.Retenido).ToList();
         var reembolsados = pagos.Where(p => p.Estado == EstadoPago.Reembolsado).ToList();
 
-        var comisionLiberada = liberados.Sum(p => p.ComisionLex);
-        var comisionRetenida = retenidos.Sum(p => p.ComisionLex);
+        var comisionLiberada = liberados.Sum(p => p.Comision);
+        var comisionRetenida = retenidos.Sum(p => p.Comision);
 
         return new IngresosLexResponse
         {
@@ -81,11 +81,11 @@ public class PagoService : IPagoService
             Id = p.Id,
             TrabajoId = p.TrabajoId,
             MontoTotal = p.MontoTotal,
-            PorcentajeComision = p.PorcentajeComision,
-            ComisionLex = p.ComisionLex,
-            MontoEstudiante = p.MontoEstudiante,
+            PorcentajeComision = p.PorcentajeComisionLex,
+            ComisionLex = p.MontoComisionCalculada,
+            MontoEstudiante = p.MontoAEstudiante,
             Estado = p.Estado,
-            FechaRetencion = p.FechaRetencion,
+            FechaRetencion = p.FechaCreacion,
             FechaLiberacion = p.FechaLiberacion
         };
 }

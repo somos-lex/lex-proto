@@ -54,12 +54,24 @@ public enum TipoPaciente
     Animal
 }
 
-/// <summary>Estado del pago en escrow. (pago.estado)</summary>
+/// <summary>Estado del pago en escrow. (pago.estado). Se persiste como string.</summary>
 public enum EstadoPago
 {
-    Retenido = 0,
-    Liberado = 1,
-    Reembolsado = 2
+    Retenido,             // Escrow activo
+    ParcialmenteLiberado, // Reservado para Hito 2 (paquetes)
+    Liberado,             // Todo liberado + comisión
+    Reembolsado,          // Devuelto al cliente
+    EnDisputa             // Bloqueado
+}
+
+/// <summary>Tipo de asiento en el libro de movimientos de un pago. (movimiento_pago.tipo). Se persiste como string.</summary>
+public enum TipoMovimientoPago
+{
+    Retencion,            // Cliente paga
+    LiberacionEstudiante, // Se libera al estudiante
+    ComisionLex,          // Comisión LEX
+    Reembolso,            // Devuelto al cliente
+    Ajuste                // Corrección manual admin
 }
 
 /// <summary>

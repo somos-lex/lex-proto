@@ -414,6 +414,7 @@ public class DemoService : IDemoService
         var t = await _trabajosPc.ContratarAsync(clienteId, new ContratarTrabajoProyectoCerradoRequest { ServicioId = servicioId });
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
+        await CrearPagoDemoAsync(t.Id, creado);
         return (t.Id, t.EstudianteId);
     }
 
@@ -423,6 +424,7 @@ public class DemoService : IDemoService
         var t = await _trabajosClase.ContratarAsync(clienteId, new ContratarTrabajoClaseRequest { ServicioId = servicioId });
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
+        await CrearPagoDemoAsync(t.Id, creado);
         return (t.Id, t.EstudianteId);
     }
 
@@ -434,7 +436,81 @@ public class DemoService : IDemoService
         await _trabajosSalud.FirmarConsentimientoAsync(clienteId, t.Id, "127.0.0.1");
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
+        await CrearPagoDemoAsync(t.Id, creado);
         return (t.Id, t.EstudianteId);
+    }
+
+    // Crea el escrow del trabajo con snapshots (monto + comisión 10%) y su libro de
+    // movimientos coherente con el estado final del trabajo. La lógica real de
+    // liberación/reembolso llega en Sub-hito 1.3 Parte 2; acá solo se siembra evidencia.
+    private async Task CrearPagoDemoAsync(int idTrabajo, DateTime creado)
+    {
+        var trabajo = await _db.Trabajos
+            .Include(t => t.Historiales)
+            .FirstAsync(t => t.Id == idTrabajo);
+
+        const decimal porcentaje = 10m; // Lex:PorcentajeComision
+        var comision = Math.Round(trabajo.PrecioAcordado * porcentaje / 100m, 2, MidpointRounding.AwayFromZero);
+        var aEstudiante = trabajo.PrecioAcordado - comision;
+
+        var pago = new Pago
+        {
+            TrabajoId = idTrabajo,
+            MontoTotal = trabajo.PrecioAcordado,
+            PorcentajeComisionLex = porcentaje,
+            MontoComisionCalculada = comision,
+            MontoAEstudiante = aEstudiante,
+            Estado = EstadoPago.Retenido,
+            FechaCreacion = creado
+        };
+
+        // Movimiento inicial: el cliente retiene el monto en el escrow al contratar.
+        pago.Movimientos.Add(new MovimientoPago
+        {
+            Tipo = TipoMovimientoPago.Retencion,
+            Monto = trabajo.PrecioAcordado,
+            Descripcion = "Retención del pago en escrow al contratar el trabajo.",
+            FechaMovimiento = creado
+        });
+
+        var fin = trabajo.FechaFin ?? creado;
+
+        if (trabajo.Estado == EstadoTrabajo.Completado)
+        {
+            // Trabajo cerrado: se libera al estudiante y LEX toma su comisión.
+            pago.Movimientos.Add(new MovimientoPago
+            {
+                Tipo = TipoMovimientoPago.LiberacionEstudiante,
+                Monto = aEstudiante,
+                Descripcion = "Liberación al estudiante por trabajo completado.",
+                FechaMovimiento = fin
+            });
+            pago.Movimientos.Add(new MovimientoPago
+            {
+                Tipo = TipoMovimientoPago.ComisionLex,
+                Monto = comision,
+                Descripcion = "Comisión LEX sobre el trabajo completado.",
+                FechaMovimiento = fin
+            });
+            pago.Estado = EstadoPago.Liberado;
+            pago.FechaLiberacion = fin;
+        }
+        else if (trabajo.Estado == EstadoTrabajo.Cancelado)
+        {
+            // Trabajo cancelado: se reembolsa el total al cliente.
+            pago.Movimientos.Add(new MovimientoPago
+            {
+                Tipo = TipoMovimientoPago.Reembolso,
+                Monto = trabajo.PrecioAcordado,
+                Descripcion = "Reembolso al cliente por cancelación del trabajo.",
+                FechaMovimiento = fin
+            });
+            pago.Estado = EstadoPago.Reembolsado;
+        }
+        // Otros estados (Pendiente/Aceptado/EnCurso/Entregado/Disputa): queda Retenido.
+
+        _db.Pagos.Add(pago);
+        await _db.SaveChangesAsync();
     }
 
     // Recorre las transiciones permitidas hasta el estado objetivo, respetando qué
@@ -534,6 +610,9 @@ public class DemoService : IDemoService
         // Reseñas, pagos e historial cuelgan de la tabla base 'trabajo' -> antes que ella.
         _db.Resenas.RemoveRange(_db.Resenas.Where(r => trabajoIds.Contains(r.TrabajoId)
             || demoUserIds.Contains(r.AutorUsuarioId) || demoUserIds.Contains(r.ReceptorUsuarioId)));
+        // Movimientos antes que su pago (FK) y antes del historial (traza opcional).
+        var pagoIds = await _db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)).Select(p => p.Id).ToListAsync();
+        _db.MovimientosPago.RemoveRange(_db.MovimientosPago.Where(m => pagoIds.Contains(m.PagoId)));
         _db.Pagos.RemoveRange(_db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)));
         _db.TrabajoHistoriales.RemoveRange(_db.TrabajoHistoriales.Where(h => trabajoIds.Contains(h.TrabajoId) || (h.UsuarioId != null && demoUserIds.Contains(h.UsuarioId.Value))));
         // Trabajos: al remover la entidad base (TPT) EF borra también la fila hija.
@@ -590,8 +669,8 @@ public class DemoService : IDemoService
 
         var resenas = await _db.Resenas.CountAsync(r => trabajoIds.Contains(r.TrabajoId));
 
-        // El escrow/pago se rediseña en Sub-hito 1.3: por ahora no se generan pagos.
-        var pagos = await _db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)).Select(p => new { p.Estado, p.ComisionLex }).ToListAsync();
+        // Escrow: comisión efectiva (liberada) vs. potencial (retenida).
+        var pagos = await _db.Pagos.Where(p => trabajoIds.Contains(p.TrabajoId)).Select(p => new { p.Estado, Comision = p.MontoComisionCalculada }).ToListAsync();
 
         return new DemoSeedResponse
         {
@@ -606,8 +685,8 @@ public class DemoService : IDemoService
             Trabajos = trabajos.Count,
             Resenas = resenas,
             TrabajosPorEstado = trabajos.GroupBy(t => t.Estado.ToString()).ToDictionary(g => g.Key, g => g.Count()),
-            ComisionLexLiberada = pagos.Where(p => p.Estado == EstadoPago.Liberado).Sum(p => p.ComisionLex),
-            ComisionLexRetenida = pagos.Where(p => p.Estado == EstadoPago.Retenido).Sum(p => p.ComisionLex),
+            ComisionLexLiberada = pagos.Where(p => p.Estado == EstadoPago.Liberado).Sum(p => p.Comision),
+            ComisionLexRetenida = pagos.Where(p => p.Estado == EstadoPago.Retenido).Sum(p => p.Comision),
             EmailsEjemplo = new List<string>
             {
                 "camila@demo.com (estudiante - diseño)",
