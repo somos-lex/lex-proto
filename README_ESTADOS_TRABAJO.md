@@ -55,3 +55,19 @@ Cualquier transición no listada por la state machine se rechaza con HTTP 400.
 | completar | cliente |
 | cancelar | cliente o estudiante |
 | disputar | cliente o estudiante |
+
+## Efecto en Pago por cada transición
+
+| Transición | Efecto en Pago |
+|---|---|
+| contratar | Crea Pago(Retenido) + MovimientoPago(Retencion) |
+| aceptar | Sin efecto |
+| iniciar | Sin efecto |
+| entregar | Sin efecto |
+| completar | Crea 2 MovimientoPago (LiberacionEstudiante + ComisionLex) → Pago(Liberado) |
+| cancelar | Si el escrow seguía sin resolverse (Retenido o EnDisputa) → MovimientoPago(Reembolso) → Pago(Reembolsado). Si el trabajo no tenía pago, la cancelación procede igual. |
+| disputar | Pago pasa a EnDisputa (sin movimiento contable, dinero congelado) |
+
+`completar` y `cancelar` aceptan un pago en Retenido o en EnDisputa, porque ambas transiciones son alcanzables desde Disputa.
+
+Ver `README_PAGOS.md` para detalles del modelo de pagos.

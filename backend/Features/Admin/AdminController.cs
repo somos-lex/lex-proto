@@ -16,9 +16,9 @@ public class AdminController : ControllerBase
         _pagos = pagos;
     }
 
-    /// <summary>Panel del modelo de ingresos de LEX: comision liberada (efectiva) vs retenida (potencial).</summary>
+    /// <summary>Panel del modelo de ingresos de LEX: comisión liberada (efectiva) vs retenida (potencial), con breakdown por vertical.</summary>
     [HttpGet("ingresos")]
-    [ProducesResponseType(typeof(IngresosLexResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IngresosAdminResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Ingresos()
     {
         return Ok(await _pagos.ObtenerIngresosLexAsync());

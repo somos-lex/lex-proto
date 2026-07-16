@@ -181,13 +181,15 @@ Trabajo directo en `main` (proyecto en fase de refactor). Commits descriptivos c
 
 - **Sub-hito 1.1 completado**: Servicio TPT, catálogo cerrado, Feature Folders reorganizados por vertical.
 - **Sub-hito 1.2 completado**: Trabajo TPT con estados unificados, snapshots por valor, Paciente Humano/Animal, consentimiento obligatorio en Salud, state machine documentada.
-- **Próximos**: 1.3 (Pagos con movimientos), 1.4 (Solicitudes redesign), 1.5 (Frontend), Hito 2 (Turnos y sesiones).
+- **Sub-hito 1.3 completado**: modelo de Pagos con movimientos, comisión LEX calculada, liberación automática en flujos de Trabajo, endpoints públicos de consulta, admin/ingresos con breakdown por vertical.
+- **Próximos**: 1.4 (Solicitudes redesign), 1.5 (Frontend), Hito 2 (Turnos y sesiones).
 
 ## Documentos importantes en el repo
 
 - `CLAUDE.md` (este archivo) — contexto general.
 - `README_CATALOGO.md` — modelo de catálogo cerrado.
 - `README_ESTADOS_TRABAJO.md` — state machine y permisos por transición.
+- `README_PAGOS.md` — modelo de pagos con movimientos y ciclo de vida.
 
 ## Contacto y equipo
 

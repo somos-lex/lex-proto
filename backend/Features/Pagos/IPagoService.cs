@@ -1,13 +1,15 @@
 using Lex.Api.Domain.Entities;
+using Lex.Api.Domain.Enums;
 
 namespace Lex.Api.Features.Pagos;
 
 public interface IPagoService
 {
     // --- Consultas ---
-    Task<PagoResponse> ObtenerPorTrabajoAsync(int usuarioId, int idTrabajo);
-    Task<MisPagosResponse> ListarMiosAsync(int estudianteId);
-    Task<IngresosLexResponse> ObtenerIngresosLexAsync();
+    Task<IReadOnlyList<PagoResumenResponse>> ListarMiosAsync(int usuarioId, EstadoPago? estado, TipoServicio? tipoTrabajo);
+    Task<PagoDetalleResponse> ObtenerDetalleAsync(int usuarioId, int idPago);
+    Task<IReadOnlyList<MovimientoPagoResponse>> ListarMovimientosAsync(int usuarioId, int idPago);
+    Task<IngresosAdminResponse> ObtenerIngresosLexAsync();
 
     // --- Negocio del escrow ---
     // Ninguno de estos llama a SaveChanges: solo dejan los cambios en el DbContext para

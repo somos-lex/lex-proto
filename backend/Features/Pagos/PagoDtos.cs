@@ -1,42 +1,65 @@
-using Lex.Api.Domain.Enums;
-
 namespace Lex.Api.Features.Pagos;
 
-public class PagoResponse
-{
-    public int Id { get; set; }
-    public int TrabajoId { get; set; }
-    public decimal MontoTotal { get; set; }
-    public decimal PorcentajeComision { get; set; } // 10.00 = 10%
-    public decimal ComisionLex { get; set; }
-    public decimal MontoEstudiante { get; set; }
-    public EstadoPago Estado { get; set; }
-    public DateTime? FechaRetencion { get; set; }
-    public DateTime? FechaLiberacion { get; set; }
-}
+// GET /api/pagos/mios: una fila por pago en el que participa el usuario logueado.
+public record PagoResumenResponse(
+    int Id,
+    int TrabajoId,
+    string TituloTrabajo,
+    string TipoTrabajo,  // "ProyectoCerrado" | "Clase" | "Salud"
+    string RolUsuario,   // "Cliente" | "Estudiante" (segun el logueado)
+    decimal MontoTotal,
+    decimal MontoAEstudiante,
+    decimal MontoComisionCalculada,
+    string Estado,
+    DateTime FechaCreacion,
+    DateTime? FechaLiberacion
+);
 
-// GET /api/pagos/mios: pagos del estudiante con sus totales.
-public class MisPagosResponse
-{
-    // Lo efectivamente cobrado (pagos liberados).
-    public decimal TotalCobrado { get; set; }
-    // Lo retenido en escrow, pendiente de liberar.
-    public decimal TotalRetenido { get; set; }
-    public IReadOnlyList<PagoResponse> Pagos { get; set; } = new List<PagoResponse>();
-}
+// GET /api/pagos/{id}: el pago con su libro de movimientos.
+public record PagoDetalleResponse(
+    int Id,
+    int TrabajoId,
+    string TituloTrabajo,
+    string TipoTrabajo,
+    decimal MontoTotal,
+    decimal PorcentajeComisionLex,
+    decimal MontoComisionCalculada,
+    decimal MontoAEstudiante,
+    string Estado,
+    DateTime FechaCreacion,
+    DateTime? FechaLiberacion,
+    List<MovimientoPagoResponse> Movimientos
+);
+
+// Un asiento del libro contable de un pago.
+public record MovimientoPagoResponse(
+    int Id,
+    string Tipo,
+    decimal Monto,
+    string Descripcion,
+    DateTime FechaMovimiento
+);
 
 // GET /api/admin/ingresos: panel del modelo de ingresos de LEX.
-public class IngresosLexResponse
-{
+public record IngresosAdminResponse(
     // Comision ya liberada = ingreso efectivo de LEX.
-    public decimal ComisionLiberada { get; set; }
+    decimal ComisionLiberada,
     // Comision retenida en escrow = ingreso potencial.
-    public decimal ComisionRetenida { get; set; }
+    decimal ComisionRetenida,
     // Suma de ambas (no incluye reembolsadas).
-    public decimal ComisionTotal { get; set; }
+    decimal ComisionTotal,
+    int CantidadTrabajosConPago,
+    int CantidadPagosLiberados,
+    int CantidadPagosRetenidos,
+    int CantidadPagosReembolsados,
+    // Comision promedio de los trabajos ya cobrados (pagos liberados). 0 si no hay ninguno.
+    decimal IngresoPromedioPorTrabajoCompletado,
+    // Keys: "ProyectoCerrado", "Clase", "Salud".
+    Dictionary<string, IngresosPorVertical> BreakdownPorVertical
+);
 
-    public int CantidadTrabajosConPago { get; set; }
-    public int CantidadPagosLiberados { get; set; }
-    public int CantidadPagosRetenidos { get; set; }
-    public int CantidadPagosReembolsados { get; set; }
-}
+public record IngresosPorVertical(
+    int CantidadTrabajos,
+    decimal ComisionLiberada,
+    decimal ComisionRetenida
+);

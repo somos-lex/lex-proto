@@ -129,46 +129,97 @@ public class PagoService : IPagoService
 
     // --- Consultas ----------------------------------------------------------
 
-    public async Task<PagoResponse> ObtenerPorTrabajoAsync(int usuarioId, int idTrabajo)
+    public async Task<IReadOnlyList<PagoResumenResponse>> ListarMiosAsync(int usuarioId, EstadoPago? estado, TipoServicio? tipoTrabajo)
     {
-        // Validamos participacion mirando el trabajo (existe siempre, aunque no haya pago).
-        var trabajo = await _db.Trabajos.AsNoTracking()
-            .Where(t => t.Id == idTrabajo)
-            .Select(t => new { t.EstudianteId, t.ClienteId })
-            .FirstOrDefaultAsync()
-            ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
+        // Participa el que puso la plata o el que la va a cobrar.
+        var query = _db.Pagos.AsNoTracking()
+            .Include(p => p.Trabajo)
+            .Where(p => p.Trabajo.ClienteId == usuarioId || p.Trabajo.EstudianteId == usuarioId);
 
-        if (trabajo.EstudianteId != usuarioId && trabajo.ClienteId != usuarioId)
-            throw new ForbiddenException("No participás en este trabajo.");
+        if (estado is EstadoPago e)
+            query = query.Where(p => p.Estado == e);
 
-        return await _db.Pagos.AsNoTracking()
-            .Where(p => p.TrabajoId == idTrabajo)
-            .Select(Proyeccion)
-            .FirstOrDefaultAsync()
-            ?? throw new NotFoundException($"El trabajo {idTrabajo} todavía no tiene un pago asociado.");
+        query = tipoTrabajo switch
+        {
+            TipoServicio.ProyectoCerrado => query.Where(p => p.Trabajo is TrabajoProyectoCerrado),
+            TipoServicio.Clase => query.Where(p => p.Trabajo is TrabajoClase),
+            TipoServicio.Salud => query.Where(p => p.Trabajo is TrabajoSalud),
+            _ => query
+        };
+
+        var pagos = await query.OrderByDescending(p => p.FechaCreacion).ToListAsync();
+
+        return pagos.Select(p => new PagoResumenResponse(
+            p.Id,
+            p.TrabajoId,
+            p.Trabajo.TituloSnapshot,
+            TipoDe(p.Trabajo),
+            RolDe(usuarioId, p.Trabajo),
+            p.MontoTotal,
+            p.MontoAEstudiante,
+            p.MontoComisionCalculada,
+            p.Estado.ToString(),
+            p.FechaCreacion,
+            p.FechaLiberacion)).ToList();
     }
 
-    public async Task<MisPagosResponse> ListarMiosAsync(int estudianteId)
+    public async Task<PagoDetalleResponse> ObtenerDetalleAsync(int usuarioId, int idPago)
     {
-        var pagos = await _db.Pagos.AsNoTracking()
-            .Where(p => p.Trabajo.EstudianteId == estudianteId)
-            .OrderByDescending(p => p.FechaCreacion)
-            .Select(Proyeccion)
+        var pago = await BuscarParticipandoAsync(usuarioId, idPago);
+
+        var movimientos = await MovimientosDeAsync(idPago);
+
+        return new PagoDetalleResponse(
+            pago.Id,
+            pago.TrabajoId,
+            pago.Trabajo.TituloSnapshot,
+            TipoDe(pago.Trabajo),
+            pago.MontoTotal,
+            pago.PorcentajeComisionLex,
+            pago.MontoComisionCalculada,
+            pago.MontoAEstudiante,
+            pago.Estado.ToString(),
+            pago.FechaCreacion,
+            pago.FechaLiberacion,
+            movimientos);
+    }
+
+    public async Task<IReadOnlyList<MovimientoPagoResponse>> ListarMovimientosAsync(int usuarioId, int idPago)
+    {
+        await BuscarParticipandoAsync(usuarioId, idPago);
+        return await MovimientosDeAsync(idPago);
+    }
+
+    // Un pago al que no participás se responde igual que uno inexistente: 404 en los dos
+    // casos, para no filtrar por diferencia de status que el pago existe.
+    private async Task<Pago> BuscarParticipandoAsync(int usuarioId, int idPago)
+    {
+        var pago = await _db.Pagos.AsNoTracking()
+            .Include(p => p.Trabajo)
+            .FirstOrDefaultAsync(p => p.Id == idPago);
+
+        if (pago is null || (pago.Trabajo.ClienteId != usuarioId && pago.Trabajo.EstudianteId != usuarioId))
+            throw new NotFoundException($"No existe el pago {idPago}.");
+
+        return pago;
+    }
+
+    // El libro se lee en orden cronologico: primero la retencion, despues su resolucion.
+    private async Task<List<MovimientoPagoResponse>> MovimientosDeAsync(int idPago) =>
+        await _db.MovimientosPago.AsNoTracking()
+            .Where(m => m.PagoId == idPago)
+            .OrderBy(m => m.FechaMovimiento).ThenBy(m => m.Id)
+            .Select(m => new MovimientoPagoResponse(
+                m.Id, m.Tipo.ToString(), m.Monto, m.Descripcion, m.FechaMovimiento))
             .ToListAsync();
 
-        return new MisPagosResponse
-        {
-            TotalCobrado = pagos.Where(p => p.Estado == EstadoPago.Liberado).Sum(p => p.MontoEstudiante),
-            TotalRetenido = pagos.Where(p => p.Estado == EstadoPago.Retenido).Sum(p => p.MontoEstudiante),
-            Pagos = pagos
-        };
-    }
-
-    public async Task<IngresosLexResponse> ObtenerIngresosLexAsync()
+    public async Task<IngresosAdminResponse> ObtenerIngresosLexAsync()
     {
-        // Traemos las comisiones por estado; el agregado se hace en C# (decimal).
+        // El tipo de trabajo sale de la subclase TPT que materializa EF, asi que traemos
+        // los pagos con su trabajo y agregamos en C# (tambien evita sumar decimals en SQL).
         var pagos = await _db.Pagos.AsNoTracking()
-            .Select(p => new { p.Estado, Comision = p.MontoComisionCalculada })
+            .Include(p => p.Trabajo)
+            .Select(p => new { p.Estado, Comision = p.MontoComisionCalculada, p.Trabajo })
             .ToListAsync();
 
         var liberados = pagos.Where(p => p.Estado == EstadoPago.Liberado).ToList();
@@ -178,29 +229,39 @@ public class PagoService : IPagoService
         var comisionLiberada = liberados.Sum(p => p.Comision);
         var comisionRetenida = retenidos.Sum(p => p.Comision);
 
-        return new IngresosLexResponse
-        {
-            ComisionLiberada = comisionLiberada,
-            ComisionRetenida = comisionRetenida,
-            ComisionTotal = comisionLiberada + comisionRetenida, // las reembolsadas no cuentan
-            CantidadTrabajosConPago = pagos.Count,
-            CantidadPagosLiberados = liberados.Count,
-            CantidadPagosRetenidos = retenidos.Count,
-            CantidadPagosReembolsados = reembolsados.Count
-        };
+        // Las 3 verticales aparecen siempre, aunque no tengan pagos todavia.
+        var breakdown = Enum.GetValues<TipoServicio>().ToDictionary(
+            tipo => tipo.ToString(),
+            tipo =>
+            {
+                var delTipo = pagos.Where(p => TipoDe(p.Trabajo) == tipo.ToString()).ToList();
+                return new IngresosPorVertical(
+                    delTipo.Count,
+                    delTipo.Where(p => p.Estado == EstadoPago.Liberado).Sum(p => p.Comision),
+                    delTipo.Where(p => p.Estado == EstadoPago.Retenido).Sum(p => p.Comision));
+            });
+
+        return new IngresosAdminResponse(
+            comisionLiberada,
+            comisionRetenida,
+            comisionLiberada + comisionRetenida, // las reembolsadas no cuentan
+            pagos.Count,
+            liberados.Count,
+            retenidos.Count,
+            reembolsados.Count,
+            liberados.Count == 0 ? 0m : Math.Round(comisionLiberada / liberados.Count, 2, MidpointRounding.AwayFromZero),
+            breakdown);
     }
 
-    private static readonly System.Linq.Expressions.Expression<Func<Lex.Api.Domain.Entities.Pago, PagoResponse>> Proyeccion =
-        p => new PagoResponse
-        {
-            Id = p.Id,
-            TrabajoId = p.TrabajoId,
-            MontoTotal = p.MontoTotal,
-            PorcentajeComision = p.PorcentajeComisionLex,
-            ComisionLex = p.MontoComisionCalculada,
-            MontoEstudiante = p.MontoAEstudiante,
-            Estado = p.Estado,
-            FechaRetencion = p.FechaCreacion,
-            FechaLiberacion = p.FechaLiberacion
-        };
+    // La vertical la define la subclase concreta que materializo EF (TPT).
+    private static string TipoDe(Trabajo trabajo) => trabajo switch
+    {
+        TrabajoProyectoCerrado => nameof(TipoServicio.ProyectoCerrado),
+        TrabajoClase => nameof(TipoServicio.Clase),
+        TrabajoSalud => nameof(TipoServicio.Salud),
+        _ => throw new InvalidOperationException($"Vertical desconocida para el trabajo {trabajo.Id}.")
+    };
+
+    private static string RolDe(int usuarioId, Trabajo trabajo) =>
+        trabajo.EstudianteId == usuarioId ? "Estudiante" : "Cliente";
 }
