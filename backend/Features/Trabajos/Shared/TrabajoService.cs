@@ -2,6 +2,7 @@ using Lex.Api.Common;
 using Lex.Api.Data;
 using Lex.Api.Domain.Entities;
 using Lex.Api.Domain.Enums;
+using Lex.Api.Features.Pagos;
 using Lex.Api.Features.Trabajos.Clase;
 using Lex.Api.Features.Trabajos.ProyectoCerrado;
 using Lex.Api.Features.Trabajos.Salud;
@@ -21,10 +22,12 @@ public enum ParteTrabajo
 public class TrabajoService : ITrabajoService
 {
     private readonly AppDbContext _db;
+    private readonly IPagoService _pagos;
 
-    public TrabajoService(AppDbContext db)
+    public TrabajoService(AppDbContext db, IPagoService pagos)
     {
         _db = db;
+        _pagos = pagos;
     }
 
     // --- Transiciones --------------------------------------------------------
@@ -41,16 +44,16 @@ public class TrabajoService : ITrabajoService
         TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Completado);
 
     public Task<TrabajoResponse> CancelarAsync(int usuarioId, int idTrabajo, string? motivo) =>
-        TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Cancelado);
+        TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Cancelado, motivo);
 
     public Task<TrabajoResponse> DisputarAsync(int usuarioId, int idTrabajo, string motivo)
     {
         if (string.IsNullOrWhiteSpace(motivo))
             throw new BadRequestException("Debe indicar el motivo de la disputa.");
-        return TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Disputa);
+        return TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Disputa, motivo);
     }
 
-    private async Task<TrabajoResponse> TransicionarAsync(int usuarioId, int idTrabajo, EstadoTrabajo destino)
+    private async Task<TrabajoResponse> TransicionarAsync(int usuarioId, int idTrabajo, EstadoTrabajo destino, string? motivo = null)
     {
         var trabajo = await _db.Trabajos.FirstOrDefaultAsync(t => t.Id == idTrabajo)
             ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
@@ -80,8 +83,21 @@ public class TrabajoService : ITrabajoService
         if (destino is EstadoTrabajo.Completado or EstadoTrabajo.Cancelado)
             trabajo.FechaFin = ahora;
 
-        // TODO Sub-hito 1.3: al Completar liberar el pago (escrow) al estudiante;
-        // al Cancelar, reembolsar si habia retencion.
+        // Efecto sobre el escrow. Va antes del SaveChanges de abajo a proposito: el
+        // service de pagos solo deja los cambios en el DbContext, asi el nuevo estado del
+        // trabajo y el del pago se commitean juntos o no se commitea ninguno.
+        switch (destino)
+        {
+            case EstadoTrabajo.Completado:
+                await _pagos.LiberarPagoTotalAsync(trabajo.Id);
+                break;
+            case EstadoTrabajo.Cancelado:
+                await _pagos.ReembolsarPagoAsync(trabajo.Id, motivo ?? "Cancelación");
+                break;
+            case EstadoTrabajo.Disputa:
+                await _pagos.MarcarEnDisputaAsync(trabajo.Id);
+                break;
+        }
 
         trabajo.Historiales.Add(new TrabajoHistorial
         {

@@ -23,6 +23,10 @@ namespace Lex.Api.Features.Demo;
 /// (Sub-hito 1.2) para nacer cada trabajo con sus snapshots, la máquina de estados
 /// compartida (<see cref="ITrabajoService"/>) para avanzarlos, y
 /// <see cref="IResenaService"/> para las reseñas. Las fechas se "retrodatan" al final.
+///
+/// Los pagos NO se siembran a mano: desde Sub-hito 1.3 Parte 2 el escrow lo crea la
+/// contratación y lo resuelve la máquina de estados, así que el seeder los obtiene como
+/// efecto de usar el flujo real. Solo se retrodatan sus fechas junto con las del trabajo.
 /// </summary>
 public class DemoService : IDemoService
 {
@@ -373,6 +377,10 @@ public class DemoService : IDemoService
         // --- Aceptado ---
         var t11 = await CrearTrabajoPcAsync(diegoId, servicioIds["basedatos"], EstadoTrabajo.Aceptado, ahora.AddDays(-3), 0);
 
+        // --- Cancelado (ejercita el reembolso del escrow) ---
+        await CrearTrabajoPcCanceladoAsync(veronicaId, servicioIds["logo"], ahora.AddDays(-20),
+            "El cliente canceló antes de que el estudiante aceptara.");
+
         // --- Pendientes ---
         var t12 = await CrearTrabajoClaseAsync(veronicaId, servicioIds["contabilidad"], EstadoTrabajo.Pendiente, ahora.AddDays(-2), 0);
         // Salud pendiente (Humano en Odonto): consentimiento firmado, esperando aceptación.
@@ -414,7 +422,18 @@ public class DemoService : IDemoService
         var t = await _trabajosPc.ContratarAsync(clienteId, new ContratarTrabajoProyectoCerradoRequest { ServicioId = servicioId });
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
-        await CrearPagoDemoAsync(t.Id, creado);
+        return (t.Id, t.EstudianteId);
+    }
+
+    // Cancelado no entra en AvanzarAsync: su valor en el enum es mayor que Completado, asi
+    // que la comparacion por orden avanzaria el trabajo hasta completarlo. Ademas el caso
+    // que interesa es el corte temprano: el cliente cancela con el trabajo aun Pendiente.
+    private async Task<(int Id, int EstudianteId)> CrearTrabajoPcCanceladoAsync(
+        int clienteId, int servicioId, DateTime creado, string motivo)
+    {
+        var t = await _trabajosPc.ContratarAsync(clienteId, new ContratarTrabajoProyectoCerradoRequest { ServicioId = servicioId });
+        await _trabajos.CancelarAsync(clienteId, t.Id, motivo);
+        await RetrodatarAsync(t.Id, creado, 0);
         return (t.Id, t.EstudianteId);
     }
 
@@ -424,7 +443,6 @@ public class DemoService : IDemoService
         var t = await _trabajosClase.ContratarAsync(clienteId, new ContratarTrabajoClaseRequest { ServicioId = servicioId });
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
-        await CrearPagoDemoAsync(t.Id, creado);
         return (t.Id, t.EstudianteId);
     }
 
@@ -436,81 +454,7 @@ public class DemoService : IDemoService
         await _trabajosSalud.FirmarConsentimientoAsync(clienteId, t.Id, "127.0.0.1");
         await AvanzarAsync(t.Id, t.EstudianteId, clienteId, objetivo);
         await RetrodatarAsync(t.Id, creado, durDias);
-        await CrearPagoDemoAsync(t.Id, creado);
         return (t.Id, t.EstudianteId);
-    }
-
-    // Crea el escrow del trabajo con snapshots (monto + comisión 10%) y su libro de
-    // movimientos coherente con el estado final del trabajo. La lógica real de
-    // liberación/reembolso llega en Sub-hito 1.3 Parte 2; acá solo se siembra evidencia.
-    private async Task CrearPagoDemoAsync(int idTrabajo, DateTime creado)
-    {
-        var trabajo = await _db.Trabajos
-            .Include(t => t.Historiales)
-            .FirstAsync(t => t.Id == idTrabajo);
-
-        const decimal porcentaje = 10m; // Lex:PorcentajeComision
-        var comision = Math.Round(trabajo.PrecioAcordado * porcentaje / 100m, 2, MidpointRounding.AwayFromZero);
-        var aEstudiante = trabajo.PrecioAcordado - comision;
-
-        var pago = new Pago
-        {
-            TrabajoId = idTrabajo,
-            MontoTotal = trabajo.PrecioAcordado,
-            PorcentajeComisionLex = porcentaje,
-            MontoComisionCalculada = comision,
-            MontoAEstudiante = aEstudiante,
-            Estado = EstadoPago.Retenido,
-            FechaCreacion = creado
-        };
-
-        // Movimiento inicial: el cliente retiene el monto en el escrow al contratar.
-        pago.Movimientos.Add(new MovimientoPago
-        {
-            Tipo = TipoMovimientoPago.Retencion,
-            Monto = trabajo.PrecioAcordado,
-            Descripcion = "Retención del pago en escrow al contratar el trabajo.",
-            FechaMovimiento = creado
-        });
-
-        var fin = trabajo.FechaFin ?? creado;
-
-        if (trabajo.Estado == EstadoTrabajo.Completado)
-        {
-            // Trabajo cerrado: se libera al estudiante y LEX toma su comisión.
-            pago.Movimientos.Add(new MovimientoPago
-            {
-                Tipo = TipoMovimientoPago.LiberacionEstudiante,
-                Monto = aEstudiante,
-                Descripcion = "Liberación al estudiante por trabajo completado.",
-                FechaMovimiento = fin
-            });
-            pago.Movimientos.Add(new MovimientoPago
-            {
-                Tipo = TipoMovimientoPago.ComisionLex,
-                Monto = comision,
-                Descripcion = "Comisión LEX sobre el trabajo completado.",
-                FechaMovimiento = fin
-            });
-            pago.Estado = EstadoPago.Liberado;
-            pago.FechaLiberacion = fin;
-        }
-        else if (trabajo.Estado == EstadoTrabajo.Cancelado)
-        {
-            // Trabajo cancelado: se reembolsa el total al cliente.
-            pago.Movimientos.Add(new MovimientoPago
-            {
-                Tipo = TipoMovimientoPago.Reembolso,
-                Monto = trabajo.PrecioAcordado,
-                Descripcion = "Reembolso al cliente por cancelación del trabajo.",
-                FechaMovimiento = fin
-            });
-            pago.Estado = EstadoPago.Reembolsado;
-        }
-        // Otros estados (Pendiente/Aceptado/EnCurso/Entregado/Disputa): queda Retenido.
-
-        _db.Pagos.Add(pago);
-        await _db.SaveChangesAsync();
     }
 
     // Recorre las transiciones permitidas hasta el estado objetivo, respetando qué
@@ -541,8 +485,8 @@ public class DemoService : IDemoService
         if (e2 is not null) e2.Fecha = fin.AddDays(2);
     }
 
-    // Reescribe las fechas del trabajo (y su historial / consentimiento) para que la
-    // línea de tiempo quede distribuida y coherente. (El pago se rediseña en Sub-hito 1.3.)
+    // Reescribe las fechas del trabajo (y su historial / consentimiento / pago) para que
+    // la línea de tiempo quede distribuida y coherente.
     private async Task RetrodatarAsync(int idTrabajo, DateTime creado, int durDias)
     {
         var t = await _db.Trabajos
@@ -573,12 +517,28 @@ public class DemoService : IDemoService
         var hEnt = t.Historiales.FirstOrDefault(h => h.EstadoNuevo == EstadoTrabajo.Entregado);
         if (hEnt is not null) hEnt.Fecha = entregado;
 
+        // Cierre: el trabajo termina al completarse o al cancelarse, lo que haya pasado.
         var fin = creado.AddDays(Math.Max(durDias, 4));
-        var hComp = t.Historiales.FirstOrDefault(h => h.EstadoNuevo == EstadoTrabajo.Completado);
-        if (hComp is not null)
+        var hFin = t.Historiales.FirstOrDefault(h => h.EstadoNuevo is EstadoTrabajo.Completado or EstadoTrabajo.Cancelado);
+        if (hFin is not null)
         {
-            hComp.Fecha = fin;
+            hFin.Fecha = fin;
             t.FechaFin = fin;
+        }
+
+        // El escrow nace al contratar y se resuelve al cerrar el trabajo: sus asientos
+        // siguen esa misma línea de tiempo.
+        var pago = await _db.Pagos
+            .Include(p => p.Movimientos)
+            .FirstOrDefaultAsync(p => p.TrabajoId == idTrabajo);
+        if (pago is not null)
+        {
+            var cierre = t.FechaFin ?? fin;
+            pago.FechaCreacion = creado;
+            if (pago.FechaLiberacion is not null)
+                pago.FechaLiberacion = cierre;
+            foreach (var m in pago.Movimientos)
+                m.FechaMovimiento = m.Tipo == TipoMovimientoPago.Retencion ? creado : cierre;
         }
 
         await _db.SaveChangesAsync();

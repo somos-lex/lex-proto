@@ -2,6 +2,7 @@ using Lex.Api.Common;
 using Lex.Api.Data;
 using Lex.Api.Domain.Entities;
 using Lex.Api.Domain.Enums;
+using Lex.Api.Features.Pagos;
 using Lex.Api.Features.Trabajos.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,12 @@ namespace Lex.Api.Features.Trabajos.Salud;
 public class TrabajoSaludService : ITrabajoSaludService
 {
     private readonly AppDbContext _db;
+    private readonly IPagoService _pagos;
 
-    public TrabajoSaludService(AppDbContext db)
+    public TrabajoSaludService(AppDbContext db, IPagoService pagos)
     {
         _db = db;
+        _pagos = pagos;
     }
 
     public async Task<TrabajoSaludResponse> ContratarAsync(int clienteId, ContratarTrabajoSaludRequest request)
@@ -86,6 +89,8 @@ public class TrabajoSaludService : ITrabajoSaludService
         });
 
         _db.TrabajosSalud.Add(trabajo);
+        // Contratar retiene la plata: el trabajo nace junto con su escrow en un solo commit.
+        _pagos.CrearPagoParaTrabajo(trabajo);
         await _db.SaveChangesAsync();
 
         return await ObtenerAsync(clienteId, trabajo.Id);
