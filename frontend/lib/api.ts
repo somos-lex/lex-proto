@@ -8,9 +8,23 @@
 //     y los de validación de ASP.NET ({ errors: { Campo: [...] } }) lanzando un
 //     ApiError con un mensaje mostrable en pantalla.
 
-import { getToken } from "./session";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5156";
+
+// Lee el JWT de la cookie `lex_token`, funcione desde donde funcione:
+//   - Client Components: de `document.cookie` (igual que `session.getToken`).
+//   - Server Components: del store de cookies de Next, que no expone `document`.
+// El `import('next/headers')` es DINÁMICO a propósito: ese módulo es server-only y un
+// import estático arriba (api.ts lo consumen Client Components) rompería el bundle de
+// cliente. Al vivir dentro de la rama server, nunca llega al navegador.
+async function obtenerToken(): Promise<string | null> {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|; )lex_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  return cookieStore.get("lex_token")?.value ?? null;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -59,7 +73,7 @@ export async function apiFetch<T>(
   finalHeaders.set("Content-Type", "application/json");
 
   if (auth) {
-    const token = getToken();
+    const token = await obtenerToken();
     if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 

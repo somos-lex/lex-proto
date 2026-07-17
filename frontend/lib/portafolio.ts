@@ -2,9 +2,10 @@
 // verificación institucional, servicios y reseñas (GET /api/estudiantes/{id}/portafolio).
 
 import { apiFetch } from "./api";
-import type { Resena, Servicio } from "./servicios";
+import type { ServicioResponse } from "./servicios";
+import type { ResenaResponse } from "./resenas";
 
-export type EstadoVerificacion = "Verificado" | "Pendiente";
+export type EstadoVerificacion = "Verificado" | "Pendiente" | "Rechazado";
 
 export interface CarreraPortafolio {
   carreraId: number;
@@ -21,8 +22,8 @@ export interface Portafolio {
   calificacionPromedio: number;
   trabajosCompletados: number;
   carreras: CarreraPortafolio[];
-  servicios: Servicio[];
-  resenas: Resena[];
+  servicios: ServicioResponse[];
+  resenas: ResenaResponse[];
 }
 
 /** Portafolio público de un estudiante. No requiere sesión. */

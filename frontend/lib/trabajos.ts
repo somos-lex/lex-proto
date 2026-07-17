@@ -1,111 +1,209 @@
-// Tipos de dominio + helpers del motor de trabajos.
-// Espejan los DTOs del backend (TrabajoResponse / TrabajoHistorialResponse).
+// Tipos de dominio + helpers del motor de trabajos. Espejan TrabajoResponse del backend.
 // Los enums viajan como string (JsonStringEnumConverter en el backend).
+//
+// Nota: GET /api/trabajos/{id} devuelve ademas un bloque `detalle` polimorfico por vertical
+// (snapshots, sesiones, consentimiento en Salud). Ese detalle se tipa en la Parte 5, cuando
+// se rehaga la pantalla de detalle de trabajo. Aca solo va la base comun.
 
 import { apiFetch } from "./api";
+import type { TipoServicio } from "./servicios";
 
 export type EstadoTrabajo =
   | "Pendiente"
   | "Aceptado"
   | "EnCurso"
+  | "Entregado"
   | "Completado"
-  | "Cancelado";
+  | "Cancelado"
+  | "Disputa";
 
-export type OrigenTrabajo = "Directo" | "Postulacion";
+export type TipoTrabajo = TipoServicio; // los mismos 3 verticales
 
-export interface Consentimiento {
-  idConsentimiento: number;
-  pacienteId: number | null;
-  pacienteNombre: string | null;
-  textoConsentimiento: string | null;
-  aceptado: boolean;
-  fechaAceptacion: string | null;
-  supervisorResponsable: string | null;
-}
-
-export interface Trabajo {
-  idTrabajo: number;
-  estudianteId: number;
-  estudianteNombre: string;
+export interface TrabajoResponse {
+  id: number;
+  servicioId: number;
   clienteId: number;
   clienteNombre: string;
-  tipoServicioId: number | null;
-  tipoServicioNombre: string | null;
-  origen: OrigenTrabajo;
-  idServicio: number | null;
-  idPostulacion: number | null;
-  pacienteId: number | null;
+  estudianteId: number;
+  estudianteNombre: string;
+  tituloSnapshot: string;
+  descripcionSnapshot: string;
+  precioAcordado: number;
   estado: EstadoTrabajo;
-  monto: number;
-  fechaCreacion: string;
+  tipo: TipoTrabajo;
+  fechaCreacion: string; // ISO UTC
   fechaInicio: string | null;
   fechaFin: string | null;
-  // Solo presente en trabajos de Salud.
-  consentimiento: Consentimiento | null;
 }
 
-export interface TrabajoHistorial {
-  idHistorial: number;
+export interface TrabajoHistorialResponse {
+  id: number;
   estadoAnterior: EstadoTrabajo | null;
   estadoNuevo: EstadoTrabajo;
   fecha: string;
   usuarioId: number | null;
 }
 
-/** Contratación directa (Flujo 1): un cliente contrata un servicio. */
-export function contratarServicio(idServicio: number): Promise<Trabajo> {
-  return apiFetch<Trabajo>("/api/trabajos/contratar-servicio", {
-    method: "POST",
-    body: { idServicio },
-  });
+// --- Metadata de estados (presentacion) ---
+
+export interface EstadoMeta {
+  etiqueta: string;
+  descripcion: string;
+  clases: string; // clases Tailwind para el badge
 }
 
-/** Contratación de Salud (Flujo 3): requiere paciente + consentimiento aceptado. */
-export function contratarServicioSalud(
-  idServicio: number,
-  pacienteId: number,
-  consentimientoAceptado: boolean,
-): Promise<Trabajo> {
-  return apiFetch<Trabajo>("/api/trabajos/contratar-servicio-salud", {
-    method: "POST",
-    body: { idServicio, pacienteId, consentimientoAceptado },
-  });
-}
-
-/** Trabajos donde participa el usuario logueado (estudiante o cliente). */
-export function listarMisTrabajos(): Promise<Trabajo[]> {
-  return apiFetch<Trabajo[]>("/api/trabajos/mios");
-}
-
-export function obtenerTrabajo(id: number): Promise<Trabajo> {
-  return apiFetch<Trabajo>(`/api/trabajos/${id}`);
-}
-
-export function cambiarEstadoTrabajo(
-  id: number,
-  nuevoEstado: EstadoTrabajo,
-  // Solo al aceptar un trabajo de Salud: el estudiante indica el supervisor matriculado.
-  supervisorResponsable?: string,
-): Promise<Trabajo> {
-  return apiFetch<Trabajo>(`/api/trabajos/${id}/estado`, {
-    method: "PATCH",
-    body: { nuevoEstado, supervisorResponsable },
-  });
-}
-
-export function listarHistorialTrabajo(id: number): Promise<TrabajoHistorial[]> {
-  return apiFetch<TrabajoHistorial[]>(`/api/trabajos/${id}/historial`);
-}
-
-// --- Presentación de estados ---
-
-export const ESTADO_META: Record<
-  EstadoTrabajo,
-  { label: string; classes: string }
-> = {
-  Pendiente: { label: "Pendiente", classes: "bg-gray-100 text-gray-600 ring-gray-200" },
-  Aceptado: { label: "Aceptado", classes: "bg-blue-50 text-blue-700 ring-blue-100" },
-  EnCurso: { label: "En curso", classes: "bg-amber-50 text-amber-700 ring-amber-100" },
-  Completado: { label: "Completado", classes: "bg-emerald-50 text-emerald-700 ring-emerald-100" },
-  Cancelado: { label: "Cancelado", classes: "bg-red-50 text-red-700 ring-red-100" },
+export const ESTADO_META: Record<EstadoTrabajo, EstadoMeta> = {
+  Pendiente: {
+    etiqueta: "Pendiente",
+    descripcion: "Esperando aceptación del estudiante",
+    clases: "bg-amber-100 text-amber-800",
+  },
+  Aceptado: {
+    etiqueta: "Aceptado",
+    descripcion: "El estudiante confirmó, aún no arrancó",
+    clases: "bg-blue-100 text-blue-800",
+  },
+  EnCurso: {
+    etiqueta: "En curso",
+    descripcion: "Trabajo activo",
+    clases: "bg-indigo-100 text-indigo-800",
+  },
+  Entregado: {
+    etiqueta: "Entregado",
+    descripcion: "Estudiante entregó, cliente debe confirmar",
+    clases: "bg-purple-100 text-purple-800",
+  },
+  Completado: {
+    etiqueta: "Completado",
+    descripcion: "Trabajo finalizado, pago liberado",
+    clases: "bg-emerald-100 text-emerald-800",
+  },
+  Cancelado: {
+    etiqueta: "Cancelado",
+    descripcion: "Cancelado antes de completar",
+    clases: "bg-slate-100 text-slate-800",
+  },
+  Disputa: {
+    etiqueta: "En disputa",
+    descripcion: "Conflicto activo, requiere resolución",
+    clases: "bg-rose-100 text-rose-800",
+  },
 };
+
+// --- Listado y detalle ---
+
+export function listarMisTrabajos(): Promise<TrabajoResponse[]> {
+  return apiFetch<TrabajoResponse[]>("/api/trabajos/mios");
+}
+
+export function obtenerTrabajo(id: number): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}`);
+}
+
+export function listarHistorialTrabajo(
+  id: number,
+): Promise<TrabajoHistorialResponse[]> {
+  return apiFetch<TrabajoHistorialResponse[]>(`/api/trabajos/${id}/historial`);
+}
+
+// --- Contratacion por vertical ---
+// ProyectoCerrado no reserva turnos. Clase reserva N slots (uno por sesion del paquete).
+// Salud reserva un unico slot y requiere paciente; el consentimiento se firma aparte.
+
+export interface ContratarProyectoCerradoRequest {
+  servicioId: number;
+  notasCliente?: string;
+}
+
+export function contratarProyectoCerrado(
+  req: ContratarProyectoCerradoRequest,
+): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>("/api/trabajos/proyecto-cerrado", {
+    method: "POST",
+    body: req,
+  });
+}
+
+export interface ContratarClaseRequest {
+  servicioId: number;
+  slotsElegidos: string[]; // ISO UTC datetimes
+  notasCliente?: string;
+}
+
+export function contratarClase(
+  req: ContratarClaseRequest,
+): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>("/api/trabajos/clase", {
+    method: "POST",
+    body: req,
+  });
+}
+
+export interface ContratarSaludRequest {
+  servicioId: number;
+  pacienteId: number;
+  slotElegido: string; // ISO UTC datetime
+  notasCliente?: string;
+}
+
+export function contratarSalud(
+  req: ContratarSaludRequest,
+): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>("/api/trabajos/salud", {
+    method: "POST",
+    body: req,
+  });
+}
+
+// --- Transiciones de estado (un endpoint POST por accion) ---
+
+export function aceptarTrabajo(id: number): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/aceptar`, {
+    method: "POST",
+  });
+}
+
+export function iniciarTrabajo(id: number): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/iniciar`, {
+    method: "POST",
+  });
+}
+
+export function entregarTrabajo(id: number): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/entregar`, {
+    method: "POST",
+  });
+}
+
+export function completarTrabajo(id: number): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/completar`, {
+    method: "POST",
+  });
+}
+
+export function cancelarTrabajo(
+  id: number,
+  motivo?: string,
+): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/cancelar`, {
+    method: "POST",
+    body: motivo ? { motivo } : undefined,
+  });
+}
+
+export function disputarTrabajo(
+  id: number,
+  motivo: string,
+): Promise<TrabajoResponse> {
+  return apiFetch<TrabajoResponse>(`/api/trabajos/${id}/disputar`, {
+    method: "POST",
+    body: { motivo },
+  });
+}
+
+// Firma de consentimiento (solo Salud). Habilita pasar de Aceptado a EnCurso.
+export function firmarConsentimiento(trabajoId: number): Promise<void> {
+  return apiFetch<void>(`/api/trabajos/salud/${trabajoId}/consentimiento`, {
+    method: "POST",
+  });
+}

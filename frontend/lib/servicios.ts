@@ -1,135 +1,255 @@
-// Tipos de dominio + helpers de servicios y reseñas.
-// Espejan exactamente los DTOs del backend (ServicioResponse / ResenaResponse).
+// Tipos de dominio + helpers de servicios. Espejan los DTOs del backend post-Hito 2:
+// jerarquia TPT con 3 verticales (ProyectoCerrado / Clase / Salud) y catalogo cerrado.
+//
+// Importante: el backend expone DOS formas del servicio.
+//   - LISTADO  (GET /api/servicios)      -> ServicioResponse: campos comunes, SIN detalle.
+//   - DETALLE  (GET /api/servicios/{id}) -> ServicioDetalleResponse: comunes + `detalle`
+//     polimorfico segun la vertical.
+// La creacion/edicion por vertical devuelve la forma "plana" (comunes + campos propios al
+// tope), que es un supertipo de la base: por eso la tipamos como ServicioResponse.
 
 import { apiFetch } from "./api";
 
-export interface Servicio {
-  idServicio: number;
-  titulo: string;
-  descripcion: string | null;
-  imagenUrl: string | null;
-  precio: number;
-  tiempoEntregaDias: number | null;
-  activo: boolean;
-  fechaPublicacion: string;
-  tipoServicioId: number;
-  tipoServicioNombre: string;
+export type TipoServicio = "ProyectoCerrado" | "Clase" | "Salud";
+
+export type FormatoEntrega = "Archivos" | "Link" | "Ambos";
+export type NivelClase =
+  | "Primario"
+  | "Secundario"
+  | "Universitario"
+  | "Adulto"
+  | "Idioma"
+  | "Otro";
+export type ModalidadClase = "Online" | "Presencial" | "Ambas";
+export type ModalidadSalud = "Domicilio" | "Consultorio" | "Ambas";
+
+// Campos comunes a las tres verticales: es lo que devuelve el listado unificado
+// (GET /api/servicios) y la base de la respuesta por vertical.
+export interface ServicioResponse {
+  id: number;
   estudianteId: number;
   estudianteNombre: string;
   estudianteCalificacion: number;
-}
-
-export interface Resena {
-  idResena: number;
-  idTrabajo: number;
-  autorUsuarioId: number;
-  autorNombre: string;
-  receptorUsuarioId: number;
-  puntaje: number;
-  comentario: string | null;
-  fecha: string;
-}
-
-// Tipos de servicio del backend (tabla tipo_servicio).
-export const TIPOS_SERVICIO = [
-  { id: 1, nombre: "Digital" },
-  { id: 2, nombre: "Clase" },
-  { id: 3, nombre: "Salud" },
-  { id: 4, nombre: "Otro" },
-] as const;
-
-/** Lista pública de servicios activos, con filtros opcionales. */
-export function listarServicios(params: {
-  tipoServicioId?: number | null;
-  texto?: string;
-}): Promise<Servicio[]> {
-  const qs = new URLSearchParams();
-  if (params.tipoServicioId) qs.set("tipoServicioId", String(params.tipoServicioId));
-  if (params.texto?.trim()) qs.set("texto", params.texto.trim());
-  const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiFetch<Servicio[]>(`/api/servicios${suffix}`, { auth: false });
-}
-
-/** Detalle público de un servicio. */
-export function obtenerServicio(id: number): Promise<Servicio> {
-  return apiFetch<Servicio>(`/api/servicios/${id}`, { auth: false });
-}
-
-export interface ServicioInput {
   titulo: string;
-  descripcion?: string | null;
+  descripcion: string;
   precio: number;
-  tipoServicioId: number;
-  tiempoEntregaDias?: number | null;
-  imagenUrl?: string | null;
+  activo: boolean;
+  fechaPublicacion: string; // ISO UTC
+  imagenUrl: string | null;
+  tipo: TipoServicio;
 }
 
-/** Publica un servicio nuevo (estudiante autenticado). */
-export function crearServicio(input: ServicioInput): Promise<Servicio> {
-  return apiFetch<Servicio>("/api/servicios", { method: "POST", body: input });
+// Bloques `detalle` polimorficos por vertical.
+export interface DetalleProyectoCerrado {
+  catalogoServicioId: number;
+  catalogoServicioNombre: string;
+  plazoEntregaDias: number;
+  revisionesIncluidas: number;
+  formatoEntrega: FormatoEntrega;
 }
 
-/** Edita un servicio propio. */
-export function actualizarServicio(
-  id: number,
-  input: ServicioInput,
-): Promise<Servicio> {
-  return apiFetch<Servicio>(`/api/servicios/${id}`, {
-    method: "PUT",
-    body: input,
-  });
+export interface DetalleClase {
+  materia: string;
+  nivel: NivelClase;
+  modalidad: ModalidadClase;
+  duracionMinutosSesion: number;
+  esPaquete: boolean;
+  cantidadSesionesPaquete: number | null;
 }
 
-/** Baja lógica de un servicio propio. */
-export function eliminarServicio(id: number): Promise<void> {
-  return apiFetch<void>(`/api/servicios/${id}`, { method: "DELETE" });
+export interface DetalleSalud {
+  catalogoServicioId: number;
+  catalogoServicioNombre: string;
+  supervisorId: number;
+  supervisorNombre: string;
+  supervisorMatricula: string;
+  modalidad: ModalidadSalud;
+  duracionMinutosSesion: number;
 }
 
-/** El área Salud (id 3) requiere supervisión: no se contrata por el flujo directo. */
-export const TIPO_SALUD_ID = 3;
+// Detalle unificado (GET /api/servicios/{id}): comunes + bloque polimorfico.
+export type ServicioDetalleResponse = ServicioResponse & {
+  detalle: DetalleProyectoCerrado | DetalleClase | DetalleSalud;
+};
 
-/** Reseñas recibidas por un usuario (reputación pública). */
-export function listarResenasUsuario(idUsuario: number): Promise<Resena[]> {
-  return apiFetch<Resena[]>(`/api/usuarios/${idUsuario}/resenas`, { auth: false });
+// Type guards: estrechan el `detalle` segun la vertical.
+export function esProyectoCerrado(
+  s: ServicioDetalleResponse,
+): s is ServicioDetalleResponse & { detalle: DetalleProyectoCerrado } {
+  return s.tipo === "ProyectoCerrado";
 }
 
-export interface ResenaInput {
-  puntaje: number;
-  comentario?: string | null;
+export function esClase(
+  s: ServicioDetalleResponse,
+): s is ServicioDetalleResponse & { detalle: DetalleClase } {
+  return s.tipo === "Clase";
 }
 
-/** Reseñas de un trabajo puntual (ambas partes). Requiere ser parte del trabajo. */
-export function listarResenasTrabajo(idTrabajo: number): Promise<Resena[]> {
-  return apiFetch<Resena[]>(`/api/trabajos/${idTrabajo}/resenas`);
+export function esSalud(
+  s: ServicioDetalleResponse,
+): s is ServicioDetalleResponse & { detalle: DetalleSalud } {
+  return s.tipo === "Salud";
 }
 
-/** Deja una reseña sobre la otra parte de un trabajo Completado.
- *  El backend valida: estado Completado (400), ser parte (403) y una sola
- *  reseña por parte (400 "Ya dejaste una reseña para este trabajo"). */
-export function crearResenaTrabajo(
-  idTrabajo: number,
-  input: ResenaInput,
-): Promise<Resena> {
-  return apiFetch<Resena>(`/api/trabajos/${idTrabajo}/resenas`, {
+// --- Constantes de dominio ---
+
+export const TIPOS_SERVICIO: { valor: TipoServicio; etiqueta: string }[] = [
+  { valor: "ProyectoCerrado", etiqueta: "Proyectos cerrados" },
+  { valor: "Clase", etiqueta: "Tutorías y clases" },
+  { valor: "Salud", etiqueta: "Servicios de salud" },
+];
+
+// --- Listado y detalle (publicos) ---
+
+export interface ListarServiciosParams {
+  tipo?: TipoServicio;
+  carreraId?: number;
+  estudianteId?: number;
+  activo?: boolean;
+}
+
+export function listarServicios(
+  params: ListarServiciosParams = {},
+): Promise<ServicioResponse[]> {
+  const qs = new URLSearchParams();
+  if (params.tipo) qs.set("tipo", params.tipo);
+  if (params.carreraId) qs.set("carrera_id", String(params.carreraId));
+  if (params.estudianteId) qs.set("estudiante_id", String(params.estudianteId));
+  if (params.activo !== undefined) qs.set("activo", String(params.activo));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return apiFetch<ServicioResponse[]>(`/api/servicios${suffix}`, { auth: false });
+}
+
+export function obtenerServicio(id: number): Promise<ServicioDetalleResponse> {
+  return apiFetch<ServicioDetalleResponse>(`/api/servicios/${id}`, { auth: false });
+}
+
+// --- Creacion / edicion / baja por vertical (estudiante autenticado) ---
+
+export interface CrearServicioProyectoCerradoRequest {
+  titulo: string;
+  descripcion: string;
+  precio: number;
+  imagenUrl?: string;
+  catalogoServicioId: number;
+  plazoEntregaDias: number;
+  revisionesIncluidas: number;
+  formatoEntrega: FormatoEntrega;
+}
+
+export function crearServicioProyectoCerrado(
+  req: CrearServicioProyectoCerradoRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>("/api/servicios/proyecto-cerrado", {
     method: "POST",
-    body: input,
+    body: req,
   });
 }
 
-// --- Helpers de presentación ---
+export function actualizarServicioProyectoCerrado(
+  id: number,
+  req: CrearServicioProyectoCerradoRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>(`/api/servicios/proyecto-cerrado/${id}`, {
+    method: "PUT",
+    body: req,
+  });
+}
 
-/** Colores suaves del badge según el tipo de servicio. */
-export function tipoBadgeClasses(tipoServicioId: number): string {
-  switch (tipoServicioId) {
-    case 1: // Digital
-      return "bg-blue-50 text-blue-700 ring-blue-100";
-    case 2: // Clase
-      return "bg-amber-50 text-amber-700 ring-amber-100";
-    case 3: // Salud
-      return "bg-emerald-50 text-emerald-700 ring-emerald-100";
-    default: // Otro
-      return "bg-gray-100 text-gray-600 ring-gray-200";
-  }
+export function eliminarServicioProyectoCerrado(id: number): Promise<void> {
+  return apiFetch<void>(`/api/servicios/proyecto-cerrado/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export interface CrearServicioClaseRequest {
+  titulo: string;
+  descripcion: string;
+  precio: number;
+  imagenUrl?: string;
+  materia: string;
+  nivel: NivelClase;
+  modalidad: ModalidadClase;
+  duracionMinutosSesion: number;
+  esPaquete: boolean;
+  cantidadSesionesPaquete?: number;
+}
+
+export function crearServicioClase(
+  req: CrearServicioClaseRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>("/api/servicios/clase", {
+    method: "POST",
+    body: req,
+  });
+}
+
+export function actualizarServicioClase(
+  id: number,
+  req: CrearServicioClaseRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>(`/api/servicios/clase/${id}`, {
+    method: "PUT",
+    body: req,
+  });
+}
+
+export function eliminarServicioClase(id: number): Promise<void> {
+  return apiFetch<void>(`/api/servicios/clase/${id}`, { method: "DELETE" });
+}
+
+export interface CrearServicioSaludRequest {
+  titulo: string;
+  descripcion: string;
+  precio: number;
+  imagenUrl?: string;
+  catalogoServicioId: number;
+  supervisorId: number;
+  modalidad: ModalidadSalud;
+  duracionMinutosSesion: number;
+}
+
+export function crearServicioSalud(
+  req: CrearServicioSaludRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>("/api/servicios/salud", {
+    method: "POST",
+    body: req,
+  });
+}
+
+export function actualizarServicioSalud(
+  id: number,
+  req: CrearServicioSaludRequest,
+): Promise<ServicioResponse> {
+  return apiFetch<ServicioResponse>(`/api/servicios/salud/${id}`, {
+    method: "PUT",
+    body: req,
+  });
+}
+
+export function eliminarServicioSalud(id: number): Promise<void> {
+  return apiFetch<void>(`/api/servicios/salud/${id}`, { method: "DELETE" });
+}
+
+// --- Helpers de presentacion ---
+
+export function tipoBadgeClasses(tipo: TipoServicio): string {
+  const map: Record<TipoServicio, string> = {
+    ProyectoCerrado: "bg-indigo-100 text-indigo-800",
+    Clase: "bg-emerald-100 text-emerald-800",
+    Salud: "bg-rose-100 text-rose-800",
+  };
+  return map[tipo];
+}
+
+export function tipoEtiqueta(tipo: TipoServicio): string {
+  const map: Record<TipoServicio, string> = {
+    ProyectoCerrado: "Proyecto cerrado",
+    Clase: "Clases",
+    Salud: "Salud",
+  };
+  return map[tipo];
 }
 
 const formatoMoneda = new Intl.NumberFormat("es-AR", {
