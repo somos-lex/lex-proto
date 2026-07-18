@@ -16,6 +16,7 @@ const NAV_POR_VISTA: Record<Vista, { href: string; label: string }[]> = {
   ],
   Estudiante: [
     { href: "/panel/servicios", label: "Mis servicios" },
+    { href: "/panel/disponibilidad", label: "Disponibilidad" },
     { href: "/panel/trabajos", label: "Mis trabajos" },
   ],
   Agencia: [
