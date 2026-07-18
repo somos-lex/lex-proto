@@ -13,7 +13,9 @@ public interface IServicioPublicacionValidator
 // Queries agnosticas al tipo: alimentan el catalogo publico.
 public interface IServicioService
 {
-    Task<IReadOnlyList<ServicioResponse>> ListarAsync(TipoServicio? tipo, int? carreraId, int? estudianteId, bool? activo);
+    Task<PaginacionResponse<ServicioResponse>> ListarAsync(
+        TipoServicio? tipo, int? carreraId, int? estudianteId, bool? activo,
+        int page, int pageSize, CancellationToken ct = default);
     Task<ServicioDetalleResponse> ObtenerAsync(int id);
     Task<IReadOnlyList<ServicioResponse>> ListarPorEstudianteAsync(int estudianteId);
 }

@@ -101,23 +101,38 @@ export const TIPOS_SERVICIO: { valor: TipoServicio; etiqueta: string }[] = [
 
 // --- Listado y detalle (publicos) ---
 
+// Envoltorio de paginacion, espeja PaginacionResponse<T> del backend.
+export interface PaginacionResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface ListarServiciosParams {
   tipo?: TipoServicio;
   carreraId?: number;
   estudianteId?: number;
   activo?: boolean;
+  page?: number;
+  pageSize?: number;
 }
 
 export function listarServicios(
   params: ListarServiciosParams = {},
-): Promise<ServicioResponse[]> {
+): Promise<PaginacionResponse<ServicioResponse>> {
   const qs = new URLSearchParams();
   if (params.tipo) qs.set("tipo", params.tipo);
   if (params.carreraId) qs.set("carrera_id", String(params.carreraId));
   if (params.estudianteId) qs.set("estudiante_id", String(params.estudianteId));
   if (params.activo !== undefined) qs.set("activo", String(params.activo));
+  if (params.page) qs.set("page", String(params.page));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiFetch<ServicioResponse[]>(`/api/servicios${suffix}`, { auth: false });
+  return apiFetch<PaginacionResponse<ServicioResponse>>(`/api/servicios${suffix}`, {
+    auth: false,
+  });
 }
 
 export function obtenerServicio(id: number): Promise<ServicioDetalleResponse> {

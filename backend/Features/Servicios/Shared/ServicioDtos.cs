@@ -28,3 +28,14 @@ public class ServicioDetalleResponse : ServicioResponse
 {
     public object? Detalle { get; set; }
 }
+
+// Envoltorio de paginacion generico. El listado publico lo usa para no traer todo el
+// catalogo de una: el cliente pide una pagina y recibe ademas cuantas hay en total.
+public class PaginacionResponse<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int Total { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+}

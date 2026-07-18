@@ -17,17 +17,20 @@ public class ServicioController : ControllerBase
         _servicios = servicios;
     }
 
-    /// <summary>Listado publico unificado de servicios, con filtros opcionales.</summary>
+    /// <summary>Listado publico unificado de servicios, con filtros opcionales y paginacion.</summary>
     [HttpGet]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(IEnumerable<ServicioResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginacionResponse<ServicioResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar(
         [FromQuery] TipoServicio? tipo,
         [FromQuery(Name = "carrera_id")] int? carreraId,
         [FromQuery(Name = "estudiante_id")] int? estudianteId,
-        [FromQuery] bool? activo)
+        [FromQuery] bool? activo,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12,
+        CancellationToken ct = default)
     {
-        return Ok(await _servicios.ListarAsync(tipo, carreraId, estudianteId, activo));
+        return Ok(await _servicios.ListarAsync(tipo, carreraId, estudianteId, activo, page, pageSize, ct));
     }
 
     /// <summary>Detalle publico unificado: campos comunes + bloque 'detalle' segun la vertical.</summary>

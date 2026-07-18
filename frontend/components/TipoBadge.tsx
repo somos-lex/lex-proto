@@ -1,19 +1,13 @@
-import { tipoBadgeClasses } from "@/lib/servicios";
+import { tipoBadgeClasses, tipoEtiqueta, type TipoServicio } from "@/lib/servicios";
 
-export function TipoBadge({
-  tipoServicioId,
-  nombre,
-}: {
-  tipoServicioId: number;
-  nombre: string;
-}) {
+export function TipoBadge({ tipo }: { tipo: TipoServicio }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${tipoBadgeClasses(
-        tipoServicioId,
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tipoBadgeClasses(
+        tipo,
       )}`}
     >
-      {nombre}
+      {tipoEtiqueta(tipo)}
     </span>
   );
 }

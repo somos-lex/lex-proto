@@ -3,14 +3,15 @@
 // Lista de reseñas recibidas (estrellas + comentario + autor + fecha).
 // Reutilizable: la usan el detalle del servicio y el portafolio del estudiante.
 
-import { formatFecha, type Resena } from "@/lib/servicios";
+import { formatFecha } from "@/lib/servicios";
+import type { ResenaResponse } from "@/lib/resenas";
 import { StarsRow } from "@/components/Stars";
 
 export function ResenasList({
   resenas,
   emptyText = "Todavía no tiene reseñas.",
 }: {
-  resenas: Resena[];
+  resenas: ResenaResponse[];
   emptyText?: string;
 }) {
   if (resenas.length === 0) {
@@ -25,7 +26,7 @@ export function ResenasList({
     <ul className="space-y-4">
       {resenas.map((r) => (
         <li
-          key={r.idResena}
+          key={r.id}
           className="rounded-xl border border-gray-200 bg-white p-4"
         >
           <div className="flex items-center justify-between gap-2">

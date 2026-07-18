@@ -20,7 +20,49 @@ public class ServicioService : IServicioService
         _db = db;
     }
 
-    public async Task<IReadOnlyList<ServicioResponse>> ListarAsync(
+    public async Task<PaginacionResponse<ServicioResponse>> ListarAsync(
+        TipoServicio? tipo, int? carreraId, int? estudianteId, bool? activo,
+        int page, int pageSize, CancellationToken ct = default)
+    {
+        // Clamp: page al menos 1, pageSize entre 1 y 100. Una pagina fuera de rango
+        // devuelve items vacio (Skip mas alla del total), no un error.
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = ConstruirQuery(tipo, carreraId, estudianteId, activo);
+
+        var total = await query.CountAsync(ct);
+
+        // Orden estable del catalogo: los mas recientes primero.
+        var servicios = await query
+            .OrderByDescending(s => s.FechaPublicacion)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return new PaginacionResponse<ServicioResponse>
+        {
+            Items = servicios.Select(MapearComun).ToList(),
+            Total = total,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(total / (double)pageSize)
+        };
+    }
+
+    // El portafolio necesita TODOS los servicios activos del estudiante, sin paginar.
+    public async Task<IReadOnlyList<ServicioResponse>> ListarPorEstudianteAsync(int estudianteId)
+    {
+        var servicios = await ConstruirQuery(tipo: null, carreraId: null, estudianteId: estudianteId, activo: true)
+            .OrderByDescending(s => s.FechaPublicacion)
+            .ToListAsync();
+
+        return servicios.Select(MapearComun).ToList();
+    }
+
+    // Aplica los filtros comunes del catalogo. Devuelve el IQueryable sin materializar,
+    // para que cada llamador decida si pagina o trae todo.
+    private IQueryable<Servicio> ConstruirQuery(
         TipoServicio? tipo, int? carreraId, int? estudianteId, bool? activo)
     {
         var query = _db.Servicios.AsNoTracking()
@@ -41,23 +83,14 @@ public class ServicioService : IServicioService
                 ec.EstadoVerificacion == EstadoVerificacion.Verificado));
 
         // El filtro por vertical se resuelve sobre la subclase TPT.
-        query = tipo switch
+        return tipo switch
         {
             TipoServicio.ProyectoCerrado => query.Where(s => s is ServicioProyectoCerrado),
             TipoServicio.Clase => query.Where(s => s is ServicioClase),
             TipoServicio.Salud => query.Where(s => s is ServicioSalud),
             _ => query
         };
-
-        var servicios = await query
-            .OrderByDescending(s => s.FechaPublicacion)
-            .ToListAsync();
-
-        return servicios.Select(MapearComun).ToList();
     }
-
-    public async Task<IReadOnlyList<ServicioResponse>> ListarPorEstudianteAsync(int estudianteId) =>
-        await ListarAsync(tipo: null, carreraId: null, estudianteId: estudianteId, activo: true);
 
     public async Task<ServicioDetalleResponse> ObtenerAsync(int id)
     {
