@@ -183,8 +183,9 @@ Trabajo directo en `main` (proyecto en fase de refactor). Commits descriptivos c
 - **Sub-hito 1.2 completado**: Trabajo TPT con estados unificados, snapshots por valor, Paciente Humano/Animal, consentimiento obligatorio en Salud, state machine documentada.
 - **Sub-hito 1.3 completado**: modelo de Pagos con movimientos, comisión LEX calculada, liberación automática en flujos de Trabajo, endpoints públicos de consulta, admin/ingresos con breakdown por vertical.
 - **Hito 2 completado**: sistema completo de disponibilidad, turnos y sesiones, con liberación fraccionada de pagos. Parte 1: modelo + CRUD de disponibilidad. Parte 2: contratación con reserva atómica de turnos. Parte 3: marcado de sesiones (Realizada/NoAsistio) que libera el pago por fracciones y completa el trabajo solo.
-- **Próximos**: Sub-hito 1.5 (Frontend actualizado con todo el modelo nuevo).
-- **Otros pendientes**: 1.4 (Solicitudes redesign).
+- **Sub-hito 1.5 completado**: frontend reescrito sobre el modelo actual. Parte 1: `lib/` espejando los DTOs nuevos. Parte 2: catálogo público con Server Components y paginación. Parte 3: gestión del estudiante. Parte 4: contratación con slots y pacientes Humano/Animal. Parte 5: detalle de trabajo con sesiones y pagos. Parte 6: panel admin de ingresos (`/panel/admin`).
+- **Próximos**: 1.4 (Solicitudes redesign).
+- **Deuda conocida**: `GET /api/admin/ingresos` solo agrega comisión LEX (`Pago.MontoComisionCalculada` por `EstadoPago`). No expone volumen transaccionado ni el neto liberado al estudiante, así que `/panel/admin` no puede mostrar GMV ni "trabajos completados" (usa `CantidadTrabajosConPago` como proxy). Ampliar el `AdminService` si se necesitan esas métricas.
 
 ## Documentos importantes en el repo
 
