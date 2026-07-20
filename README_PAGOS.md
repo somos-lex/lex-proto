@@ -90,6 +90,20 @@ El divisor es `CantidadSesionesTotales` **vigente**, no el original: si se cance
 | `GET /api/pagos/{id}/movimientos` | partes del trabajo | Solo el libro, en orden cronológico. |
 | `GET /api/admin/ingresos` | rol Admin | Panel de ingresos con breakdown por vertical. |
 
+### Alcance de `GET /api/admin/ingresos`
+
+Agrega **solo comisión LEX**: suma `Pago.MontoComisionCalculada` agrupando por `EstadoPago`, y el breakdown por vertical sale de la subclase TPT del trabajo. No toca el libro de movimientos.
+
+Lo que **no** devuelve, y por qué importa:
+
+- **Volumen transaccionado (GMV)**: no expone `MontoTotal`. `ComisionTotal` es el take rate, no lo que movió la plataforma — son órdenes de magnitud distintos y no deben presentarse como equivalentes.
+- **Neto liberado al estudiante**: no expone la suma de `LiberacionEstudiante`.
+- **Trabajos completados**: solo hay `CantidadTrabajosConPago` (todos los pagos, en cualquier estado). `/panel/admin` lo usa como proxy.
+
+Los pagos `Reembolsado` quedan fuera de `ComisionTotal`. Los `ParcialmenteLiberado` **no** se cuentan en ninguno de los dos baldes (`ComisionLiberada` filtra por `Liberado` y `ComisionRetenida` por `Retenido`), así que desde Hito 2 Parte 3 la comisión ya cobrada de un paquete a medio liberar no aparece en el panel. Es la limitación más punzante de las cuatro si crece el volumen de Clase y Salud.
+
+Cerrar cualquiera de estos puntos requiere ampliar `PagoService.ObtenerIngresosLexAsync` sumando sobre `MovimientoPago` en vez de sobre `Pago`.
+
 Las sesiones que liberan el pago viven en `POST /api/sesiones/{id}/realizar` y `/no-asistio` (ver `README_TURNOS.md`).
 
 Un pago al que el usuario no participa responde **404**, igual que uno inexistente: distinguirlos con un 403 filtraría que el pago existe.
