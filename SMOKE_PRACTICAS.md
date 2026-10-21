@@ -53,7 +53,7 @@ SELECT (SELECT count(*) FROM pago)            AS pago,
 | 5 | `/login` → `/panel/admin` | Entrar con la cuenta Admin y escribir `/panel/admin` en la barra de direcciones. El Navbar no tiene ítems para Admin. | Panel de ingresos, con el botón **"Verificaciones pendientes →"** arriba a la derecha. | ☐ |
 | 6 | `/panel/admin/verificaciones` | Click en "Verificaciones pendientes". | Aparece una tarjeta con **Prueba Smoke Estudiante**, su email y **"Odontología · Universidad Nacional del Nordeste (UNNE) · 4° año"**. | ☐ |
 | 6b | Misma tarjeta | Click en **"Abrir comprobante (drive.google.com) ↗"**. | Se abre en una pestaña nueva y el documento **se lee**: no pide permiso, no da error. Si muestra "Solicitar acceso", el link no es público: corregilo antes de seguir. | ☐ |
-| 7 | Misma tarjeta | **Aprobar** → observación "Comprobante revisado (smoke)" → **Confirmar aprobación**. | La tarjeta desaparece. Recargar la página: sigue sin aparecer. | ☐ |
+| 7 | Misma tarjeta | **Aprobar** → observación "Comprobante revisado (smoke)" → **Confirmar aprobación**. | La tarjeta desaparece. Recargar la página: sigue sin aparecer. Con comprobante cargado, la etiqueta dice **"Observaciones (opcional)"**. Sin comprobante diría **"¿Cómo verificaste el vínculo? (obligatorio: no hay comprobante)"** y no dejaría aprobar en blanco; ese camino lo cubre el test automatizado. | ☐ |
 
 ### C. El estudiante publica — Perfil 1, sin recargar ni re-loguear
 

@@ -109,7 +109,7 @@ function Comprobante({ valor }: { valor: string | null }) {
   if (!valor) {
     return (
       <p className="mt-2 text-xs italic text-amber-700">
-        Sin comprobante cargado: pedíselo al estudiante antes de aprobar.
+        Sin comprobante cargado: pedíselo, o al aprobar dejá escrito cómo lo verificaste.
       </p>
     );
   }
@@ -154,9 +154,20 @@ function TarjetaVerificacion({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sin comprobante, aprobar exige dejar escrito cómo se verificó (mismo guard que el
+  // backend): nunca se aprueba sin evidencia ni registro.
+  const sinComprobante = !v.documentoComprobante?.trim();
+  const observacionesObligatorias = modo === "aprobar" && sinComprobante;
+
   async function confirmar() {
     if (modo === "rechazar" && !texto.trim()) {
       setError("El motivo del rechazo es obligatorio.");
+      return;
+    }
+    if (observacionesObligatorias && !texto.trim()) {
+      setError(
+        "El estudiante no cargó comprobante: para aprobar, escribí cómo verificaste el vínculo.",
+      );
       return;
     }
     setEnviando(true);
@@ -205,7 +216,11 @@ function TarjetaVerificacion({
       {modo !== "ninguno" && (
         <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
           <label className="block text-sm font-medium text-slate-700" htmlFor={`texto-${v.estudianteId}-${v.carreraId}`}>
-            {modo === "aprobar" ? "Observaciones (opcional)" : "Motivo del rechazo"}
+            {modo === "rechazar"
+              ? "Motivo del rechazo"
+              : observacionesObligatorias
+                ? "¿Cómo verificaste el vínculo? (obligatorio: no hay comprobante)"
+                : "Observaciones (opcional)"}
           </label>
           <textarea
             id={`texto-${v.estudianteId}-${v.carreraId}`}
@@ -214,9 +229,11 @@ function TarjetaVerificacion({
             rows={2}
             maxLength={1000}
             placeholder={
-              modo === "aprobar"
-                ? "Ej: constancia de alumno regular 2026 verificada."
-                : "Ej: la foto de la constancia no se lee; reenviala."
+              modo === "rechazar"
+                ? "Ej: la foto de la constancia no se lee; reenviala."
+                : observacionesObligatorias
+                  ? "Ej: constancia de alumno regular en papel vista en la cátedra el 23/10/2026."
+                  : "Ej: constancia de alumno regular 2026 verificada."
             }
             className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           />

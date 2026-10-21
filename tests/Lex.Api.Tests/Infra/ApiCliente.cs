@@ -92,9 +92,15 @@ public class ApiCliente
         return await LoginAsync(email, password);
     }
 
+    public const string ComprobantePorDefecto = "https://drive.google.com/file/d/constancia-alumno-regular-tests/view";
+
     // Cliente Particular que activa su perfil de estudiante. El vinculo con la carrera nace
     // Pendiente. Vuelve a loguear porque el rol Estudiante recien entra en un token nuevo.
-    public async Task<(Actor Estudiante, string Email)> RegistrarEstudianteAsync(int carreraId, int anioCursado)
+    //
+    // Por defecto carga un comprobante, como en el camino normal: aprobar exige comprobante u
+    // observaciones. Pasar comprobante: null para el estudiante que se activa sin link.
+    public async Task<(Actor Estudiante, string Email)> RegistrarEstudianteAsync(
+        int carreraId, int anioCursado, string? comprobante = ComprobantePorDefecto)
     {
         var email = $"{Guid.NewGuid():N}@tests.lex";
         const string password = "Tests1234";
@@ -112,7 +118,8 @@ public class ApiCliente
         {
             carreraId,
             bio = "Estudiante de tests",
-            anioCursado
+            anioCursado,
+            documentoComprobante = comprobante
         }), HttpStatusCode.OK);
 
         return (await LoginAsync(email, password), email);

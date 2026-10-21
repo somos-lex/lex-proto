@@ -284,6 +284,70 @@ public class CaminoVerificacionE2ETests
         Assert.Equal(filasAntes, await ContarFilasDelMarketplaceAsync());
     }
 
+    // El comprobante es opcional al ACTIVAR (el estudiante puede registrarse y explorar en
+    // Pendiente), pero no se aprueba sin evidencia: o hay comprobante cargado, o el admin
+    // deja escrito como lo verifico. Caso real: la constancia en papel vista en la catedra.
+    [Fact]
+    public async Task Aprobar_sin_comprobante_exige_observaciones_y_las_guarda()
+    {
+        var materias = await ApiCliente.LeerAsync<List<MateriaResponse>>(await _api.GetAsync("/api/materias"));
+        var periodoncia = materias.Single(m => m.CarreraNombre == Carrera && m.Nombre == "Periodoncia");
+        var (estudiante, _) = await _api.RegistrarEstudianteAsync(periodoncia.CarreraId, AnioCursado, comprobante: null);
+        var admin = await _api.AdminAsync();
+        var aprobar = $"/api/admin/verificaciones/{estudiante.UsuarioId}/{periodoncia.CarreraId}/aprobar";
+
+        // Se activo sin link: en la bandeja figura sin comprobante.
+        var pendientes = await ApiCliente.LeerAsync<List<VerificacionPendienteResponse>>(
+            await _api.GetAsync("/api/admin/verificaciones/pendientes", admin.Token));
+        Assert.Null(Assert.Single(pendientes, p => p.EstudianteId == estudiante.UsuarioId).DocumentoComprobante);
+
+        // --- Caso 1: sin comprobante ni observaciones, falla --------------------------
+        // Ni body vacio ni observaciones en blanco cuentan como registro de la verificacion.
+        foreach (var body in new object[] { new { }, new { observaciones = "   " } })
+        {
+            var rechazo = await _api.PostAsync(aprobar, admin.Token, body);
+            var mensaje = await rechazo.Content.ReadAsStringAsync();
+            await ApiCliente.AssertStatusAsync(rechazo, HttpStatusCode.BadRequest);
+            // El mensaje dice que falta: no hay comprobante, y que hay que dejar observaciones.
+            Assert.Contains("comprobante", mensaje, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("observaciones", mensaje, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // El intento fallido no dejo nada a medias: sigue Pendiente y sin publicar.
+        await _factory.ConDbAsync(async db =>
+        {
+            var fila = await db.EstudianteCarreras.AsNoTracking()
+                .SingleAsync(ec => ec.EstudianteId == estudiante.UsuarioId && ec.CarreraId == periodoncia.CarreraId);
+            Assert.Equal(EstadoVerificacion.Pendiente, fila.EstadoVerificacion);
+            Assert.Null(fila.VerificadoPorUsuarioId);
+            Assert.Null(fila.FechaVerificacion);
+        });
+        await ApiCliente.AssertStatusAsync(
+            await _api.PublicarAsync(estudiante, periodoncia.Id, TipoPaciente.Humano), HttpStatusCode.BadRequest);
+
+        // --- Caso 2: sin comprobante pero con observaciones, pasa y las guarda ------------
+        const string comoSeVerifico = "Constancia de alumno regular en papel vista en la cátedra de Periodoncia, 23/10/2026.";
+        var resuelta = await ApiCliente.LeerAsync<VerificacionResueltaResponse>(
+            await _api.PostAsync(aprobar, admin.Token, new { observaciones = comoSeVerifico }));
+        Assert.Equal(EstadoVerificacion.Verificado, resuelta.EstadoVerificacion);
+        Assert.Equal(comoSeVerifico, resuelta.ObservacionesVerificacion);
+        Assert.Equal(admin.UsuarioId, resuelta.VerificadoPorUsuarioId);
+
+        await _factory.ConDbAsync(async db =>
+        {
+            var fila = await db.EstudianteCarreras.AsNoTracking()
+                .SingleAsync(ec => ec.EstudianteId == estudiante.UsuarioId && ec.CarreraId == periodoncia.CarreraId);
+            Assert.Equal(EstadoVerificacion.Verificado, fila.EstadoVerificacion);
+            Assert.Equal(comoSeVerifico, fila.ObservacionesVerificacion);
+            Assert.Null(fila.DocumentoComprobante);
+            Assert.Equal(admin.UsuarioId, fila.VerificadoPorUsuarioId);
+        });
+
+        // Y queda habilitado: la aprobacion con observaciones vale igual que con comprobante.
+        await ApiCliente.AssertStatusAsync(
+            await _api.PublicarAsync(estudiante, periodoncia.Id, TipoPaciente.Humano), HttpStatusCode.Created);
+    }
+
     private async Task<Dictionary<string, long>> ContarFilasDelMarketplaceAsync()
     {
         var conteos = new Dictionary<string, long>();

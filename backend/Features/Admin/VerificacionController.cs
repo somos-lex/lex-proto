@@ -27,7 +27,10 @@ public class VerificacionController : ControllerBase
     public async Task<IActionResult> Pendientes() =>
         Ok(await _verificaciones.ListarPendientesAsync());
 
-    /// <summary>Verifica el vinculo. Acepta Pendiente o Rechazado (re-aprobacion tras reenviar el comprobante).</summary>
+    /// <summary>
+    /// Verifica el vinculo. Acepta Pendiente o Rechazado (re-aprobacion tras reenviar el comprobante).
+    /// Si el estudiante no cargo comprobante, las observaciones son obligatorias: 400 si faltan las dos.
+    /// </summary>
     [HttpPost("{estudianteId:int}/{carreraId:int}/aprobar")]
     [ProducesResponseType(typeof(VerificacionResueltaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

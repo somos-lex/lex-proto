@@ -49,10 +49,23 @@ public class VerificacionService : IVerificacionService
         if (vinculo.EstadoVerificacion == EstadoVerificacion.Verificado)
             throw new BadRequestException("Este vínculo ya está verificado.");
 
+        // Ninguna aprobacion sin evidencia: o el estudiante cargo el comprobante, o el admin
+        // deja escrito como lo constato (ej. constancia en papel vista en la catedra). La
+        // verificacion institucional es el diferencial del producto; aprobar sin ninguna de
+        // las dos cosas la convierte en un sello de goma. El comprobante sigue siendo
+        // opcional al ACTIVAR el perfil: el estudiante puede registrarse y explorar en
+        // Pendiente sin tramite previo.
+        var observacionesLimpias = Limpiar(observaciones);
+        if (string.IsNullOrWhiteSpace(vinculo.DocumentoComprobante) && observacionesLimpias is null)
+            throw new BadRequestException(
+                "El estudiante no cargó comprobante de su carrera. Para aprobar sin comprobante, " +
+                "dejá en las observaciones cómo verificaste el vínculo (por ejemplo: constancia de " +
+                "alumno regular en papel vista en la cátedra, con la fecha).");
+
         vinculo.EstadoVerificacion = EstadoVerificacion.Verificado;
         vinculo.FechaVerificacion = DateTime.UtcNow;
         vinculo.VerificadoPorUsuarioId = adminId;
-        vinculo.ObservacionesVerificacion = Limpiar(observaciones);
+        vinculo.ObservacionesVerificacion = observacionesLimpias;
         vinculo.MotivoRechazo = null;
 
         await _db.SaveChangesAsync();

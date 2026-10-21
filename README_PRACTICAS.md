@@ -17,13 +17,18 @@ Hasta este módulo, `EstadoVerificacion.Verificado` solo lo seteaban `DbSeeder` 
 | Endpoint | Regla |
 |---|---|
 | `GET /api/admin/verificaciones/pendientes` | Vínculos `Pendiente`, más viejos primero, con estudiante, carrera, institución, año cursado y comprobante. |
-| `POST /api/admin/verificaciones/{estudianteId}/{carreraId}/aprobar` | Desde `Pendiente` **o `Rechazado`**. Body `{ observaciones? }`. |
+| `POST /api/admin/verificaciones/{estudianteId}/{carreraId}/aprobar` | Desde `Pendiente` **o `Rechazado`**. Body `{ observaciones? }`, **obligatorio si el estudiante no cargó comprobante**. |
 | `POST /api/admin/verificaciones/{estudianteId}/{carreraId}/rechazar` | Solo desde `Pendiente`. Body `{ motivo }` obligatorio. |
 
 - **La ruta usa la clave compuesta** porque `estudiante_carrera` no tiene `Id` propio, y no se le agrega uno solo para acomodar una ruta.
 - **Aprobar desde `Rechazado`** es deliberado: el rechazo típico va a ser una foto ilegible de la constancia de alumno regular, y dejar a esa persona bloqueada para siempre sería un bug de producto.
 - Se registra **quién resolvió** (`verificado_por_usuario_id`) y **cuándo** (`fecha_verificacion`, que ahora significa "última resolución").
-- **El comprobante es un link**, no un archivo. El estudiante lo carga al activar su perfil (`documentoComprobante` en `POST /api/perfil/activar-estudiante`, solo http/https), por ejemplo un PDF de la constancia de alumno regular compartido en Drive. La bandeja lo muestra como "Abrir comprobante". El prototipo no tiene almacenamiento de archivos, y hasta este cambio `documento_comprobante` no lo seteaba nadie: el admin aprobaba sin ver nada. Es opcional, y la bandeja avisa cuando falta.
+- **El comprobante es un link**, no un archivo. El estudiante lo carga al activar su perfil (`documentoComprobante` en `POST /api/perfil/activar-estudiante`, solo http/https), por ejemplo un PDF de la constancia de alumno regular compartido en Drive. La bandeja lo muestra como "Abrir comprobante". El prototipo no tiene almacenamiento de archivos, y hasta este cambio `documento_comprobante` no lo seteaba nadie: el admin aprobaba sin ver nada.
+- **Comprobante: opcional al activar, obligatorio al aprobar.**
+  - **Al activar no se exige.** Un estudiante tiene que poder registrarse y explorar sin trámite previo; para eso existe `Pendiente`.
+  - **Aprobar se rechaza (400) si no hay comprobante cargado y las observaciones están vacías.** O hay comprobante, o el admin deja escrito cómo verificó. La verificación institucional es el diferencial del producto, y aprobar sin evidencia ni registro de cómo se constató la convertiría en un sello de goma.
+  - Las observaciones cubren el caso real de verificar en persona, con la constancia en papel en la cátedra: ese camino no se bloquea, pero queda asentado y auditable.
+  - El mensaje de error dice qué falta (no hay comprobante) y qué hacer (dejar escrito cómo se verificó). La bandeja aplica la misma regla: sin comprobante, el campo de observaciones pasa a ser obligatorio.
 
 ## Modelo
 
@@ -164,6 +169,7 @@ El proyecto vive **fuera de `backend/`** porque `Lex.Api.csproj` (SDK Web) compi
 
 Cobertura:
 - **Habilitación:** carrera pendiente, año insuficiente, materia de otra carrera, fecha pasada, solape, y aprobar desde `Rechazado`.
+- **Camino de verificación end-to-end** (`CaminoVerificacionE2ETests`): un estudiante que arranca en `Pendiente` recorre todo el módulo, y el test cierra comprobando contra la base que no se escribió ninguna fila de dinero. Aprobar sin comprobante ni observaciones falla y no deja nada a medias; con observaciones pasa y las guarda.
 - **Cupo único:** incluye inscripciones **simultáneas**, que solo frena el índice parcial.
 - **Paciente:** tipo y pertenencia.
 - **Constancia:** emisión en `Asistio` y en `NoAsistio`, antes del inicio, doble registro, `asistio` ausente, y verificación pública sin datos del paciente.
