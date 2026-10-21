@@ -13,11 +13,14 @@ const NAV_POR_VISTA: Record<Vista, { href: string; label: string }[]> = {
     { href: "/", label: "Explorar servicios" },
     { href: "/panel/trabajos", label: "Mis trabajos" },
     { href: "/panel/pacientes", label: "Mis pacientes" },
+    { href: "/practicas", label: "Prácticas clínicas" },
+    { href: "/panel/inscripciones", label: "Mis inscripciones" },
   ],
   Estudiante: [
     { href: "/panel/servicios", label: "Mis servicios" },
     { href: "/panel/disponibilidad", label: "Disponibilidad" },
     { href: "/panel/trabajos", label: "Mis trabajos" },
+    { href: "/panel/practicas", label: "Mis prácticas" },
   ],
   Agencia: [
     { href: "/panel/agencia", label: "Panel de agencia" },
@@ -103,6 +106,12 @@ export function Navbar() {
               </>
             ) : (
               <>
+                <Link
+                  href="/practicas"
+                  className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent sm:inline"
+                >
+                  Prácticas clínicas
+                </Link>
                 <Link
                   href="/login"
                   className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent"
