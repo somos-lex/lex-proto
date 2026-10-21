@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Lex.Api.Common;
 using Lex.Api.Data;
+using Lex.Api.Features.Admin;
 using Lex.Api.Features.Auth;
 using Lex.Api.Features.Demo;
 using Lex.Api.Features.Disponibilidad;
@@ -55,6 +56,7 @@ builder.Services.AddScoped<ITurnoService, TurnoService>();
 builder.Services.AddScoped<IValidadorTurnosService, ValidadorTurnosService>();
 builder.Services.AddScoped<ISesionService, SesionService>();
 builder.Services.AddScoped<IDemoService, DemoService>();
+builder.Services.AddScoped<IVerificacionService, VerificacionService>();
 
 // --- Parametros de negocio (take rate, etc.) ---
 builder.Services.Configure<Lex.Api.Common.LexOptions>(

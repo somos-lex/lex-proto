@@ -137,6 +137,12 @@ public class AppDbContext : DbContext
             .WithMany(c => c.EstudianteCarreras)
             .HasForeignKey(ec => ec.CarreraId);
 
+        // Traza de quien verifico (o rechazo) el vinculo. Sin navegacion inversa.
+        modelBuilder.Entity<EstudianteCarrera>()
+            .HasOne(ec => ec.VerificadoPor)
+            .WithMany()
+            .HasForeignKey(ec => ec.VerificadoPorUsuarioId);
+
         // ----------------------------------------------------------------
         // BLOQUE 4 — Perfiles de demanda (cliente y agencia)
         // ----------------------------------------------------------------

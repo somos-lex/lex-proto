@@ -261,9 +261,23 @@ namespace Lex.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_verificacion");
 
+                    b.Property<string>("MotivoRechazo")
+                        .HasColumnType("text")
+                        .HasColumnName("motivo_rechazo");
+
+                    b.Property<string>("ObservacionesVerificacion")
+                        .HasColumnType("text")
+                        .HasColumnName("observaciones_verificacion");
+
+                    b.Property<int?>("VerificadoPorUsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("verificado_por_usuario_id");
+
                     b.HasKey("EstudianteId", "CarreraId");
 
                     b.HasIndex("CarreraId");
+
+                    b.HasIndex("VerificadoPorUsuarioId");
 
                     b.ToTable("estudiante_carrera");
                 });
@@ -1369,9 +1383,16 @@ namespace Lex.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Lex.Api.Domain.Entities.Usuario", "VerificadoPor")
+                        .WithMany()
+                        .HasForeignKey("VerificadoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Carrera");
 
                     b.Navigation("Estudiante");
+
+                    b.Navigation("VerificadoPor");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>

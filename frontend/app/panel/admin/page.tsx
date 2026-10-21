@@ -8,6 +8,7 @@
 // dicen "comisión" a propósito para no leerse como GMV.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   obtenerIngresosAdmin,
   type IngresosAdminResponse,
@@ -64,13 +65,23 @@ function AdminIngresos() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-        Ingresos de LEX
-      </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Comisión efectiva (pagos ya liberados) y potencial (retenida en escrow),
-        con breakdown por vertical.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Ingresos de LEX
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Comisión efectiva (pagos ya liberados) y potencial (retenida en escrow),
+            con breakdown por vertical.
+          </p>
+        </div>
+        <Link
+          href="/panel/admin/verificaciones"
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          Verificaciones pendientes →
+        </Link>
+      </div>
 
       {error && (
         <div className="mt-6">
