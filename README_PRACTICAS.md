@@ -23,6 +23,7 @@ Hasta este módulo, `EstadoVerificacion.Verificado` solo lo seteaban `DbSeeder` 
 - **La ruta usa la clave compuesta** porque `estudiante_carrera` no tiene `Id` propio, y no se le agrega uno solo para acomodar una ruta.
 - **Aprobar desde `Rechazado`** es deliberado: el rechazo típico va a ser una foto ilegible de la constancia de alumno regular, y dejar a esa persona bloqueada para siempre sería un bug de producto.
 - Se registra **quién resolvió** (`verificado_por_usuario_id`) y **cuándo** (`fecha_verificacion`, que ahora significa "última resolución").
+- **El comprobante es un link**, no un archivo. El estudiante lo carga al activar su perfil (`documentoComprobante` en `POST /api/perfil/activar-estudiante`, solo http/https), por ejemplo un PDF de la constancia de alumno regular compartido en Drive. La bandeja lo muestra como "Abrir comprobante". El prototipo no tiene almacenamiento de archivos, y hasta este cambio `documento_comprobante` no lo seteaba nadie: el admin aprobaba sin ver nada. Es opcional, y la bandeja avisa cuando falta.
 
 ## Modelo
 

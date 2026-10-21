@@ -20,6 +20,12 @@ public class ActivarEstudianteRequest
 
     [Range(1, 10)]
     public int? AnioCursado { get; set; }
+
+    // Link (http/https) a la constancia de alumno regular u otro comprobante de la
+    // carrera, por ejemplo un PDF compartido en Drive. Es lo que el admin revisa en la
+    // bandeja de verificacion. Link y no archivo: el prototipo no tiene almacenamiento.
+    [MaxLength(500)]
+    public string? DocumentoComprobante { get; set; }
 }
 
 // Respuesta de GET /api/perfil/yo: identidad completa del usuario autenticado.

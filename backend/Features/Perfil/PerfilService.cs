@@ -51,6 +51,17 @@ public class PerfilService : IPerfilService
         if (!carreraExiste)
             throw new BadRequestException($"La carrera {request.CarreraId} no existe. Consultá el catálogo en GET /api/catalogo/carreras.");
 
+        // 4b) El comprobante es opcional, pero si viene tiene que ser un link abrible: es lo
+        //     unico que el admin tiene para verificar el vinculo.
+        var comprobante = string.IsNullOrWhiteSpace(request.DocumentoComprobante)
+            ? null
+            : request.DocumentoComprobante.Trim();
+        if (comprobante is not null
+            && !(Uri.TryCreate(comprobante, UriKind.Absolute, out var uri)
+                 && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)))
+            throw new BadRequestException(
+                "El comprobante tiene que ser un link (http o https) a tu constancia de alumno regular.");
+
         // 5) Sumar el rol Estudiante (sin tocar los roles ya existentes).
         var rolEstudiante = await _db.Roles.FirstOrDefaultAsync(r => r.Nombre == "Estudiante")
             ?? throw new InvalidOperationException("El rol 'Estudiante' no existe. ¿Se ejecutó el seeder de roles?");
@@ -69,7 +80,8 @@ public class PerfilService : IPerfilService
         usuario.PerfilEstudiante.EstudianteCarreras.Add(new EstudianteCarrera
         {
             CarreraId = request.CarreraId,
-            EstadoVerificacion = EstadoVerificacion.Pendiente
+            EstadoVerificacion = EstadoVerificacion.Pendiente,
+            DocumentoComprobante = comprobante
         });
 
         await _db.SaveChangesAsync();

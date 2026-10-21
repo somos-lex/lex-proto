@@ -102,6 +102,46 @@ function Verificaciones() {
   );
 }
 
+// El comprobante es un link que pegó el estudiante. Se abre en otra pestaña y solo si es
+// http(s): el backend ya lo valida al activar, pero esto no confía en datos viejos (un
+// "javascript:" en un href se ejecutaría al hacer click).
+function Comprobante({ valor }: { valor: string | null }) {
+  if (!valor) {
+    return (
+      <p className="mt-2 text-xs italic text-amber-700">
+        Sin comprobante cargado: pedíselo al estudiante antes de aprobar.
+      </p>
+    );
+  }
+
+  let url: URL | null = null;
+  try {
+    url = new URL(valor);
+  } catch {
+    url = null;
+  }
+
+  if (!url || (url.protocol !== "https:" && url.protocol !== "http:")) {
+    return (
+      <p className="mt-2 break-all text-xs text-slate-600">
+        Comprobante (no es un link válido): <span className="font-mono">{valor}</span>
+      </p>
+    );
+  }
+
+  return (
+    <a
+      href={url.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+    >
+      Abrir comprobante
+      <span className="font-normal text-indigo-500">({url.hostname})</span> ↗
+    </a>
+  );
+}
+
 function TarjetaVerificacion({
   verificacion: v,
   onResuelta,
@@ -141,14 +181,7 @@ function TarjetaVerificacion({
             {v.carreraNombre} · {v.institucionNombre}
             {v.anioCursado != null && <> · {v.anioCursado}° año</>}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Comprobante:{" "}
-            {v.documentoComprobante ? (
-              <span className="font-medium text-slate-700">{v.documentoComprobante}</span>
-            ) : (
-              <span className="italic">sin comprobante cargado</span>
-            )}
-          </p>
+          <Comprobante valor={v.documentoComprobante} />
         </div>
 
         {modo === "ninguno" && (

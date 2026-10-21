@@ -64,6 +64,8 @@ export interface ActivarEstudianteInput {
   carreraId: number;
   bio: string;
   anioCursado: number;
+  /** Link (http/https) a la constancia de alumno regular. Lo revisa el admin al verificar. */
+  documentoComprobante?: string;
 }
 
 /** Agrega el rol Estudiante al usuario. OJO: el token viejo no tendrá el rol

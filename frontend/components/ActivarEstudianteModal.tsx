@@ -18,7 +18,7 @@ import {
   listarCarreras,
   type Carrera,
 } from "@/lib/perfil";
-import { ErrorAlert, Field, Select } from "@/components/ui";
+import { ErrorAlert, Field, Input, Select } from "@/components/ui";
 
 export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
   const { refrescarSesion, cambiarVista, logout } = useAuth();
@@ -29,6 +29,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
   const [carreraId, setCarreraId] = useState<string>("");
   const [bio, setBio] = useState("");
   const [anioCursado, setAnioCursado] = useState<string>("1");
+  const [comprobante, setComprobante] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -74,6 +75,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
         carreraId: Number(carreraId),
         bio: bio.trim(),
         anioCursado: Number(anioCursado),
+        documentoComprobante: comprobante.trim() || undefined,
       });
 
       // Token fresco con el rol Estudiante.
@@ -196,6 +198,21 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
                     </option>
                   ))}
                 </Select>
+              </Field>
+
+              <Field label="Link a tu constancia de alumno regular" htmlFor="comprobante">
+                <Input
+                  id="comprobante"
+                  type="url"
+                  maxLength={500}
+                  value={comprobante}
+                  onChange={(e) => setComprobante(e.target.value)}
+                  placeholder="https://drive.google.com/…"
+                />
+                <p className="text-xs text-gray-500">
+                  LEX lo revisa para verificar tu carrera. Hasta que esté verificada no
+                  podés publicar. Asegurate de que el link se pueda abrir sin pedir permiso.
+                </p>
               </Field>
 
               <Field label="Bio (opcional)" htmlFor="bio">
