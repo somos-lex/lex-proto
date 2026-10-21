@@ -7,6 +7,8 @@ using Lex.Api.Features.Admin;
 using Lex.Api.Features.Auth;
 using Lex.Api.Features.Demo;
 using Lex.Api.Features.Disponibilidad;
+using Lex.Api.Features.Materias;
+using Lex.Api.Features.Practicas;
 using Lex.Api.Features.Pacientes;
 using Lex.Api.Features.Pagos;
 using Lex.Api.Features.Perfil;
@@ -57,6 +59,9 @@ builder.Services.AddScoped<IValidadorTurnosService, ValidadorTurnosService>();
 builder.Services.AddScoped<ISesionService, SesionService>();
 builder.Services.AddScoped<IDemoService, DemoService>();
 builder.Services.AddScoped<IVerificacionService, VerificacionService>();
+builder.Services.AddScoped<IMateriaService, MateriaService>();
+builder.Services.AddScoped<IPracticaService, PracticaService>();
+builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 
 // --- Parametros de negocio (take rate, etc.) ---
 builder.Services.Configure<Lex.Api.Common.LexOptions>(

@@ -792,6 +792,32 @@ public class DemoService : IDemoService
         _db.Trabajos.RemoveRange(_db.Trabajos.Where(t => trabajoIds.Contains(t.Id)));
         await _db.SaveChangesAsync();
 
+        // Banco de Turnos: constancias -> inscripciones -> practicas, antes que los pacientes
+        // y los perfiles de los que cuelgan (FKs Restrict).
+        //  - Una practica de un estudiante demo se va entera, con todas sus inscripciones.
+        //  - Una inscripcion demo en la practica de un estudiante REAL se borra sola: la
+        //    practica y su constancia (que es un snapshot, sin FK a la inscripcion) quedan, y
+        //    si la practica seguia Cubierta por esa inscripcion vuelve a Publicada.
+        var practicaDemoIds = await _db.PracticasClinicas
+            .Where(p => demoUserIds.Contains(p.EstudianteId))
+            .Select(p => p.Id)
+            .ToListAsync();
+        var practicasRealesLiberadas = await _db.PracticasClinicas
+            .Where(p => !demoUserIds.Contains(p.EstudianteId)
+                        && p.Estado == EstadoPracticaClinica.Cubierta
+                        && p.Inscripciones.Any(i => i.Estado == EstadoInscripcionPractica.Inscripta
+                                                    && demoUserIds.Contains(i.ClienteId)))
+            .ToListAsync();
+        foreach (var practica in practicasRealesLiberadas)
+            practica.Estado = EstadoPracticaClinica.Publicada;
+
+        _db.ConstanciasPractica.RemoveRange(_db.ConstanciasPractica.Where(c => practicaDemoIds.Contains(c.PracticaClinicaId)));
+        _db.InscripcionesPractica.RemoveRange(_db.InscripcionesPractica.Where(i => practicaDemoIds.Contains(i.PracticaClinicaId)
+            || demoUserIds.Contains(i.ClienteId)));
+        await _db.SaveChangesAsync();
+        _db.PracticasClinicas.RemoveRange(_db.PracticasClinicas.Where(p => practicaDemoIds.Contains(p.Id)));
+        await _db.SaveChangesAsync();
+
         // Consentimientos: después de borrar trabajo_salud (que los referenciaba por consentimiento_id).
         _db.Consentimientos.RemoveRange(_db.Consentimientos.Where(c => trabajoIds.Contains(c.TrabajoSaludId)
             || demoUserIds.Contains(c.AceptadoPorUsuarioId)));
