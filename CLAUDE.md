@@ -173,6 +173,15 @@ npm run dev
 # → http://localhost:3000
 ```
 
+### Tests
+
+```bash
+# Desde la raíz. Necesita Docker (Testcontainers levanta un postgres:16).
+dotnet test tests/Lex.Api.Tests
+```
+
+El proyecto de tests vive en `tests/`, **fuera de `backend/`**: `Lex.Api.csproj` compila todos los `.cs` debajo de su carpeta. En CI corren con `.github/workflows/backend-tests.yml`.
+
 ### Git
 
 Trabajo directo en `main` (proyecto en fase de refactor). Commits descriptivos con prefijo `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`.
@@ -184,6 +193,8 @@ Trabajo directo en `main` (proyecto en fase de refactor). Commits descriptivos c
 - **Sub-hito 1.3 completado**: modelo de Pagos con movimientos, comisión LEX calculada, liberación automática en flujos de Trabajo, endpoints públicos de consulta, admin/ingresos con breakdown por vertical.
 - **Hito 2 completado**: sistema completo de disponibilidad, turnos y sesiones, con liberación fraccionada de pagos. Parte 1: modelo + CRUD de disponibilidad. Parte 2: contratación con reserva atómica de turnos. Parte 3: marcado de sesiones (Realizada/NoAsistio) que libera el pago por fracciones y completa el trabajo solo.
 - **Sub-hito 1.5 completado**: frontend reescrito sobre el modelo actual. Parte 1: `lib/` espejando los DTOs nuevos. Parte 2: catálogo público con Server Components y paginación. Parte 3: gestión del estudiante. Parte 4: contratación con slots y pacientes Humano/Animal. Parte 5: detalle de trabajo con sesiones y pagos. Parte 6: panel admin de ingresos (`/panel/admin`).
+- **Verificación de estudiantes**: bandeja Admin (`/api/admin/verificaciones`, `/panel/admin/verificaciones`) para aprobar/rechazar `EstudianteCarrera`. Aprobar acepta también `Rechazado`. Antes de esto ningún estudiante real podía publicar.
+- **Banco de Turnos completado**: prácticas clínicas sin dinero (`Features/Practicas`, `Features/Materias`). Aislado del escrow: no toca `Pago`, `Trabajo`, `Turno` ni `Sesion`. Ver `README_PRACTICAS.md`.
 - **Próximos**: 1.4 (Solicitudes redesign).
 - **Deuda conocida**: `GET /api/admin/ingresos` solo agrega comisión LEX (`Pago.MontoComisionCalculada` por `EstadoPago`). No expone volumen transaccionado ni el neto liberado al estudiante, así que `/panel/admin` no puede mostrar GMV ni "trabajos completados" (usa `CantidadTrabajosConPago` como proxy). Ampliar el `AdminService` si se necesitan esas métricas.
 
@@ -194,6 +205,7 @@ Trabajo directo en `main` (proyecto en fase de refactor). Commits descriptivos c
 - `README_ESTADOS_TRABAJO.md` — state machine y permisos por transición.
 - `README_PAGOS.md` — modelo de pagos con movimientos y ciclo de vida.
 - `README_TURNOS.md` — sistema de turnos y sesiones.
+- `README_PRACTICAS.md` — Banco de Turnos: prácticas clínicas sin costo, verificación de estudiantes y constancias.
 
 ## Contacto y equipo
 
