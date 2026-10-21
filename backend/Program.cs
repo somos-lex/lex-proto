@@ -156,3 +156,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Expone la clase generada por los top-level statements para WebApplicationFactory<Program>
+// en los tests de integracion (tests/Lex.Api.Tests).
+public partial class Program { }

@@ -1,0 +1,45 @@
+# Tests de integracion del backend contra Postgres real (Testcontainers).
+# ubuntu-latest trae Docker, que es lo unico que Testcontainers necesita: la API arranca
+# contra un postgres:16 efimero, aplica todas las migraciones y corre el seed.
+name: backend-tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "tests/**"
+      - ".github/workflows/backend-tests.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "tests/**"
+      - ".github/workflows/backend-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore tests/Lex.Api.Tests/Lex.Api.Tests.csproj
+
+      - name: Test
+        run: >
+          dotnet test tests/Lex.Api.Tests/Lex.Api.Tests.csproj
+          --no-restore
+          --logger "trx;LogFileName=resultados.trx"
+          --logger "console;verbosity=normal"
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-tests
+          path: tests/Lex.Api.Tests/TestResults/*.trx

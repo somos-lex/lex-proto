@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lex.Api", "Lex.Api.csproj", "{C41DB137-DA10-41E4-AE16-A0336C70F9CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lex.Api.Tests", "..\tests\Lex.Api.Tests\Lex.Api.Tests.csproj", "{DEC2C248-56FB-4C56-B76B-EA88E582C94D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{C41DB137-DA10-41E4-AE16-A0336C70F9CE}.Release|x64.Build.0 = Release|Any CPU
 		{C41DB137-DA10-41E4-AE16-A0336C70F9CE}.Release|x86.ActiveCfg = Release|Any CPU
 		{C41DB137-DA10-41E4-AE16-A0336C70F9CE}.Release|x86.Build.0 = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|x64.Build.0 = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Debug|x86.Build.0 = Debug|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|x64.ActiveCfg = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|x64.Build.0 = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|x86.ActiveCfg = Release|Any CPU
+		{DEC2C248-56FB-4C56-B76B-EA88E582C94D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

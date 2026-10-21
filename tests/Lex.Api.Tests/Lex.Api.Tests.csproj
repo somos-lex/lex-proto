@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests de integracion contra Postgres real (Testcontainers). Viven FUERA de backend/
+    a proposito: Lex.Api.csproj (SDK Web) compila todos los .cs debajo de su carpeta, asi
+    que un proyecto de tests adentro terminaria compilado dentro de la API. Afuera, ademas,
+    no entra al contexto de build del Dockerfile.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.19" />
+    <!-- La API resuelve EF Core 8.0.19 por Microsoft.EntityFrameworkCore.Design, que es
+         PrivateAssets y no fluye hasta aca; sin esto los tests caerian en la 8.0.11 que trae
+         Npgsql y la version no coincidiria con la compilada en Lex.Api.dll. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.19" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.10.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\backend\Lex.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
