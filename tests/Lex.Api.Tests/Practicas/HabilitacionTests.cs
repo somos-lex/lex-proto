@@ -2,22 +2,25 @@ using System.Net;
 using Lex.Api.Domain.Enums;
 using Lex.Api.Features.Practicas;
 using Lex.Api.Tests.Infra;
+using Microsoft.EntityFrameworkCore;
 
 namespace Lex.Api.Tests.Practicas;
 
 // Publicar exige carrera VERIFICADA a la que pertenezca la materia y año cursado >= año
 // minimo de la materia. Las materias usadas salen del seed (FOUNNE plan 134/2023 y FCV):
-// Periodoncia es de 4° año de Odontología; Semiología, de 3° de Veterinaria.
+// Periodoncia es de 4° año de Odontología; Semiología, de 3° de Medicina Veterinaria.
 [Collection(ApiCollection.Nombre)]
 public class HabilitacionTests
 {
     private const string Odontologia = "Odontología";
-    private const string Veterinaria = "Veterinaria";
+    private const string Veterinaria = "Medicina Veterinaria";
 
+    private readonly LexApiFactory _factory;
     private readonly ApiCliente _api;
 
     public HabilitacionTests(LexApiFactory factory)
     {
+        _factory = factory;
         _api = new ApiCliente(factory);
     }
 
@@ -123,6 +126,21 @@ public class HabilitacionTests
         await ApiCliente.AssertStatusAsync(
             await _api.PublicarAsync(estudiante, periodoncia.Id, TipoPaciente.Humano),
             HttpStatusCode.Created);
+    }
+
+    // El seed de una base nueva: la carrera nace con el nombre oficial y sin duplicados.
+    [Fact]
+    public async Task El_seed_no_deja_Veterinaria_ni_carreras_duplicadas()
+    {
+        await _factory.ConDbAsync(async db =>
+        {
+            Assert.False(await db.Carreras.AnyAsync(c => c.Nombre == "Veterinaria"));
+            Assert.Empty(await db.Carreras
+                .GroupBy(c => new { c.InstitucionId, c.Nombre })
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key.Nombre)
+                .ToListAsync());
+        });
     }
 
     [Fact]

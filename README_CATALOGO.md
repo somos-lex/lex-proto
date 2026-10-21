@@ -17,7 +17,7 @@ Este catálogo es de **ejemplo**, poblado por el equipo de LEX en base a criteri
 - Licenciatura en Sistemas de Información — UNNE (Proyectos Cerrados)
 - Diseño Gráfico — UNNE (Proyectos Cerrados)
 - Odontología — UNNE (Salud)
-- Veterinaria — UNNE (Salud)
+- Medicina Veterinaria — UNNE (Salud). Hasta octubre de 2026 se llamaba "Veterinaria" (ver migración `RenombrarCarreraMedicinaVeterinaria`).
 
 ### Total de servicios en el catálogo inicial
 - Proyectos Cerrados: 10 servicios

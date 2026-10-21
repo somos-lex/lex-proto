@@ -19,7 +19,7 @@ public class InscripcionTests
     private async Task<(Actor Estudiante, PracticaDetalleResponse Practica)> PracticaPublicadaAsync(TipoPaciente tipo)
     {
         var materia = tipo == TipoPaciente.Animal
-            ? await _api.MateriaAsync("Veterinaria", "Semiología")
+            ? await _api.MateriaAsync("Medicina Veterinaria", "Semiología")
             : await _api.MateriaAsync("Odontología", "Periodoncia");
         var estudiante = await _api.EstudianteVerificadoAsync(materia.CarreraId, anioCursado: 5);
         return (estudiante, await _api.PublicarOkAsync(estudiante, materia.Id, tipo));

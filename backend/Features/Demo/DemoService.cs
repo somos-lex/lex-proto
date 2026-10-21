@@ -94,7 +94,7 @@ public class DemoService : IDemoService
         new("martina@demo.com",   "Martina Díaz",      "Licenciatura en Marketing",                   3, "Bilingüe en inglés. Doy clases conversacionales y gestiono redes sociales."),
         new("benjamin@demo.com",  "Benjamín Torres",   "Profesorado de Matemática",                   2, "Futuro profe de matemática. Doy apoyo en cálculo, álgebra y preparación de finales."),
         new("agustina@demo.com",  "Agustina Romero",   "Diseño de Indumentaria",                      4, "Diseñadora e ilustradora. Hago flyers, ilustración digital y asesoría de imagen."),
-        new("florencia@demo.com", "Florencia Aguirre", "Veterinaria",                                 4, "Practicante de veterinaria. Atiendo mascotas bajo supervisión de profesionales matriculados."),
+        new("florencia@demo.com", "Florencia Aguirre", "Medicina Veterinaria",                        4, "Practicante de veterinaria. Atiendo mascotas bajo supervisión de profesionales matriculados."),
     };
 
     private static readonly ServicioPcSeed[] ServiciosPc =
@@ -134,7 +134,7 @@ public class DemoService : IDemoService
         // Su paquete es de 8 clases, así que necesita agenda ancha para poder agendarlo entero.
         new("martina@demo.com",  new[] { DiaSemana.Miercoles, DiaSemana.Viernes }, 10, 12),
         new("martina@demo.com",  new[] { DiaSemana.Miercoles, DiaSemana.Viernes }, 16, 20),
-        // Florencia (Veterinaria): sábados a la mañana.
+        // Florencia (Medicina Veterinaria): sábados a la mañana.
         new("florencia@demo.com", new[] { DiaSemana.Sabado }, 9, 12),
         // Los tres siguientes tienen servicios de Clase que el seed contrata: sin agenda
         // publicada, la contratación con turnos no tendría dónde agendarlos.

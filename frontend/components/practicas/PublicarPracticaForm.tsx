@@ -59,7 +59,7 @@ export function PublicarPracticaForm({
 
   function elegirMateria(id: number) {
     setMateriaId(id);
-    // Sugerencia, no regla: en Veterinaria el paciente casi siempre es un animal.
+    // Sugerencia, no regla: en Medicina Veterinaria el paciente casi siempre es un animal.
     const m = materias?.find((x) => x.id === id);
     if (m) setTipo(/veterin/i.test(m.carreraNombre) ? "Animal" : "Humano");
   }

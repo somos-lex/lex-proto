@@ -62,7 +62,10 @@ public static class DbSeeder
             {
                 ("Medicina", (string?)"Salud"),
                 ("Odontología", (string?)"Salud"),
-                ("Veterinaria", (string?)"Salud"),
+                // Nombre oficial (FCV UNNE). Antes era "Veterinaria": la fila existente la
+                // renombra la migracion RenombrarCarreraMedicinaVeterinaria antes de que corra
+                // este seed, que es idempotente por nombre y si no crearia una carrera nueva.
+                ("Medicina Veterinaria", (string?)"Salud"),
                 ("Bioquímica", (string?)"Salud"),
                 ("Enfermería", (string?)"Salud"),
                 // Nombre oficial de la Facultad de Medicina (med.unne.edu.ar). Se agrega
@@ -138,12 +141,11 @@ public static class DbSeeder
             ("Odontología", "Clínica Integral Adulto", 5),
             ("Odontología", "Clínica en Odontopediatría", 5),
 
-            // Medicina Veterinaria — FCV UNNE, Plan 2008 (Res. 637/08-CS). En el seed la
-            // carrera se llama "Veterinaria".
-            ("Veterinaria", "Semiología", 3),
-            ("Veterinaria", "Cirugía y Anestesiología", 4),
-            ("Veterinaria", "Clínica de Pequeños Animales", 5),
-            ("Veterinaria", "Clínica de Grandes Animales", 5),
+            // Medicina Veterinaria — FCV UNNE, Plan 2008 (Res. 637/08-CS).
+            ("Medicina Veterinaria", "Semiología", 3),
+            ("Medicina Veterinaria", "Cirugía y Anestesiología", 4),
+            ("Medicina Veterinaria", "Clínica de Pequeños Animales", 5),
+            ("Medicina Veterinaria", "Clínica de Grandes Animales", 5),
 
             // Licenciatura en Kinesiología y Fisiatría — Facultad de Medicina UNNE
             // (Res. 501/03-CS y modificaciones).
@@ -304,27 +306,27 @@ public static class DbSeeder
             ("Consulta clínica general (Veterinaria)",
              "Consulta clínica general de la mascota, bajo supervisión de un profesional matriculado.",
              TipoServicio.Salud, true,
-             new[] { ("Veterinaria", 4) }),
+             new[] { ("Medicina Veterinaria", 4) }),
 
             ("Aplicación de vacunas (Veterinaria)",
              "Aplicación del plan de vacunación de la mascota, bajo supervisión de un profesional matriculado.",
              TipoServicio.Salud, true,
-             new[] { ("Veterinaria", 3) }),
+             new[] { ("Medicina Veterinaria", 3) }),
 
             ("Higiene dental veterinaria",
              "Higiene y control dental de la mascota, bajo supervisión de un profesional matriculado.",
              TipoServicio.Salud, true,
-             new[] { ("Veterinaria", 4) }),
+             new[] { ("Medicina Veterinaria", 4) }),
 
             ("Curación de heridas menores (Veterinaria)",
              "Limpieza y curación de heridas menores de la mascota, bajo supervisión de un profesional matriculado.",
              TipoServicio.Salud, true,
-             new[] { ("Veterinaria", 3) }),
+             new[] { ("Medicina Veterinaria", 3) }),
 
             ("Control de peso y nutrición (Veterinaria)",
              "Control de peso y plan nutricional de la mascota, bajo supervisión de un profesional matriculado.",
              TipoServicio.Salud, true,
-             new[] { ("Veterinaria", 3) }),
+             new[] { ("Medicina Veterinaria", 3) }),
         };
 
         var carreras = await db.Carreras.ToListAsync();

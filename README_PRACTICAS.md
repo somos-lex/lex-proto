@@ -144,10 +144,16 @@ El prototipo se va a mostrar a estudiantes de estas facultades. Una materia que 
 | Carrera | Fuente | Materias (año) |
 |---|---|---|
 | Odontología | [FOUNNE, Plan de Estudios 134/2023](https://www.odn.unne.edu.ar/wp-content/uploads/2026/06/PLAN-DE-ESTUDIO-134-2023.pdf) | Práctica Clínica Preventiva (3), Clínica Rehabilitadora (4), Periodoncia (4), Clínica Integral Adulto (5), Clínica en Odontopediatría (5) |
-| Medicina Veterinaria (en el seed, `Veterinaria`) | [FCV UNNE, Res. 637/08-CS (plan 2008)](https://vet.unne.edu.ar/wp-content/uploads/2023/08/Res637-08CS.pdf) | Semiología (3), Cirugía y Anestesiología (4), Clínica de Pequeños Animales (5), Clínica de Grandes Animales (5) |
+| Medicina Veterinaria | [FCV UNNE, Res. 637/08-CS (plan 2008)](https://vet.unne.edu.ar/wp-content/uploads/2023/08/Res637-08CS.pdf) | Semiología (3), Cirugía y Anestesiología (4), Clínica de Pequeños Animales (5), Clínica de Grandes Animales (5) |
 | Licenciatura en Kinesiología y Fisiatría | [Facultad de Medicina UNNE](https://med.unne.edu.ar/carreras/licenciatura-en-kinesiologia-y-fisiatria/) (Res. 501/03-CS y modif.) | Técnicas Evaluativas Funcionales (3), Kinesiterapia I (3), Clínica Kinésica Médica (4), Clínica Kinésica Quirúrgica (4), Prácticas Profesionales Intensivas (5) |
 
-La carrera de Kinesiología no existía en el seed y se agregó a UNNE con su nombre oficial. Los planes cambian por cohorte: la FCV implementa un [Plan 2027](https://vet.unne.edu.ar/innovacion-y-futuro-la-facultad-de-ciencias-veterinarias-de-la-unne-presento-el-nuevo-plan-de-estudios-2027/) de forma gradual, y la página de correlativas de FOUNNE todavía usa la nomenclatura anterior. El seed refleja lo vigente a octubre de 2026.
+La carrera de Kinesiología no existía en el seed y se agregó a UNNE con su nombre oficial.
+
+La de Veterinaria se llamaba `Veterinaria` y se renombró a su nombre oficial con la migración `RenombrarCarreraMedicinaVeterinaria`: un `UPDATE` sobre la fila existente, acotado a UNNE, que corre antes que el seed. No alcanzaba con cambiar el string del seed: el seed es idempotente **por nombre**, y habría creado una segunda carrera con el catálogo y las materias enganchados, dejando la vieja con los `EstudianteCarrera` verificados. Esos estudiantes se habrían quedado sin poder publicar, sin ningún error visible. Al renombrar, `carrera_id` no cambia y todo lo que la referencia sigue en su lugar.
+
+Los nombres de las entradas del catálogo, como "Aplicación de vacunas (Veterinaria)", **no** se tocaron: también son claves de idempotencia del seed, y cambiarlos duplicaría el catálogo.
+
+Los planes cambian por cohorte: la FCV implementa un [Plan 2027](https://vet.unne.edu.ar/innovacion-y-futuro-la-facultad-de-ciencias-veterinarias-de-la-unne-presento-el-nuevo-plan-de-estudios-2027/) de forma gradual, y la página de correlativas de FOUNNE todavía usa la nomenclatura anterior. El seed refleja lo vigente a octubre de 2026.
 
 ## Tests
 
@@ -160,6 +166,7 @@ Cobertura:
 - **Cupo único:** incluye inscripciones **simultáneas**, que solo frena el índice parcial.
 - **Paciente:** tipo y pertenencia.
 - **Constancia:** emisión en `Asistio` y en `NoAsistio`, antes del inicio, doble registro, `asistio` ausente, y verificación pública sin datos del paciente.
+- **Renombre de Medicina Veterinaria:** con un contenedor propio, una base parada en la migración anterior con "Veterinaria" (y una homónima en otra institución) y un estudiante verificado. Se comprueba que el `Up` renombra solo la de UNNE conservando el id y el vínculo, que el `Down` revierte, y que el seed posterior no duplica.
 
 ```bash
 dotnet test tests/Lex.Api.Tests   # necesita Docker
@@ -174,10 +181,9 @@ Corren en GitHub Actions en cada push y PR que toque `backend/` o `tests/` (`.gi
 - **Una `Cubierta` vencida sin asistencia registrada queda así para siempre.** No hay cierre automático ni recordatorio al estudiante.
 - **Re-verificación sin re-envío.** El admin puede aprobar un vínculo rechazado, pero la app no tiene cómo subir un comprobante nuevo: llega por fuera.
 - **Cupo de un paciente por práctica.**
-- **El tipo de paciente no se valida contra la carrera.** Una práctica de Veterinaria con paciente humano es técnicamente publicable; lo decide el estudiante.
+- **El tipo de paciente no se valida contra la carrera.** Una práctica de Medicina Veterinaria con paciente humano es técnicamente publicable; lo decide el estudiante.
 - **`AnioCursado` es uno solo por estudiante, no por carrera** (heredado de `PerfilEstudiante`). Alguien con dos carreras en años distintos se evalúa con el mismo año para las dos.
 - **El rol Estudiante entra en el JWT recién después de re-loguear** (heredado de `activar-estudiante`).
-- **Nombre de la carrera de Veterinaria.** El seed la llama `Veterinaria`; el nombre oficial es *Medicina Veterinaria*. Renombrarla es un cambio de datos sobre una fila existente, referenciada por nombre en el seed del catálogo, y queda pendiente de decisión.
 - **Constancia sin PDF.** Alcanza con el registro y su código verificable.
 - **Sin rate limit en la verificación pública.** Con 40 bits de código, enumerar no es práctico, pero no hay freno explícito.
 - **`DemoService.reset`**: borra las prácticas de estudiantes demo enteras. De una práctica de un estudiante real borra solo la inscripción demo; si la práctica seguía `Cubierta` por esa inscripción, vuelve a `Publicada`, y su constancia (si existía) se conserva porque es un snapshot.

@@ -59,7 +59,7 @@ export default async function PracticasPage({ searchParams }: Props) {
             Prácticas clínicas sin costo con estudiantes de la UNNE
           </h1>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Estudiantes de Odontología, Veterinaria y Kinesiología necesitan pacientes para
+            Estudiantes de Odontología, Medicina Veterinaria y Kinesiología necesitan pacientes para
             sus prácticas obligatorias. La atención se hace en la cátedra, bajo supervisión
             docente, y no se cobra nada.
           </p>
