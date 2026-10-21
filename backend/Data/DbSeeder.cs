@@ -24,6 +24,7 @@ public static class DbSeeder
         await SeedInstitucionesYCarrerasAsync(db);
         await SeedSupervisoresAsync(db);
         await SeedCatalogoServiciosAsync(db);
+        await SeedMateriasAsync(db);
         await SeedEstudiantesEjemploAsync(db);
         await SeedClasesEjemploAsync(db);
         await SeedAdminAsync(db, adminEmail, adminPassword);
@@ -64,6 +65,9 @@ public static class DbSeeder
                 ("Veterinaria", (string?)"Salud"),
                 ("Bioquímica", (string?)"Salud"),
                 ("Enfermería", (string?)"Salud"),
+                // Nombre oficial de la Facultad de Medicina (med.unne.edu.ar). Se agrega
+                // para el Banco de Turnos: es carrera con practica clinica obligatoria.
+                ("Licenciatura en Kinesiología y Fisiatría", (string?)"Salud"),
                 ("Diseño Gráfico", (string?)"Diseño"),
                 ("Licenciatura en Sistemas de Información", (string?)"Tecnología"),
                 ("Abogacía", (string?)"Derecho"),
@@ -111,6 +115,69 @@ public static class DbSeeder
                 if (institucion.Carreras.All(c => c.Nombre != carrera))
                     institucion.Carreras.Add(new Carrera { Nombre = carrera, AreaConocimiento = area });
             }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    // Materias con atencion de pacientes para el Banco de Turnos. A diferencia del catalogo
+    // de servicios (marcado como "de ejemplo"), estas salen de los planes de estudio
+    // oficiales vigentes a octubre de 2026, y anio_minimo es el año del plan en que se
+    // cursan. El prototipo se muestra a estudiantes de estas facultades: una materia
+    // inexistente o un año mal puesto cuesta credibilidad. Fuentes en README_PRACTICAS.md.
+    private static async Task SeedMateriasAsync(AppDbContext db)
+    {
+        const string Unne = "Universidad Nacional del Nordeste (UNNE)";
+
+        var materias = new (string Carrera, string Materia, int AnioMinimo)[]
+        {
+            // Odontología — FOUNNE, Plan de Estudios 134/2023.
+            ("Odontología", "Práctica Clínica Preventiva", 3),
+            ("Odontología", "Clínica Rehabilitadora", 4),
+            ("Odontología", "Periodoncia", 4),
+            ("Odontología", "Clínica Integral Adulto", 5),
+            ("Odontología", "Clínica en Odontopediatría", 5),
+
+            // Medicina Veterinaria — FCV UNNE, Plan 2008 (Res. 637/08-CS). En el seed la
+            // carrera se llama "Veterinaria".
+            ("Veterinaria", "Semiología", 3),
+            ("Veterinaria", "Cirugía y Anestesiología", 4),
+            ("Veterinaria", "Clínica de Pequeños Animales", 5),
+            ("Veterinaria", "Clínica de Grandes Animales", 5),
+
+            // Licenciatura en Kinesiología y Fisiatría — Facultad de Medicina UNNE
+            // (Res. 501/03-CS y modificaciones).
+            ("Licenciatura en Kinesiología y Fisiatría", "Técnicas Evaluativas Funcionales", 3),
+            ("Licenciatura en Kinesiología y Fisiatría", "Kinesiterapia I", 3),
+            ("Licenciatura en Kinesiología y Fisiatría", "Clínica Kinésica Médica", 4),
+            ("Licenciatura en Kinesiología y Fisiatría", "Clínica Kinésica Quirúrgica", 4),
+            ("Licenciatura en Kinesiología y Fisiatría", "Prácticas Profesionales Intensivas", 5),
+        };
+
+        // Las carreras se buscan dentro de UNNE: el nombre solo no es unico entre instituciones.
+        var carreras = await db.Carreras
+            .Where(c => c.Institucion.Nombre == Unne)
+            .ToListAsync();
+        int CarreraId(string nombre) => carreras.FirstOrDefault(c => c.Nombre == nombre)?.CarreraId
+            ?? throw new InvalidOperationException($"Falta la carrera '{nombre}' de UNNE en el catálogo institucional.");
+
+        var existentes = await db.Materias
+            .Select(m => new { m.CarreraId, m.Nombre })
+            .ToListAsync();
+
+        foreach (var (carrera, materia, anioMinimo) in materias)
+        {
+            var carreraId = CarreraId(carrera);
+            if (existentes.Any(e => e.CarreraId == carreraId && e.Nombre == materia))
+                continue;
+
+            db.Materias.Add(new Materia
+            {
+                CarreraId = carreraId,
+                Nombre = materia,
+                AnioMinimo = anioMinimo,
+                Activa = true
+            });
         }
 
         await db.SaveChangesAsync();

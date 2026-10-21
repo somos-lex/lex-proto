@@ -160,6 +160,81 @@ namespace Lex.Api.Migrations
                     b.ToTable("consentimiento");
                 });
 
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ConstanciaPractica", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AsistenciaRegistrada")
+                        .HasColumnType("boolean")
+                        .HasColumnName("asistencia_registrada");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTime>("FechaEmision")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_emision");
+
+                    b.Property<DateTime>("FechaPractica")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_practica");
+
+                    b.Property<string>("NombreCarrera")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_carrera");
+
+                    b.Property<string>("NombreEstudiante")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_estudiante");
+
+                    b.Property<string>("NombreInstitucion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_institucion");
+
+                    b.Property<string>("NombreMateria")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_materia");
+
+                    b.Property<string>("NombrePaciente")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre_paciente");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("text")
+                        .HasColumnName("observaciones");
+
+                    b.Property<int>("PracticaClinicaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("practica_clinica_id");
+
+                    b.Property<string>("TipoPaciente")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tipo_paciente");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.HasIndex("PracticaClinicaId")
+                        .IsUnique();
+
+                    b.ToTable("constancia_practica");
+                });
+
             modelBuilder.Entity("Lex.Api.Domain.Entities.DatosEmpresa", b =>
                 {
                     b.Property<int>("UsuarioId")
@@ -282,6 +357,66 @@ namespace Lex.Api.Migrations
                     b.ToTable("estudiante_carrera");
                 });
 
+            modelBuilder.Entity("Lex.Api.Domain.Entities.InscripcionPractica", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime?>("FechaAceptacionRequisitos")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_aceptacion_requisitos");
+
+                    b.Property<DateTime?>("FechaCancelacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_cancelacion");
+
+                    b.Property<DateTime>("FechaInscripcion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_inscripcion");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .HasColumnType("text")
+                        .HasColumnName("motivo_cancelacion");
+
+                    b.Property<int>("PacienteId")
+                        .HasColumnType("integer")
+                        .HasColumnName("paciente_id");
+
+                    b.Property<int>("PracticaClinicaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("practica_clinica_id");
+
+                    b.Property<bool>("RequisitosAceptados")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requisitos_aceptados");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("PacienteId");
+
+                    b.HasIndex("PracticaClinicaId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_inscripcion_practica_vigente")
+                        .HasFilter("estado <> 'Cancelada'");
+
+                    b.ToTable("inscripcion_practica");
+                });
+
             modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>
                 {
                     b.Property<int>("InstitucionId")
@@ -313,6 +448,40 @@ namespace Lex.Api.Migrations
                     b.HasIndex("TipoInstitucionId");
 
                     b.ToTable("institucion");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Materia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activa");
+
+                    b.Property<int>("AnioMinimo")
+                        .HasColumnType("integer")
+                        .HasColumnName("anio_minimo");
+
+                    b.Property<int>("CarreraId")
+                        .HasColumnType("integer")
+                        .HasColumnName("carrera_id");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CarreraId", "Nombre")
+                        .IsUnique();
+
+                    b.ToTable("materia");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.MovimientoPago", b =>
@@ -591,6 +760,78 @@ namespace Lex.Api.Migrations
                     b.HasIndex("SolicitudId");
 
                     b.ToTable("postulacion");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PracticaClinica", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Arancel")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("arancel");
+
+                    b.Property<int>("DuracionMinutos")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracion_minutos");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("estado");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("integer")
+                        .HasColumnName("estudiante_id");
+
+                    b.Property<DateTime?>("FechaCancelacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_cancelacion");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTime>("FechaHoraInicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_hora_inicio");
+
+                    b.Property<string>("Lugar")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("lugar");
+
+                    b.Property<int>("MateriaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("materia_id");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .HasColumnType("text")
+                        .HasColumnName("motivo_cancelacion");
+
+                    b.Property<string>("RequisitosPrevios")
+                        .HasColumnType("text")
+                        .HasColumnName("requisitos_previos");
+
+                    b.Property<string>("TipoPacienteRequerido")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tipo_paciente_requerido");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MateriaId");
+
+                    b.HasIndex("Estado", "FechaHoraInicio");
+
+                    b.HasIndex("EstudianteId", "FechaHoraInicio");
+
+                    b.ToTable("practica_clinica");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>
@@ -1336,6 +1577,17 @@ namespace Lex.Api.Migrations
                     b.Navigation("AceptadoPor");
                 });
 
+            modelBuilder.Entity("Lex.Api.Domain.Entities.ConstanciaPractica", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.PracticaClinica", "PracticaClinica")
+                        .WithOne("Constancia")
+                        .HasForeignKey("Lex.Api.Domain.Entities.ConstanciaPractica", "PracticaClinicaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PracticaClinica");
+                });
+
             modelBuilder.Entity("Lex.Api.Domain.Entities.DatosEmpresa", b =>
                 {
                     b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "PerfilCliente")
@@ -1395,6 +1647,33 @@ namespace Lex.Api.Migrations
                     b.Navigation("VerificadoPor");
                 });
 
+            modelBuilder.Entity("Lex.Api.Domain.Entities.InscripcionPractica", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilCliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.Paciente", "Paciente")
+                        .WithMany()
+                        .HasForeignKey("PacienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.PracticaClinica", "PracticaClinica")
+                        .WithMany("Inscripciones")
+                        .HasForeignKey("PracticaClinicaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Paciente");
+
+                    b.Navigation("PracticaClinica");
+                });
+
             modelBuilder.Entity("Lex.Api.Domain.Entities.Institucion", b =>
                 {
                     b.HasOne("Lex.Api.Domain.Entities.TipoInstitucion", "TipoInstitucion")
@@ -1404,6 +1683,17 @@ namespace Lex.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("TipoInstitucion");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Materia", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.Carrera", "Carrera")
+                        .WithMany()
+                        .HasForeignKey("CarreraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Carrera");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.MovimientoPago", b =>
@@ -1494,6 +1784,25 @@ namespace Lex.Api.Migrations
                     b.Navigation("Estudiante");
 
                     b.Navigation("Solicitud");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PracticaClinica", b =>
+                {
+                    b.HasOne("Lex.Api.Domain.Entities.PerfilEstudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lex.Api.Domain.Entities.Materia", "Materia")
+                        .WithMany("Practicas")
+                        .HasForeignKey("MateriaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Estudiante");
+
+                    b.Navigation("Materia");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>
@@ -1765,6 +2074,11 @@ namespace Lex.Api.Migrations
                     b.Navigation("Carreras");
                 });
 
+            modelBuilder.Entity("Lex.Api.Domain.Entities.Materia", b =>
+                {
+                    b.Navigation("Practicas");
+                });
+
             modelBuilder.Entity("Lex.Api.Domain.Entities.Paciente", b =>
                 {
                     b.Navigation("TrabajosSalud");
@@ -1797,6 +2111,13 @@ namespace Lex.Api.Migrations
                     b.Navigation("Servicios");
 
                     b.Navigation("Trabajos");
+                });
+
+            modelBuilder.Entity("Lex.Api.Domain.Entities.PracticaClinica", b =>
+                {
+                    b.Navigation("Constancia");
+
+                    b.Navigation("Inscripciones");
                 });
 
             modelBuilder.Entity("Lex.Api.Domain.Entities.ProfesionalSupervisor", b =>

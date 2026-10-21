@@ -149,6 +149,33 @@ public enum EstadoTurno
     Ausente      // El cliente no se presento
 }
 
+/// <summary>
+/// Estado de una practica clinica del Banco de Turnos. (practica_clinica.estado). Se persiste
+/// como string. Vencida NO se persiste nunca: es una Publicada cuya fecha ya paso, resuelta
+/// al consultar (sin job programado). Ver README_PRACTICAS.md.
+/// </summary>
+public enum EstadoPracticaClinica
+{
+    Publicada,  // Esperando paciente
+    Cubierta,   // Tiene una inscripcion vigente
+    Realizada,  // El estudiante marco la asistencia y se emitio la constancia
+    Cancelada,  // El estudiante la dio de baja antes de la fecha
+    Vencida     // Calculado: Publicada con fecha pasada
+}
+
+/// <summary>
+/// Estado de una inscripcion a una practica clinica. (inscripcion_practica.estado). Se
+/// persiste como string. No hay estado de confirmacion: la inscripcion vale al crearse, y si
+/// el paciente no sirve el estudiante la cancela.
+/// </summary>
+public enum EstadoInscripcionPractica
+{
+    Inscripta,
+    Asistio,
+    NoAsistio,
+    Cancelada
+}
+
 /// <summary>Estado de una sesion dentro de un trabajo. (sesion.estado). Se persiste como string.</summary>
 public enum EstadoSesion
 {

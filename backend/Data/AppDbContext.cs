@@ -65,6 +65,12 @@ public class AppDbContext : DbContext
     public DbSet<Turno> Turnos => Set<Turno>();
     public DbSet<Sesion> Sesiones => Set<Sesion>();
 
+    // --- Bloque 13: Banco de Turnos (practicas clinicas, sin dinero) ---
+    public DbSet<Materia> Materias => Set<Materia>();
+    public DbSet<PracticaClinica> PracticasClinicas => Set<PracticaClinica>();
+    public DbSet<InscripcionPractica> InscripcionesPractica => Set<InscripcionPractica>();
+    public DbSet<ConstanciaPractica> ConstanciasPractica => Set<ConstanciaPractica>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -483,6 +489,94 @@ public class AppDbContext : DbContext
         // Listado de sesiones de un trabajo.
         modelBuilder.Entity<Sesion>()
             .HasIndex(s => s.TrabajoId);
+
+        // ----------------------------------------------------------------
+        // BLOQUE 13 — Banco de Turnos: materia -> practica -> inscripcion -> constancia
+        //   Agregado sin dinero, aislado del motor transaccional: ninguna relacion con
+        //   trabajo, pago, turno ni sesion. Todas las FKs quedan Restrict por el loop
+        //   global: son registros de evidencia academica, no se borran en cascada.
+        // ----------------------------------------------------------------
+        modelBuilder.Entity<Materia>()
+            .HasOne(m => m.Carrera)
+            .WithMany()
+            .HasForeignKey(m => m.CarreraId);
+
+        modelBuilder.Entity<Materia>()
+            .HasIndex(m => new { m.CarreraId, m.Nombre })
+            .IsUnique();
+
+        modelBuilder.Entity<PracticaClinica>()
+            .HasOne(p => p.Estudiante)
+            .WithMany()
+            .HasForeignKey(p => p.EstudianteId);
+
+        modelBuilder.Entity<PracticaClinica>()
+            .HasOne(p => p.Materia)
+            .WithMany(m => m.Practicas)
+            .HasForeignKey(p => p.MateriaId);
+
+        modelBuilder.Entity<PracticaClinica>()
+            .Property(p => p.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PracticaClinica>()
+            .Property(p => p.TipoPacienteRequerido)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PracticaClinica>()
+            .Property(p => p.Arancel)
+            .HasPrecision(12, 2);
+
+        // Agenda del estudiante (deteccion de solapes) y busqueda de disponibles.
+        modelBuilder.Entity<PracticaClinica>()
+            .HasIndex(p => new { p.EstudianteId, p.FechaHoraInicio });
+
+        modelBuilder.Entity<PracticaClinica>()
+            .HasIndex(p => new { p.Estado, p.FechaHoraInicio });
+
+        modelBuilder.Entity<InscripcionPractica>()
+            .HasOne(i => i.PracticaClinica)
+            .WithMany(p => p.Inscripciones)
+            .HasForeignKey(i => i.PracticaClinicaId);
+
+        modelBuilder.Entity<InscripcionPractica>()
+            .HasOne(i => i.Cliente)
+            .WithMany()
+            .HasForeignKey(i => i.ClienteId);
+
+        modelBuilder.Entity<InscripcionPractica>()
+            .HasOne(i => i.Paciente)
+            .WithMany()
+            .HasForeignKey(i => i.PacienteId);
+
+        modelBuilder.Entity<InscripcionPractica>()
+            .Property(i => i.Estado)
+            .HasConversion<string>();
+
+        // Cupo unico: a lo sumo una inscripcion VIGENTE por practica. Es la unica garantia
+        // contra dos inscripciones simultaneas; el chequeo del service solo da el mensaje.
+        // Las canceladas quedan fuera del indice y se conservan como historial.
+        modelBuilder.Entity<InscripcionPractica>()
+            .HasIndex(i => i.PracticaClinicaId)
+            .IsUnique()
+            .HasFilter("estado <> 'Cancelada'")
+            .HasDatabaseName("ux_inscripcion_practica_vigente");
+
+        modelBuilder.Entity<InscripcionPractica>()
+            .HasIndex(i => i.ClienteId);
+
+        modelBuilder.Entity<ConstanciaPractica>()
+            .HasOne(c => c.PracticaClinica)
+            .WithOne(p => p.Constancia)
+            .HasForeignKey<ConstanciaPractica>(c => c.PracticaClinicaId);
+
+        modelBuilder.Entity<ConstanciaPractica>()
+            .HasIndex(c => c.Codigo)
+            .IsUnique();
+
+        modelBuilder.Entity<ConstanciaPractica>()
+            .Property(c => c.TipoPaciente)
+            .HasConversion<string>();
 
         // ----------------------------------------------------------------
         // Cascada: se desactiva en TODAS las relaciones (DeleteBehavior.Restrict)
