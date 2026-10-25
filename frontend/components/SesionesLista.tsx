@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addHours, format } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { relojAR } from "@/lib/fechas";
 import {
   listarSesionesDeTrabajo,
   marcarSesionRealizada,
@@ -14,18 +15,8 @@ import { ApiError } from "@/lib/api";
 import EstadoSesionBadge from "@/components/EstadoSesionBadge";
 import { ErrorAlert } from "@/components/ui";
 
-// Instante UTC -> Date con componentes de reloj de pared AR (solo para display, nunca
-// como instante). Idéntico enfoque tz-seguro que SelectorSlots.
-function arDisplay(utcIso: string): Date {
-  const s = addHours(new Date(utcIso), -3);
-  return new Date(
-    s.getUTCFullYear(),
-    s.getUTCMonth(),
-    s.getUTCDate(),
-    s.getUTCHours(),
-    s.getUTCMinutes(),
-  );
-}
+// Instante UTC -> Date con componentes de reloj de pared AR (solo para display).
+const arDisplay = relojAR;
 
 type Marca = "realizar" | "no-asistio";
 

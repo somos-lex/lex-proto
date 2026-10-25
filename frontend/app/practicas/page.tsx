@@ -133,12 +133,33 @@ export default async function PracticasPage({ searchParams }: Props) {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-12">
-        {practicas.length === 0 ? (
+        {practicas.length === 0 && hayFiltros ? (
           <div className="rounded-lg border-2 border-dashed border-slate-200 py-16 text-center">
             <p className="text-slate-600">No hay prácticas abiertas que coincidan con los filtros.</p>
             <p className="mt-1 text-sm text-slate-500">
               Probá con otra carrera o un rango de fechas más amplio.
             </p>
+            <Link href="/practicas" className="mt-4 inline-block text-sm font-semibold text-indigo-700 hover:underline">
+              Ver todas las prácticas
+            </Link>
+          </div>
+        ) : practicas.length === 0 ? (
+          // Sin filtros y sin resultados: no hay ninguna práctica abierta. No es un problema
+          // de búsqueda, así que el mensaje explica cómo funciona y da una acción por rol.
+          <div className="rounded-lg border-2 border-dashed border-slate-200 px-6 py-16 text-center">
+            <p className="font-medium text-slate-700">Todavía no hay prácticas abiertas.</p>
+            <p className="mx-auto mt-1 max-w-xl text-sm text-slate-500">
+              Los estudiantes publican una práctica cuando necesitan un paciente para una materia.
+              Apenas haya una, aparece acá y podés inscribirte sin costo.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3 text-sm font-semibold">
+              <Link href="/panel/practicas" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-white transition hover:bg-indigo-700">
+                Soy estudiante: publicar una práctica
+              </Link>
+              <Link href="/constancias" className="rounded-lg border border-slate-200 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50">
+                Verificar una constancia
+              </Link>
+            </div>
           </div>
         ) : (
           <>
