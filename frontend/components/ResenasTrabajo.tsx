@@ -72,6 +72,9 @@ export function ResenasTrabajo({ trabajo }: { trabajo: TrabajoResponse }) {
     user?.usuarioId === trabajo.estudianteId ||
     user?.usuarioId === trabajo.clienteId;
   const miResena = resenas.find((r) => r.autorUsuarioId === user?.usuarioId);
+  // Si la propia reseña ya se muestra arriba como "Tu reseña", no se repite en la lista.
+  const mostrarMiResenaArriba = esParte && completado && !!miResena;
+  const listado = mostrarMiResenaArriba ? resenas.filter((r) => r.id !== miResena!.id) : resenas;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -196,13 +199,15 @@ export function ResenasTrabajo({ trabajo }: { trabajo: TrabajoResponse }) {
           <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
         ) : loadError ? (
           <ErrorAlert message={loadError} />
-        ) : resenas.length === 0 ? (
+        ) : listado.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
-            Este trabajo todavía no tiene reseñas.
+            {mostrarMiResenaArriba
+              ? "La otra parte todavía no dejó su reseña."
+              : "Este trabajo todavía no tiene reseñas."}
           </p>
         ) : (
           <ul className="space-y-3">
-            {resenas.map((r) => (
+            {listado.map((r) => (
               <li
                 key={r.id}
                 className="rounded-lg border border-slate-200 bg-white p-4"

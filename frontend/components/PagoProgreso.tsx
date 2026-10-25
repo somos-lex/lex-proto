@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { addHours, format } from "date-fns";
+import { formatFechaHoraCortaAR } from "@/lib/fechas";
 import {
   listarMisPagos,
   obtenerPagoDetalle,
@@ -36,9 +36,7 @@ const MOV_META: Record<
   Ajuste: { signo: "±", clase: "text-amber-700", etiqueta: "Ajuste" },
 };
 
-function fechaMov(iso: string): string {
-  return format(addHours(new Date(iso), -3), "dd/MM/yyyy HH:mm");
-}
+const fechaMov = formatFechaHoraCortaAR;
 
 export function PagoProgreso({
   trabajoId,

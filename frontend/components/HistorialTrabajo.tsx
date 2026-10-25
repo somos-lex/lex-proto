@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { addHours, format } from "date-fns";
+import { formatFechaHoraCortaAR } from "@/lib/fechas";
 import {
   listarHistorialTrabajo,
   ESTADO_META,
@@ -9,9 +9,7 @@ import {
 } from "@/lib/trabajos";
 import { ApiError } from "@/lib/api";
 
-function fechaHora(iso: string): string {
-  return format(addHours(new Date(iso), -3), "dd/MM/yyyy HH:mm");
-}
+const fechaHora = formatFechaHoraCortaAR;
 
 export function HistorialTrabajo({
   trabajoId,
