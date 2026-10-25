@@ -13,14 +13,15 @@ export default function PanelContratacion({
 }: {
   servicio: ServicioDetalleResponse;
 }) {
-  const { user, vistaActiva } = useAuth();
+  const { user, hasRole } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  // El id del usuario vive en `user`; la identidad (roles/vistas) en `vistaActiva`.
+  // Sin selector de vistas (D2): contrata cualquiera que tenga el rol Cliente,
+  // aunque también sea estudiante.
   const esServicioPropio = user?.usuarioId === servicio.estudianteId;
-  const puedeContratar = vistaActiva === "Cliente" && !esServicioPropio;
+  const puedeContratar = hasRole("Cliente") && !esServicioPropio;
 
   async function handleContratarProyectoCerrado() {
     setEnviando(true);
@@ -62,9 +63,9 @@ export default function PanelContratacion({
         </div>
       )}
 
-      {user && vistaActiva !== "Cliente" && !esServicioPropio && (
+      {user && !hasRole("Cliente") && !esServicioPropio && (
         <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700">
-          Cambiá a la vista Cliente para contratar servicios.
+          Con esta cuenta no se pueden contratar servicios.
         </div>
       )}
 

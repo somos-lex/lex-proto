@@ -25,7 +25,7 @@ export default function ServiceCard({ servicio }: { servicio: ServicioResponse }
           <RatingBadge value={servicio.estudianteCalificacion} />
         </div>
 
-        <h3 className="line-clamp-2 font-semibold text-foreground transition group-hover:text-accent lg:text-lg">
+        <h3 className="line-clamp-2 font-semibold text-ink transition group-hover:text-link lg:text-lg">
           {servicio.titulo}
         </h3>
 
@@ -34,7 +34,7 @@ export default function ServiceCard({ servicio }: { servicio: ServicioResponse }
         </p>
 
         <div className="mt-4 flex items-end justify-end border-t border-gray-100 pt-3">
-          <span className="text-lg font-bold text-foreground lg:text-xl">
+          <span className="text-lg font-bold text-ink lg:text-xl">
             {formatPrecio(servicio.precio)}
           </span>
         </div>

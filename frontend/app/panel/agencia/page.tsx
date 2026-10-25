@@ -18,10 +18,10 @@ function PanelAgencia() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-accent-soft/50 to-white p-8">
-        <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+        <span className="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-link">
           Vista Agencia
         </span>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-ink">
           {user?.nombreCompleto ?? "Tu agencia"}
         </h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -35,7 +35,7 @@ function PanelAgencia() {
           href="/"
           className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
         >
-          <h2 className="font-semibold text-foreground">Explorar servicios</h2>
+          <h2 className="font-semibold text-ink">Explorar servicios</h2>
           <p className="mt-1 text-sm text-gray-500">
             Buscá talento universitario en la vidriera.
           </p>
@@ -43,7 +43,7 @@ function PanelAgencia() {
 
         {/* Placeholder de lo que viene */}
         <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6">
-          <h2 className="font-semibold text-foreground">
+          <h2 className="font-semibold text-ink">
             Funcionalidades de agencia
           </h2>
           <p className="mt-1 text-sm text-gray-500">

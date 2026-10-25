@@ -30,7 +30,7 @@ export function ResenasList({
           className="rounded-xl border border-gray-200 bg-white p-4"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-foreground">{r.autorNombre}</span>
+            <span className="font-semibold text-ink">{r.autorNombre}</span>
             <StarsRow value={r.puntaje} />
           </div>
           {r.comentario && (

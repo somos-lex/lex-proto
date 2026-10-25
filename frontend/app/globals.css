@@ -1,26 +1,184 @@
+/* LEX — tokens del sistema de diseño (generado desde tokens.mjs; no editar a mano). */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #1a1a2e;
+/* "dark:" sigue al atributo, que el script de apariencia fija antes del primer pintado. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  /* Al cerrar la Fase 4, descomentá la línea siguiente: borra la paleta por defecto y cualquier
+     slate, gray, indigo, rose o red que haya quedado deja de compilar. */
+  /* --color-*: initial; */
+  --color-canvas: #F6F5F8;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EFEEF2;
+  --color-surface-3: #E5E4EA;
+  --color-line: #DFDFE3;
+  --color-line-strong: #86858D;
+  --color-ink: #1B1921;
+  --color-ink-2: #58575F;
+  --color-ink-3: #6C6B72;
+  --color-accent: #A17DD4;
+  --color-accent-hover: #AC8CDC;
+  --color-on-accent: #1B1921;
+  --color-accent-soft: #F2EAFF;
+  --color-on-accent-soft: #633796;
+  --color-link: #67379D;
+  --color-focus: #67379D;
+  --color-selection: #E5D5FF;
+  --color-cred: #ECE2FF;
+  --color-cred-mark: #DCCBF9;
+  --color-ok: #1A763F;
+  --color-ok-soft: #E0F7E5;
+  --color-ok-ink: #0D6332;
+  --color-warn: #B17000;
+  --color-warn-soft: #FFF0D0;
+  --color-warn-ink: #824C11;
+  --color-danger: #C52C2A;
+  --color-danger-soft: #FFEAE7;
+  --color-danger-ink: #A92321;
+  --color-info: #0F68A2;
+  --color-info-soft: #E6F2FD;
+  --color-info-ink: #075A8E;
+  --color-star: #C26F00;
+  --color-v-proyecto: #496282;
+  --color-v-proyecto-soft: #E1EBF7;
+  --color-v-clases: #7F5C1D;
+  --color-v-clases-soft: #F8ECCF;
+  --color-v-salud: #126C79;
+  --color-v-salud-soft: #D7F1F6;
+  --color-inverse: #1B1921;
+  --color-inverse-link: #CFB7F5;
+  --color-inverse-ok: #6AD895;
+  --color-scrim: rgba(23, 23, 28, 0.44);
+
+  --font-sans: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
+  /* Solo para códigos (constancias). El sistema no usa monoespaciada en la interfaz. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-display: 56px;
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 650;
+  --text-display-mobile: 34px;
+  --text-display-mobile--line-height: 1.06;
+  --text-display-mobile--letter-spacing: -0.026em;
+  --text-display-mobile--font-weight: 650;
+  --text-title-1: 40px;
+  --text-title-1--line-height: 1.14;
+  --text-title-1--letter-spacing: -0.02em;
+  --text-title-1--font-weight: 650;
+  --text-title-1-mobile: 28px;
+  --text-title-1-mobile--line-height: 1.14;
+  --text-title-1-mobile--letter-spacing: -0.02em;
+  --text-title-1-mobile--font-weight: 650;
+  --text-title-2: 24px;
+  --text-title-2--line-height: 1.22;
+  --text-title-2--letter-spacing: -0.012em;
+  --text-title-2--font-weight: 620;
+  --text-title-2-mobile: 21px;
+  --text-title-2-mobile--line-height: 1.22;
+  --text-title-2-mobile--letter-spacing: -0.012em;
+  --text-title-2-mobile--font-weight: 620;
+  --text-title-3: 17px;
+  --text-title-3--line-height: 1.3;
+  --text-title-3--letter-spacing: -0.005em;
+  --text-title-3--font-weight: 600;
+  --text-lead: 19px;
+  --text-lead--line-height: 1.5;
+  --text-lead--font-weight: 400;
+  --text-body: 16px;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 400;
+  --text-secondary: 15px;
+  --text-secondary--line-height: 1.45;
+  --text-secondary--font-weight: 400;
+  --text-label: 14px;
+  --text-label--line-height: 1.35;
+  --text-label--font-weight: 600;
+  --text-button: 16px;
+  --text-button--line-height: 1.2;
+  --text-button--font-weight: 600;
+  --text-counter: 13px;
+  --text-counter--line-height: 1;
+  --text-counter--font-weight: 700;
+  --text-amount-lg: 28px;
+  --text-amount-lg--line-height: 1.1;
+  --text-amount-lg--letter-spacing: -0.02em;
+  --text-amount-lg--font-weight: 700;
+  --text-amount: 19px;
+  --text-amount--line-height: 1.1;
+  --text-amount--letter-spacing: -0.02em;
+  --text-amount--font-weight: 700;
+
+  /* Espaciado: la escala por defecto de Tailwind (4 px por paso) ya es la de LEX: p-4 = 16 px. */
+  --radius-control: 12px;
+  --radius-button: 14px;
+  --radius-notice: 16px;
+  --radius-card: 20px;
+  --radius-sheet: 28px;
+  --radius-pill: 999px;
+  --shadow-float: 0 10px 30px rgba(26, 26, 33, 0.14), 0 0 0 1px rgba(26, 26, 33, 0.05);
+  --shadow-sheet: 0 -1px 0 #dfdfe3, 0 -12px 32px rgba(26, 26, 33, 0.10);
+  --shadow-thumb: 0 1px 2px rgba(26, 26, 33, 0.14), 0 0 0 0.5px rgba(26, 26, 33, 0.06);
+  --container-lex: 1232px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-
-  /* Color de acento de LEX: un índigo confiable y moderno. Elegido por
-     transmitir confianza/profesionalismo (marketplace académico) y por
-     diferenciarse del verde de Fiverr manteniendo la misma sensación limpia. */
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
-  --color-accent-soft: #eef2ff;
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #17161B;
+  --color-surface: #212026;
+  --color-surface-2: #2B2A31;
+  --color-surface-3: #35343C;
+  --color-line: #37363C;
+  --color-line-strong: #7A7982;
+  --color-ink: #F3F3F6;
+  --color-ink-2: #BAB9C2;
+  --color-ink-3: #A4A3AC;
+  --color-accent: #A17DD4;
+  --color-accent-hover: #AC8CDC;
+  --color-on-accent: #1B1921;
+  --color-accent-soft: #3B2E4D;
+  --color-on-accent-soft: #E0CCFF;
+  --color-link: #CFB7F5;
+  --color-focus: #CFB7F5;
+  --color-selection: #513A70;
+  --color-cred: #332647;
+  --color-cred-mark: #483463;
+  --color-ok: #6AD895;
+  --color-ok-soft: #173523;
+  --color-ok-ink: #8AE5AB;
+  --color-warn: #F2BD68;
+  --color-warn-soft: #3F2C10;
+  --color-warn-ink: #F7CD87;
+  --color-danger: #FB817A;
+  --color-danger-soft: #4E201E;
+  --color-danger-ink: #FFA8A0;
+  --color-info: #80C7F8;
+  --color-info-soft: #173142;
+  --color-info-ink: #9ED5FD;
+  --color-star: #F5B75B;
+  --color-v-proyecto: #A5BDDB;
+  --color-v-proyecto-soft: #252F3A;
+  --color-v-clases: #E2C479;
+  --color-v-clases-soft: #382D16;
+  --color-v-salud: #7CCDD6;
+  --color-v-salud-soft: #173337;
+  --color-inverse: #F3F3F6;
+  --color-inverse-link: #67379D;
+  --color-inverse-ok: #1A763F;
+  --color-scrim: rgba(6, 6, 9, 0.62);
+  --shadow-float: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px #37363c;
+  --shadow-sheet: 0 -1px 0 #37363c, 0 -16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-thumb: none;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+/* El servidor pinta <html data-theme="light">; el script de apariencia de app/layout.tsx
+   lo corrige antes del primer pintado (ver lib/apariencia.ts). */
+
+@layer base {
+  html { color-scheme: light; scrollbar-color: var(--color-line-strong) transparent; }
+  body { background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); font-variant-numeric: lining-nums; -webkit-font-smoothing: antialiased; }
+  a { color: var(--color-link); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  ::selection { background: var(--color-selection); color: var(--color-ink); }
+  :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 }

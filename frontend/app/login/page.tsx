@@ -37,12 +37,12 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:py-24">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">
         Iniciá sesión
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         ¿No tenés cuenta?{" "}
-        <Link href="/registro" className="font-semibold text-accent hover:underline">
+        <Link href="/registro" className="font-semibold text-link hover:underline">
           Creá una
         </Link>
       </p>

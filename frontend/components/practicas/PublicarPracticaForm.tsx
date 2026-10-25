@@ -188,7 +188,7 @@ export function PublicarPracticaForm({
                 value={requisitos}
                 placeholder="Ej: el animal debe tener el plan de vacunación al día y venir en ayunas."
                 onChange={(e) => setRequisitos(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-focus/20"
               />
             </Field>
 

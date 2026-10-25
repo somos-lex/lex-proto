@@ -85,12 +85,12 @@ export default function RegistroPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:py-20">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">
         Creá tu cuenta
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         ¿Ya tenés una?{" "}
-        <Link href="/login" className="font-semibold text-accent hover:underline">
+        <Link href="/login" className="font-semibold text-link hover:underline">
           Iniciá sesión
         </Link>
       </p>
@@ -248,7 +248,7 @@ function TabButton({
       onClick={onClick}
       className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
         active
-          ? "bg-white text-accent shadow-sm"
+          ? "bg-white text-link shadow-sm"
           : "text-gray-500 hover:text-gray-700"
       }`}
     >
@@ -274,11 +274,11 @@ function Toggle({
       onClick={onClick}
       className={`rounded-lg border px-3 py-2.5 text-left transition ${
         active
-          ? "border-accent bg-accent-soft/50 ring-2 ring-accent/20"
+          ? "border-accent bg-accent-soft/50 ring-2 ring-focus/20"
           : "border-gray-200 bg-white hover:border-accent/40"
       }`}
     >
-      <span className="block text-sm font-semibold text-foreground">{title}</span>
+      <span className="block text-sm font-semibold text-ink">{title}</span>
       <span className="block text-xs text-gray-500">{subtitle}</span>
     </button>
   );

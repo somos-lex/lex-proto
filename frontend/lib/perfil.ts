@@ -100,9 +100,3 @@ export function vistaPorDefecto(identidad: Identidad | null): Vista | null {
   if (vistas.includes("Estudiante")) return "Estudiante";
   return vistas[0] ?? null;
 }
-
-export const VISTA_META: Record<Vista, { label: string }> = {
-  Cliente: { label: "Cliente" },
-  Estudiante: { label: "Estudiante" },
-  Agencia: { label: "Agencia" },
-};

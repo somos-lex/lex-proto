@@ -40,7 +40,7 @@ export function ServiceCover({
         />
       )}
       {!mostrarImagen && (
-        <span className="text-3xl font-extrabold tracking-tight text-accent/30 lg:text-4xl">
+        <span className="text-3xl font-extrabold tracking-tight text-link/30 lg:text-4xl">
           LEX
         </span>
       )}

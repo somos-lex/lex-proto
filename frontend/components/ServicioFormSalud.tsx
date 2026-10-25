@@ -237,7 +237,7 @@ export function ServicioFormSalud({
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Contá en qué consiste la práctica…"
-          className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-foreground shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-focus/20"
         />
       </Field>
 

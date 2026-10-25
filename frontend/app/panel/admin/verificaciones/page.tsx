@@ -64,7 +64,7 @@ function Verificaciones() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <Link href="/panel/admin" className="text-sm font-medium text-accent hover:underline">
+      <Link href="/panel/admin" className="text-sm font-medium text-link hover:underline">
         ← Panel de admin
       </Link>
       <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
@@ -199,7 +199,7 @@ function TarjetaVerificacion({
           <div className="flex gap-2">
             <button
               onClick={() => setModo("aprobar")}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition hover:bg-accent-hover"
             >
               Aprobar
             </button>
@@ -235,7 +235,7 @@ function TarjetaVerificacion({
                   ? "Ej: constancia de alumno regular en papel vista en la cátedra el 23/10/2026."
                   : "Ej: constancia de alumno regular 2026 verificada."
             }
-            className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-focus/20"
           />
           {modo === "rechazar" && (
             <p className="text-xs text-slate-500">
@@ -248,8 +248,8 @@ function TarjetaVerificacion({
             <button
               onClick={confirmar}
               disabled={enviando}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60 ${
-                modo === "aprobar" ? "bg-accent hover:bg-accent-hover" : "bg-red-600 hover:bg-red-700"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+                modo === "aprobar" ? "bg-accent text-on-accent hover:bg-accent-hover" : "bg-red-600 text-white hover:bg-red-700"
               }`}
             >
               {enviando ? "Guardando…" : modo === "aprobar" ? "Confirmar aprobación" : "Confirmar rechazo"}

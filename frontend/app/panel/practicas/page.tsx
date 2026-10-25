@@ -283,7 +283,7 @@ function PracticaEstudianteItem({
             maxLength={accion === "asistencia" ? 2000 : 1000}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-focus/20"
           />
           {error && <ErrorAlert message={error} />}
           <div className="flex flex-wrap gap-2">

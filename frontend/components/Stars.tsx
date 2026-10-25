@@ -35,7 +35,7 @@ export function RatingBadge({
   return (
     <span className={`inline-flex items-center gap-1 ${className}`}>
       <StarIcon className="h-4 w-4 text-amber-400" />
-      <span className="text-sm font-semibold text-foreground">
+      <span className="text-sm font-semibold text-ink">
         {value.toFixed(1)}
       </span>
     </span>
@@ -89,7 +89,7 @@ export function StarsInput({
           onFocus={() => !disabled && setHover(i)}
           onBlur={() => setHover(0)}
           onClick={() => onChange(i)}
-          className="rounded p-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed"
+          className="rounded p-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-focus/40 disabled:cursor-not-allowed"
         >
           <StarIcon
             className={`h-8 w-8 transition ${

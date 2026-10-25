@@ -1,134 +1,274 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { VISTA_META, type Vista } from "@/lib/perfil";
-import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
+// Encabezado y menú (componentes "Encabezado" y "Cajon" del sistema de diseño).
+//
+// - Sin selector de vistas (D2): con sesión, el menú agrupa "Como estudiante" y
+//   "Como cliente" según los roles reales de la identidad.
+// - Mobile: el botón "Menú" abre el cajón con el árbol completo (D4). La barra
+//   inferior con sesión llega después, en el área del panel.
+// - Escritorio: navegación pública arriba; con sesión, el mismo cajón detrás del
+//   botón de la cuenta, hasta que el panel tenga su lateral.
+// - Solo enlaza páginas que existen hoy.
 
-// Ítems de navbar por vista. Solo enlazamos a páginas que existen hoy.
-const NAV_POR_VISTA: Record<Vista, { href: string; label: string }[]> = {
-  Cliente: [
-    { href: "/", label: "Explorar servicios" },
-    { href: "/panel/trabajos", label: "Mis trabajos" },
-    { href: "/panel/pacientes", label: "Mis pacientes" },
-    { href: "/practicas", label: "Prácticas clínicas" },
-    { href: "/panel/inscripciones", label: "Mis inscripciones" },
-  ],
-  Estudiante: [
-    { href: "/panel/servicios", label: "Mis servicios" },
-    { href: "/panel/disponibilidad", label: "Disponibilidad" },
-    { href: "/panel/trabajos", label: "Mis trabajos" },
-    { href: "/panel/practicas", label: "Mis prácticas" },
-  ],
-  Agencia: [
-    { href: "/panel/agencia", label: "Panel de agencia" },
-    { href: "/", label: "Explorar servicios" },
-  ],
-};
+import { useState, type ReactNode } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Identidad } from "@/lib/perfil";
+import { OPCIONES_APARIENCIA, OSCURO_HABILITADO } from "@/lib/apariencia";
+import { useApariencia } from "@/lib/useApariencia";
+import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
+import { Cajon } from "@/components/Cajon";
+import { Icono, type NombreIcono } from "@/components/Icono";
+import { clasesBoton } from "@/components/Boton";
+
+const NAV_PUBLICA = [
+  { href: "/", label: "Servicios", activo: (p: string) => p === "/" || p.startsWith("/servicios") },
+  { href: "/practicas", label: "Banco de Turnos", activo: (p: string) => p.startsWith("/practicas") },
+];
+
+interface ItemMenu {
+  href: string;
+  label: string;
+  icono: NombreIcono;
+}
+
+interface SeccionMenu {
+  titulo: string;
+  items: ItemMenu[];
+}
+
+function seccionesDe(roles: string[], identidad: Identidad | null): SeccionMenu[] {
+  const secciones: SeccionMenu[] = [];
+  if (identidad?.esEstudiante || roles.includes("Estudiante")) {
+    secciones.push({
+      titulo: "Como estudiante",
+      items: [
+        { href: "/panel/servicios", label: "Mis servicios", icono: "briefcase" },
+        { href: "/panel/disponibilidad", label: "Agenda y disponibilidad", icono: "calendar" },
+        { href: "/panel/trabajos", label: "Trabajos recibidos", icono: "inbox" },
+        { href: "/panel/practicas", label: "Turnos que publico", icono: "calendar-plus" },
+      ],
+    });
+  }
+  if (roles.includes("Cliente")) {
+    secciones.push({
+      titulo: "Como cliente",
+      items: [
+        { href: "/panel/trabajos", label: "Contrataciones", icono: "receipt" },
+        { href: "/panel/inscripciones", label: "Mis turnos del Banco", icono: "calendar" },
+        { href: "/panel/pacientes", label: "Personas y mascotas", icono: "users" },
+      ],
+    });
+  }
+  if (roles.includes("Agencia")) {
+    secciones.push({
+      titulo: "Agencia",
+      items: [{ href: "/panel/agencia", label: "Panel de agencia", icono: "briefcase" }],
+    });
+  }
+  if (roles.includes("Admin")) {
+    secciones.push({
+      titulo: "Administración",
+      items: [
+        { href: "/panel/admin", label: "Ingresos", icono: "receipt" },
+        { href: "/panel/admin/verificaciones", label: "Verificaciones", icono: "id" },
+      ],
+    });
+  }
+  secciones.push({
+    titulo: "Explorar",
+    items: [
+      { href: "/", label: "Catálogo de servicios", icono: "compass" },
+      { href: "/practicas", label: "Banco de Turnos", icono: "calendar" },
+    ],
+  });
+  return secciones;
+}
+
+function iniciales(nombre: string | undefined) {
+  if (!nombre) return "?";
+  const partes = nombre.trim().split(/\s+/);
+  return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+}
+
+function credencialCorta(identidad: Identidad | null) {
+  const c = identidad?.carreras[0];
+  if (!c) return null;
+  return c.anioCursado ? `${c.carreraNombre}, ${c.anioCursado}.º año` : c.carreraNombre;
+}
 
 export function Navbar() {
-  const {
-    isAuthenticated,
-    user,
-    identidad,
-    logout,
-    loading,
-    vistaActiva,
-    vistasDisponibles,
-  } = useAuth();
+  const { isAuthenticated, user, identidad, roles, logout, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [modalEstudiante, setModalEstudiante] = useState(false);
+  // El cajón queda abierto solo en la ruta donde se abrió: al navegar, se cierra.
+  const [abiertoEn, setAbiertoEn] = useState<string | null>(null);
+  const abierto = abiertoEn === pathname;
+  const abrir = () => setAbiertoEn(pathname);
+  const cerrar = () => setAbiertoEn(null);
 
   function handleLogout() {
+    cerrar();
     logout();
     router.push("/");
   }
 
-  // CTA "¿Sos estudiante?": Cliente Particular que aún no es estudiante.
   const mostrarCtaEstudiante =
     !!identidad && identidad.puedeActivarEstudiante && !identidad.esEstudiante;
 
-  const items = vistaActiva ? NAV_POR_VISTA[vistaActiva] : [];
+  const secciones = isAuthenticated ? seccionesDe(roles, identidad) : [];
+  const credencial = credencialCorta(identidad);
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/80 backdrop-blur">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-20 border-b border-line bg-canvas">
+        <div className="mx-auto flex h-15 max-w-lex items-center gap-1.5 px-4 md:px-6 lg:h-17 lg:gap-2 lg:px-8">
           <Link
             href="/"
-            className="text-2xl font-extrabold tracking-tight text-foreground"
+            aria-label="LEX, inicio"
+            className="inline-flex min-h-11 items-center text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
           >
-            LEX<span className="text-accent">.</span>
+            LEX
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            {loading ? (
-              <div className="h-9 w-32 animate-pulse rounded-lg bg-gray-100" />
-            ) : isAuthenticated ? (
-              <>
-                {items.map((item) => (
-                  <Link
-                    key={item.href + item.label}
-                    href={item.href}
-                    className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent sm:inline"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-
-                {mostrarCtaEstudiante && (
-                  <button
-                    onClick={() => setModalEstudiante(true)}
-                    className="rounded-lg border border-accent/30 bg-accent-soft/60 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent-soft"
-                  >
-                    ¿Sos estudiante? Ofrecé tus servicios
-                  </button>
-                )}
-
-                {vistasDisponibles.length > 1 && vistaActiva && (
-                  <ViewSwitcher />
-                )}
-
-                <span className="hidden text-sm text-gray-600 lg:inline">
-                  Hola,{" "}
-                  <span className="font-semibold text-foreground">
-                    {user?.nombreCompleto}
-                  </span>
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          <nav aria-label="Principal" className="ml-7 hidden gap-0.5 lg:flex">
+            {NAV_PUBLICA.map((item) => {
+              const actual = item.activo(pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={actual ? "page" : undefined}
+                  className={`flex min-h-11 items-center rounded-control px-3.5 font-[550] no-underline hover:bg-surface-2 hover:text-ink ${
+                    actual ? "bg-surface-2 text-ink" : "text-ink-2"
+                  }`}
                 >
-                  Cerrar sesión
-                </button>
-              </>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {loading ? (
+              <div className="h-11 w-28 animate-pulse rounded-control bg-surface-2" aria-hidden="true" />
+            ) : isAuthenticated ? (
+              <button
+                type="button"
+                onClick={abrir}
+                aria-expanded={abierto}
+                aria-haspopup="dialog"
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface-2 py-0 pr-3.5 pl-1.5 text-[15px] font-semibold text-ink hover:bg-surface-3"
+              >
+                <span className="grid size-8 place-items-center rounded-full bg-surface text-[13px] font-[650]" aria-hidden="true">
+                  {iniciales(user?.nombreCompleto)}
+                </span>
+                Menú
+              </button>
             ) : (
               <>
-                <Link
-                  href="/practicas"
-                  className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent sm:inline"
-                >
-                  Prácticas clínicas
+                <Link href="/login" className={clasesBoton({ variante: "texto", tamano: "sm" })}>
+                  Ingresar
                 </Link>
-                <Link
-                  href="/login"
-                  className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  href="/registro"
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover"
-                >
+                <Link href="/registro" className={clasesBoton({ variante: "fuerte", tamano: "sm", className: "hidden lg:inline-flex" })}>
                   Crear cuenta
                 </Link>
+                <button
+                  type="button"
+                  onClick={abrir}
+                  aria-expanded={abierto}
+                  aria-haspopup="dialog"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface-2 pr-3 pl-3.5 text-[15px] font-semibold text-ink hover:bg-surface-3 lg:hidden"
+                >
+                  <Icono nombre="menu" className="size-5.5" />
+                  Menú
+                </button>
               </>
             )}
           </div>
-        </nav>
+        </div>
       </header>
+
+      <Cajon
+        abierto={abierto}
+        onCerrar={cerrar}
+        etiqueta="Menú"
+        cabecera={
+          isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-2 text-[15px] font-[650]" aria-hidden="true">
+                {iniciales(user?.nombreCompleto)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{user?.nombreCompleto}</p>
+                {credencial && <p className="truncate text-secondary text-ink-2">{credencial}</p>}
+              </div>
+            </div>
+          ) : (
+            <span className="text-[19px] font-[760] tracking-[0.04em]">LEX</span>
+          )
+        }
+      >
+        {isAuthenticated ? (
+          <nav aria-label="Menú de la cuenta">
+            {mostrarCtaEstudiante && (
+              <TituloSeccion>Como estudiante</TituloSeccion>
+            )}
+            {mostrarCtaEstudiante && (
+              <ItemBoton
+                icono="cap"
+                onClick={() => {
+                  cerrar();
+                  setModalEstudiante(true);
+                }}
+              >
+                Ofrecé tus servicios
+              </ItemBoton>
+            )}
+            {secciones.map((s) => (
+              <div key={s.titulo}>
+                <TituloSeccion>{s.titulo}</TituloSeccion>
+                <ul>
+                  {s.items.map((it) => (
+                    <li key={it.href + it.label}>
+                      <ItemLink item={it} actual={pathname === it.href} onNavegar={cerrar} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <TituloSeccion>Cuenta</TituloSeccion>
+            {OSCURO_HABILITADO && <ControlApariencia />}
+            <ItemBoton icono="logout" onClick={handleLogout}>
+              Cerrar sesión
+            </ItemBoton>
+          </nav>
+        ) : (
+          <nav aria-label="Menú">
+            <ul>
+              {NAV_PUBLICA.map((it) => (
+                <li key={it.href}>
+                  <ItemLink
+                    item={{ href: it.href, label: it.label, icono: it.href === "/" ? "compass" : "calendar" }}
+                    actual={it.activo(pathname)}
+                    onNavegar={cerrar}
+                  />
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 grid gap-2 px-1">
+              <Link href="/registro" onClick={cerrar} className={clasesBoton({ variante: "fuerte", bloque: true })}>
+                Crear cuenta
+              </Link>
+              <Link href="/login" onClick={cerrar} className={clasesBoton({ variante: "secundario", bloque: true })}>
+                Ingresar
+              </Link>
+            </div>
+          </nav>
+        )}
+      </Cajon>
 
       {modalEstudiante && (
         <ActivarEstudianteModal onClose={() => setModalEstudiante(false)} />
@@ -137,74 +277,82 @@ export function Navbar() {
   );
 }
 
-// Dropdown para cambiar de vista cuando el usuario tiene más de una (ej. Cliente+Estudiante).
-function ViewSwitcher() {
-  const { vistaActiva, vistasDisponibles, cambiarVista } = useAuth();
-  const router = useRouter();
-  const [abierto, setAbierto] = useState(false);
+function TituloSeccion({ children }: { children: ReactNode }) {
+  return <p className="px-3 pt-4 pb-1.5 text-label text-ink-2">{children}</p>;
+}
 
-  function seleccionar(v: Vista) {
-    setAbierto(false);
-    if (v === vistaActiva) return;
-    cambiarVista(v);
-    // Llevamos al inicio de la vista elegida para evitar quedar en un panel ajeno.
-    router.push(v === "Estudiante" ? "/panel/servicios" : "/");
-  }
+const ITEM =
+  "flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-base no-underline";
 
+function ItemLink({
+  item,
+  actual,
+  onNavegar,
+}: {
+  item: ItemMenu;
+  actual: boolean;
+  onNavegar: () => void;
+}) {
   return (
-    <div className="relative">
-      <button
-        onClick={() => setAbierto((a) => !a)}
-        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-accent/40"
-      >
-        <span className="text-gray-400">Vista:</span>
-        {vistaActiva ? VISTA_META[vistaActiva].label : ""}
-        <svg
-          className={`h-4 w-4 text-gray-400 transition ${abierto ? "rotate-180" : ""}`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+    <Link
+      href={item.href}
+      onClick={onNavegar}
+      aria-current={actual ? "page" : undefined}
+      className={`${ITEM} ${
+        actual
+          ? "bg-accent-soft font-[620] text-on-accent-soft"
+          : "font-medium text-ink hover:bg-surface-2"
+      }`}
+    >
+      <Icono nombre={item.icono} className={`size-5.5 ${actual ? "" : "text-ink-2"}`} />
+      {item.label}
+    </Link>
+  );
+}
 
-      {abierto && (
-        <>
-          {/* Capa para cerrar al hacer click afuera */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setAbierto(false)}
-          />
-          <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-            {vistasDisponibles.map((v) => (
-              <button
-                key={v}
-                onClick={() => seleccionar(v)}
-                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-50 ${
-                  v === vistaActiva
-                    ? "font-semibold text-accent"
-                    : "text-gray-700"
-                }`}
-              >
-                {VISTA_META[v].label}
-                {v === vistaActiva && (
-                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+function ItemBoton({
+  icono,
+  onClick,
+  children,
+}: {
+  icono: NombreIcono;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick} className={`${ITEM} font-medium text-ink hover:bg-surface-2`}>
+      <Icono nombre={icono} className="size-5.5 text-ink-2" />
+      {children}
+    </button>
+  );
+}
+
+function ControlApariencia() {
+  const [apariencia, elegir] = useApariencia();
+  return (
+    <fieldset className="px-3 pb-2">
+      <legend className="flex min-h-12 items-center gap-3 text-base font-medium">
+        <Icono nombre="contrast" className="size-5.5 text-ink-2" />
+        Apariencia
+      </legend>
+      <div className="flex gap-0.5 rounded-pill bg-surface-2 p-[3px]">
+        {OPCIONES_APARIENCIA.map((o) => (
+          <label
+            key={o.valor}
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-pill px-2 text-center text-[14px] font-[550] text-ink-2 has-checked:bg-surface has-checked:font-[620] has-checked:text-ink has-checked:shadow-thumb has-focus-visible:outline-2 has-focus-visible:outline-focus dark:has-checked:bg-surface-3"
+          >
+            <input
+              type="radio"
+              name="apariencia"
+              value={o.valor}
+              checked={apariencia === o.valor}
+              onChange={() => elegir(o.valor)}
+              className="sr-only"
+            />
+            {o.etiqueta}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }

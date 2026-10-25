@@ -113,7 +113,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
       >
         {necesitaReLogin ? (
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-link">
               <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
@@ -122,7 +122,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
                 />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="text-lg font-bold text-ink">
               ¡Perfil de estudiante activado!
             </h2>
             <p className="mt-2 text-sm text-gray-600">
@@ -134,7 +134,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
                 logout();
                 window.location.href = "/login";
               }}
-              className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-hover"
+              className="mt-6 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition hover:bg-accent-hover"
             >
               Ir a iniciar sesión
             </button>
@@ -143,7 +143,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
           <>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">
+                <h2 className="text-lg font-bold text-ink">
                   Activá tu perfil de estudiante
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
@@ -223,7 +223,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Contá en qué te especializás…"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-foreground shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-focus/20"
                 />
               </Field>
 
@@ -238,7 +238,7 @@ export function ActivarEstudianteModal({ onClose }: { onClose: () => void }) {
                 <button
                   type="submit"
                   disabled={submitting || cargandoCarreras}
-                  className="flex-1 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex-1 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent shadow-sm transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submitting ? "Activando…" : "Activar perfil"}
                 </button>
