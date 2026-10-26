@@ -3,7 +3,7 @@
 
 import type { NombreIcono } from "@/components/Icono";
 import type { Identidad } from "@/lib/perfil";
-import { institucionCorta } from "@/components/ds/Credencial";
+import { carreraCorta, institucionCorta } from "@/components/ds/Credencial";
 
 /** Navegación pública del encabezado. */
 export const NAV_PUBLICA = [
@@ -85,9 +85,11 @@ export function iniciales(nombre: string | undefined) {
 
 /** "Odontología, UNNE". Sin año: /perfil/yo no lo trae. */
 export function credencialCorta(identidad: Identidad | null) {
-  const c = identidad?.carreras[0];
-  if (!c) return null;
-  return `${c.carrera}, ${institucionCorta(c.institucion)}`;
+  // Defensivo: una identidad guardada con otra forma (cookie vieja) no puede romper el encabezado.
+  const c = identidad?.carreras?.[0];
+  if (!c?.carrera) return null;
+  if (!c.institucion) return carreraCorta(c.carrera);
+  return `${carreraCorta(c.carrera)}, ${institucionCorta(c.institucion)}`;
 }
 
 /** Si un ítem es la página actual. Compara pathname y, si el href lleva query,
