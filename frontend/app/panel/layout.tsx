@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { RequireRole } from "@/components/RequireRole";
 import { Lateral } from "@/components/panel/Lateral";
+import { BarraTemporal } from "@/components/panel/BarraTemporal";
 
 // Marco de todo /panel (estudiante, cliente, agencia y admin). Desde 1024 px,
 // el lateral de 288 px con el mismo árbol que el cajón; debajo de eso, el
@@ -12,6 +13,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
         <Lateral />
         <div className="min-w-0">{children}</div>
       </div>
+      <BarraTemporal />
     </RequireRole>
   );
 }
