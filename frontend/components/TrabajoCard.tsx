@@ -16,7 +16,7 @@ import { clasesBoton } from "@/components/Boton";
 import { formatFecha } from "@/lib/servicios";
 import { listarHistorialTrabajo, type TrabajoHistorialResponse, type TrabajoResponse } from "@/lib/trabajos";
 import type { RolEnTrabajo } from "@/lib/transicionesTrabajo";
-import { accionTeToca, nombreDe, pasosRiel, proximoPaso, teToca } from "@/components/trabajo/estado";
+import { accionTeToca, grupoDe, nombreDe, pasosRiel, proximoPaso } from "@/components/trabajo/estado";
 
 export function TrabajoCard({
   trabajo,
@@ -27,9 +27,16 @@ export function TrabajoCard({
   rol: RolEnTrabajo;
   titulo?: "h3" | "h4";
 }) {
-  const historial = useHistorialDelCorte(trabajo);
+  const grupo = grupoDe(trabajo, rol);
+  // Lo terminado no lleva riel (el chip ya lo dice); por eso el historial solo
+  // se pide para una disputa, que sigue en marcha y corta el riel.
+  const conRiel = grupo !== "terminados";
+  const historial = useHistorialDelCorte(trabajo, conRiel);
   const pasos = pasosRiel(trabajo, historial === "cargando" ? null : historial);
-  const meToca = teToca(trabajo, rol);
+  const meToca = grupo === "teToca";
+  // En marcha, el nodo actual ya dice el estado: el chip queda para lo que no
+  // está en el riel como paso (te toca, terminado, disputa).
+  const conChip = grupo !== "enMarcha" || trabajo.estado === "Disputa";
   const nombre = nombreDe(trabajo, rol);
   const quien =
     rol === "Estudiante"
@@ -48,30 +55,34 @@ export function TrabajoCard({
                 className="text-ink no-underline outline-none before:absolute before:inset-0 before:z-0 before:rounded-[inherit] focus-visible:before:outline-2 focus-visible:before:-outline-offset-2 focus-visible:before:outline-focus"
               >
                 {trabajo.tituloSnapshot}
-                <span className="sr-only">, {nombre}</span>
+                <span className="sr-only">
+                  , {nombre}
+                  {meToca ? `. ${accionTeToca(trabajo.estado)}` : ""}
+                </span>
               </Link>
             </Titulo>
-            <p className="mt-0.5 text-[15px] leading-[1.45] text-ink-2">
+            <p className="mt-0.5 text-secondary text-ink-2">
               {quien} {nombre}.
             </p>
           </div>
           <Precio monto={trabajo.precioAcordado} unidad="en total" className="col-start-2 sm:col-start-auto sm:justify-end sm:text-right" />
         </div>
 
-        {historial === "cargando" ? (
-          <div aria-hidden="true" className="h-[42px]" />
-        ) : (
-          // Cada paso mide lo mismo en todas las filas: los nodos quedan alineados
-          // de una fila a la otra aunque el riel tenga cuatro o cinco pasos.
-          <div style={{ width: `min(100%, ${pasos.length * 136}px)` }}>
-            <Riel pasos={pasos} etiqueta={`Estado de ${nombre.toLowerCase()}`} />
-          </div>
-        )}
+        {conRiel &&
+          (historial === "cargando" ? (
+            <div aria-hidden="true" className="h-[42px]" />
+          ) : (
+            // Cada paso mide lo mismo en todas las filas: los nodos quedan alineados
+            // de una fila a la otra aunque el riel tenga cuatro o cinco pasos.
+            <div style={{ width: `min(100%, ${pasos.length * 136}px)` }}>
+              <Riel pasos={pasos} etiqueta={`Estado de ${nombre.toLowerCase()}`} />
+            </div>
+          ))}
 
         <div className="grid gap-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
           <div className="grid min-w-0 justify-items-start gap-1.5">
-            <ChipEstadoTrabajo estado={trabajo.estado} teToca={meToca} />
-            <p className="text-[15px] leading-[1.45] text-ink-2">{proximoPaso(trabajo, rol)}</p>
+            {conChip && <ChipEstadoTrabajo estado={trabajo.estado} teToca={meToca} />}
+            <p className="text-secondary text-ink-2">{proximoPaso(trabajo, rol)}</p>
           </div>
           {meToca ? (
             // La fila entera ya es el link: esto es su afordancia, no un segundo destino.
@@ -87,9 +98,9 @@ export function TrabajoCard({
   );
 }
 
-/** Solo para Cancelado y En disputa: el historial dice en qué paso se cortó. */
-function useHistorialDelCorte(trabajo: TrabajoResponse): TrabajoHistorialResponse[] | null | "cargando" {
-  const cortado = trabajo.estado === "Cancelado" || trabajo.estado === "Disputa";
+/** Solo para un riel cortado (en la lista, la disputa): el historial dice en qué paso se cortó. */
+function useHistorialDelCorte(trabajo: TrabajoResponse, conRiel: boolean): TrabajoHistorialResponse[] | null | "cargando" {
+  const cortado = conRiel && (trabajo.estado === "Cancelado" || trabajo.estado === "Disputa");
   const [historial, setHistorial] = useState<TrabajoHistorialResponse[] | null | "cargando">(cortado ? "cargando" : null);
   useEffect(() => {
     if (!cortado) return;

@@ -174,14 +174,15 @@ function Trabajos() {
             </div>
           )}
           <div className="mt-8 grid gap-10">
-            {secciones.map((s) => (
+            {secciones.map((s, i) => (
               <Seccion
                 key={s}
                 como={s}
                 trabajos={porSeccion[s]}
                 filtro={filtro}
                 unaSola={unaSola}
-                paginaVacia={visibles.length === 0}
+                // Con todo vacío, el primario va solo en la primera sección: una acción llena por pantalla.
+                vacioConPrimario={visibles.length === 0 && i === 0}
                 hrefTodos={hrefDe("todos")}
               />
             ))}
@@ -197,14 +198,14 @@ function Seccion({
   trabajos,
   filtro,
   unaSola,
-  paginaVacia,
+  vacioConPrimario,
   hrefTodos,
 }: {
   como: Como;
   trabajos: TrabajoResponse[];
   filtro: EstadoTrabajo | "todos";
   unaSola: boolean;
-  paginaVacia: boolean;
+  vacioConPrimario: boolean;
   hrefTodos: string;
 }) {
   const { rol, titulo } = SECCION[como];
@@ -212,12 +213,13 @@ function Seccion({
   const filtrados = filtro === "todos" ? trabajos : trabajos.filter((t) => t.estado === filtro);
 
   // Te toca primero; después lo que está en marcha; al final lo terminado.
-  // Dentro de cada grupo, lo más nuevo arriba.
+  // En "Te toca", lo más viejo arriba (es lo más urgente, igual que en el Inicio
+  // del panel); en los demás, lo más nuevo.
   const grupos = GRUPOS.map((g) => ({
     grupo: g,
     items: filtrados
       .filter((t) => grupoDe(t, rol) === g)
-      .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion)),
+      .sort((a, b) => (g === "teToca" ? 1 : -1) * a.fechaCreacion.localeCompare(b.fechaCreacion)),
   })).filter((g) => g.items.length > 0);
 
   // Con una sola sección el h1 ya la nombra: los grupos bajan un nivel.
@@ -231,7 +233,7 @@ function Seccion({
           icono="inbox"
           titulo="Todavía no te contrataron"
           acciones={
-            <Link href="/panel/servicios" className={clasesBoton({ variante: paginaVacia ? "primario" : "secundario", tamano: "sm" })}>
+            <Link href="/panel/servicios" className={clasesBoton({ variante: vacioConPrimario ? "primario" : "secundario", tamano: "sm" })}>
               Ver mis servicios
             </Link>
           }
@@ -243,7 +245,7 @@ function Seccion({
           icono="receipt"
           titulo="Todavía no contrataste nada"
           acciones={
-            <Link href="/" className={clasesBoton({ variante: paginaVacia ? "primario" : "secundario", tamano: "sm" })}>
+            <Link href="/" className={clasesBoton({ variante: vacioConPrimario ? "primario" : "secundario", tamano: "sm" })}>
               Explorar servicios
             </Link>
           }
@@ -268,7 +270,7 @@ function Seccion({
       <div className="grid gap-6">
         {grupos.map(({ grupo, items }) => (
           <section key={grupo} aria-labelledby={`${idTitulo}-${grupo}`}>
-            <TituloGrupo id={`${idTitulo}-${grupo}`} className="mx-1 mb-2 flex items-center gap-2 text-[15px] font-semibold text-ink-2">
+            <TituloGrupo id={`${idTitulo}-${grupo}`} className="mx-1 mb-2 flex items-center gap-2 text-secondary font-semibold text-ink-2">
               {TITULO_GRUPO[grupo]}
               {grupo === "teToca" && (
                 <Contador n={items.length} etiqueta={`${items.length} ${items.length === 1 ? "trabajo" : "trabajos"}`} />
@@ -295,23 +297,35 @@ function Seccion({
 }
 
 function EsqueletoLista({ conFiltro = false }: { conFiltro?: boolean }) {
+  // La misma forma que una sección con filas de "Te toca": título, riel, chip,
+  // dos líneas y la acción.
   return (
     <Cargando etiqueta="Cargando tus trabajos">
       {conFiltro && <Esqueleto className="mt-6 h-[50px] w-72 max-w-full rounded-pill" />}
       <div className="mt-8">
-        <Esqueleto className="mx-1 mb-3 h-4 w-24" />
+        <Esqueleto className="mb-4 h-7 w-52" />
+        <Esqueleto className="mx-1 mb-3 h-4 w-20" />
         <div className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
           {[0, 1, 2].map((i) => (
             <div key={i} className={`grid gap-3.5 px-4 py-4 sm:px-5 ${i > 0 ? "border-t border-line" : ""}`}>
-              <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-3">
+              <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 sm:grid-cols-[44px_minmax(0,1fr)_auto]">
                 <Esqueleto className="size-11 rounded-button" />
                 <div className="grid content-start gap-2 pt-1">
-                  <Esqueleto className="h-4 w-3/5" />
-                  <Esqueleto className="h-3 w-4/5" />
+                  <Esqueleto className="h-5 w-3/5" />
+                  <Esqueleto className="h-4 w-4/5" />
+                  <Esqueleto className="h-5 w-28 sm:hidden" />
                 </div>
+                <Esqueleto className="h-5 w-28 max-sm:hidden" />
               </div>
-              <Esqueleto className="h-[42px] w-full" />
-              <Esqueleto className="h-7 w-40 rounded-pill" />
+              <Esqueleto className="h-[42px] w-full max-w-[544px]" />
+              <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
+                <div className="grid gap-2">
+                  <Esqueleto className="h-7 w-40 rounded-pill" />
+                  <Esqueleto className="h-4 w-72 max-w-full" />
+                  <Esqueleto className="h-4 w-48" />
+                </div>
+                <Esqueleto className="h-11 w-full rounded-control sm:w-44" />
+              </div>
             </div>
           ))}
         </div>

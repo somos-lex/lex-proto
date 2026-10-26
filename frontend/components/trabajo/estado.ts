@@ -3,7 +3,10 @@
 // transición existe y quién la hace) son las de lib/transicionesTrabajo.ts y el
 // backend; acá solo se decide cómo contarlas.
 
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import type { EstadoPaso } from "@/components/ds/Riel";
+import { relojAR } from "@/lib/fechas";
 import { teToca as teTocaA } from "@/lib/pendientes";
 import { formatFecha } from "@/lib/servicios";
 import type { RolEnTrabajo } from "@/lib/transicionesTrabajo";
@@ -58,9 +61,11 @@ export const TITULO_GRUPO: Record<GrupoTrabajo, string> = {
 // --- Riel ---------------------------------------------------------------------
 
 /** Proyecto cerrado se entrega y se confirma; Clase y Salud avanzan por sesiones
- *  y se completan solas con la última, sin "Entregado". */
-export function pasosDe(tipo: TrabajoResponse["tipo"]): EstadoTrabajo[] {
-  return tipo === "ProyectoCerrado"
+ *  y se completan solas con la última, sin "Entregado". La API igual acepta
+ *  entregar una Clase o un servicio de Salud: si el trabajo pasó por ahí, el
+ *  paso aparece. */
+export function pasosDe(tipo: TrabajoResponse["tipo"], estado?: EstadoTrabajo): EstadoTrabajo[] {
+  return tipo === "ProyectoCerrado" || estado === "Entregado"
     ? ["Pendiente", "Aceptado", "EnCurso", "Entregado", "Completado"]
     : ["Pendiente", "Aceptado", "EnCurso", "Completado"];
 }
@@ -86,13 +91,13 @@ export function pasosRiel(
   trabajo: TrabajoResponse,
   historial: TrabajoHistorialResponse[] | null = null,
 ): { texto: string; estado: EstadoPaso }[] {
-  const pasos = pasosDe(trabajo.tipo);
   const { estado } = trabajo;
 
   if (estado === "Cancelado" || estado === "Disputa") {
     // El riel se corta: los pasos hechos hasta el corte y, en el lugar del
     // siguiente, el nodo de Cancelado o En disputa.
     const previo = estadoPrevioAlCorte(trabajo, historial);
+    const pasos = pasosDe(trabajo.tipo, previo);
     const hasta = Math.max(0, pasos.indexOf(previo));
     return [
       ...pasos.slice(0, hasta + 1).map((p) => ({ texto: ETIQUETA_ESTADO[p], estado: "hecho" as const })),
@@ -100,6 +105,7 @@ export function pasosRiel(
     ];
   }
 
+  const pasos = pasosDe(trabajo.tipo, estado);
   const actual = pasos.indexOf(estado);
   return pasos.map((p, i) => ({
     texto: ETIQUETA_ESTADO[p],
@@ -150,7 +156,7 @@ export function proximoPaso(
 
   switch (trabajo.estado) {
     case "Pendiente":
-      return `Espera que ${estudiante} lo acepte. Si no lo acepta, te devolvemos el pago.`;
+      return `Falta que ${estudiante} lo acepte. Si no lo acepta, te devolvemos el pago.`;
     case "Aceptado":
       if (consentimientoPendiente) return `Firmá el consentimiento para que ${estudiante} pueda empezar.`;
       return porSesiones ? `${estudiante} lo aceptó. Arranca con la primera sesión.` : `${estudiante} lo aceptó y tiene que empezarlo.`;
@@ -174,6 +180,11 @@ export function accionTeToca(estado: EstadoTrabajo): string {
   if (estado === "Pendiente") return "Revisar y responder";
   if (estado === "Aceptado") return "Ver cómo empezar";
   return "Revisar la entrega";
+}
+
+/** "23 de julio de 2026, 10:00", en hora argentina. */
+export function fechaHora(iso: string) {
+  return format(relojAR(iso), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es });
 }
 
 /** "Trabajo N.º 232" para el estudiante; "Contratación N.º 232" para el cliente. */
