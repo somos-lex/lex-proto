@@ -15,6 +15,7 @@ import { Suspense, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMenu } from "@/contexts/MenuContext";
 import { OSCURO_HABILITADO } from "@/lib/apariencia";
 import { usePendientes } from "@/lib/pendientes";
 import {
@@ -39,11 +40,8 @@ export function Navbar() {
   const pathname = usePathname();
   const pendientes = usePendientes();
   const [modalEstudiante, setModalEstudiante] = useState(false);
-  // El cajón queda abierto solo en la ruta donde se abrió: al navegar, se cierra.
-  const [abiertoEn, setAbiertoEn] = useState<string | null>(null);
-  const abierto = abiertoEn === pathname;
-  const abrir = () => setAbiertoEn(pathname);
-  const cerrar = () => setAbiertoEn(null);
+  // El estado del cajón vive en MenuContext: también lo abre la barra inferior.
+  const { abierto, abrir, cerrar } = useMenu();
 
   function handleLogout() {
     cerrar();
