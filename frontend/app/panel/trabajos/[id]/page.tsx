@@ -40,7 +40,7 @@ import { PagoProgreso } from "@/components/PagoProgreso";
 import { HistorialTrabajo } from "@/components/HistorialTrabajo";
 import { ResenasTrabajo } from "@/components/ResenasTrabajo";
 import { Pagina, TituloSeccion } from "@/components/trabajo/Pagina";
-import { Toast } from "@/components/trabajo/Toast";
+import { Toast } from "@/components/ds/Toast";
 import { mensajeDeError } from "@/components/trabajo/errores";
 import { grupoDe, nombreDe, pasosRiel, proximoPaso, rolEn, teToca } from "@/components/trabajo/estado";
 
@@ -303,7 +303,7 @@ function TrabajoDetalle({ trabajoId }: { trabajoId: number }) {
           </aside>
         </div>
       </Pagina>
-      <Toast mensaje={toast} onCerrar={() => setToast(null)} />
+      <Toast mensaje={toast} onCerrar={() => setToast(null)} conLateral />
     </>
   );
 }
@@ -357,3 +357,4 @@ function EsqueletoDetalle() {
     </Pagina>
   );
 }
+

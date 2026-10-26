@@ -24,7 +24,7 @@ import { formatPrecio } from "@/lib/servicios";
 import { Boton } from "@/components/Boton";
 import { Aviso } from "@/components/ds/Aviso";
 import { Field, Textarea } from "@/components/ui";
-import { Dialogo } from "@/components/trabajo/Dialogo";
+import { Dialogo } from "@/components/ds/Dialogo";
 import { mensajeDeError } from "@/components/trabajo/errores";
 import { nombreDe } from "@/components/trabajo/estado";
 
@@ -249,3 +249,4 @@ export function AccionesTrabajo({
 function Giro() {
   return <span aria-hidden="true" className="size-[18px] animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />;
 }
+

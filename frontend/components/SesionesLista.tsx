@@ -19,7 +19,7 @@ import { Esqueleto } from "@/components/ds/Estados";
 import { Tesela } from "@/components/ds/Lista";
 import EstadoSesionBadge from "@/components/EstadoSesionBadge";
 import { Field, Textarea } from "@/components/ui";
-import { Dialogo } from "@/components/trabajo/Dialogo";
+import { Dialogo } from "@/components/ds/Dialogo";
 import { mensajeDeError } from "@/components/trabajo/errores";
 import { TituloSeccion } from "@/components/trabajo/Pagina";
 
@@ -286,3 +286,4 @@ function MarcarDialogo({
     </Dialogo>
   );
 }
+

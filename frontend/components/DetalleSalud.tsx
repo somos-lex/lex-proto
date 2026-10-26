@@ -13,7 +13,7 @@ import { Boton } from "@/components/Boton";
 import { Icono } from "@/components/Icono";
 import { Aviso } from "@/components/ds/Aviso";
 import { Dato, Datos } from "@/components/trabajo/Datos";
-import { Dialogo } from "@/components/trabajo/Dialogo";
+import { Dialogo } from "@/components/ds/Dialogo";
 import { mensajeDeError } from "@/components/trabajo/errores";
 
 const MODALIDAD: Record<string, string> = {
@@ -203,3 +203,4 @@ export function FirmarConsentimiento({
     </>
   );
 }
+
