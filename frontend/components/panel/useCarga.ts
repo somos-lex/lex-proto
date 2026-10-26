@@ -4,8 +4,10 @@
 // Cada bloque del panel carga por su cuenta, así un error no tumba la pantalla.
 //
 // `clave` identifica qué se pide (null = todavía no hay con qué pedirlo).
-// `reintentar` vuelve a pedir; `cargar` recibe el número de intento, por si
-// quiere saltear una caché (intento > 0).
+// `reintentar` vuelve a pedir mostrando la carga (después de un error);
+// `recargar` vuelve a pedir dejando a la vista lo que ya había (después de
+// guardar algo). `cargar` recibe el número de intento, por si quiere saltear
+// una caché (intento > 0).
 
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
@@ -15,6 +17,7 @@ export interface Carga<T> {
   error: string | null;
   cargando: boolean;
   reintentar: () => void;
+  recargar: () => void;
 }
 
 /** Qué pasó, dicho para quien usa LEX: el mensaje del backend si es de
@@ -27,9 +30,9 @@ export function mensajeDeError(e: unknown) {
 }
 
 export function useCarga<T>(clave: string | null, cargar: (intento: number) => Promise<T>): Carga<T> {
-  const [intento, setIntento] = useState(0);
-  const [res, setRes] = useState<{ k: string; datos?: T; error?: string } | null>(null);
-  const k = clave === null ? null : `${clave}#${intento}`;
+  const [pedido, setPedido] = useState({ intento: 0, silencioso: false });
+  const [res, setRes] = useState<{ clave: string; intento: number; datos?: T; error?: string } | null>(null);
+  const { intento, silencioso } = pedido;
 
   const cargarRef = useRef(cargar);
   useEffect(() => {
@@ -37,26 +40,30 @@ export function useCarga<T>(clave: string | null, cargar: (intento: number) => P
   });
 
   useEffect(() => {
-    if (k === null) return;
+    if (clave === null) return;
     let vigente = true;
     cargarRef.current(intento).then(
       (datos) => {
-        if (vigente) setRes({ k, datos });
+        if (vigente) setRes({ clave, intento, datos });
       },
       (e: unknown) => {
-        if (vigente) setRes({ k, error: mensajeDeError(e) });
+        if (vigente) setRes({ clave, intento, error: mensajeDeError(e) });
       },
     );
     return () => {
       vigente = false;
     };
-  }, [k, intento]);
+  }, [clave, intento]);
 
-  const actual = res && res.k === k ? res : null;
+  const mismaClave = res !== null && res.clave === clave;
+  const actual = mismaClave && res.intento === intento ? res : null;
+  // En una recarga silenciosa, lo último que llegó sigue a la vista.
+  const previo = silencioso && mismaClave && res.datos !== undefined ? res : null;
   return {
-    datos: actual?.datos,
+    datos: actual ? actual.datos : previo?.datos,
     error: actual?.error ?? null,
-    cargando: k !== null && !actual,
-    reintentar: () => setIntento((i) => i + 1),
+    cargando: clave !== null && !actual && !previo,
+    reintentar: () => setPedido((p) => ({ intento: p.intento + 1, silencioso: false })),
+    recargar: () => setPedido((p) => ({ intento: p.intento + 1, silencioso: true })),
   };
 }

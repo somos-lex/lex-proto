@@ -11,13 +11,13 @@ import {
 import {
   listarServiciosPermitidos,
   listarSupervisores,
-  type CatalogoServicioResponse,
   type ProfesionalSupervisorResponse,
 } from "@/lib/catalogo";
 import type { CarreraPortafolio } from "@/lib/portafolio";
 import { ApiError } from "@/lib/api";
-import { Field, Input, Select } from "@/components/ui";
-import { FormShell } from "@/components/ServicioFormProyectoCerrado";
+import { Field, Input, Select, Textarea } from "@/components/ui";
+import { DetalleCatalogo, FormShell } from "@/components/ServicioFormProyectoCerrado";
+import { useCarga } from "@/components/panel/useCarga";
 
 const MODALIDADES: ModalidadSalud[] = ["Domicilio", "Consultorio", "Ambas"];
 
@@ -40,7 +40,6 @@ export function ServicioFormSalud({
   const [carreraId, setCarreraId] = useState<number>(
     carreras[0]?.carreraId ?? 0,
   );
-  const [catalogo, setCatalogo] = useState<CatalogoServicioResponse[]>([]);
   const [supervisores, setSupervisores] = useState<
     ProfesionalSupervisorResponse[]
   >([]);
@@ -82,28 +81,15 @@ export function ServicioFormSalud({
     };
   }, []);
 
-  // Catalogo de Salud para la carrera + año.
-  useEffect(() => {
-    let cancelado = false;
-    if (!carreraId || anioCursado <= 0) {
-      setCatalogo([]);
-      return;
-    }
-    listarServiciosPermitidos(carreraId, anioCursado)
-      .then((entradas) => {
-        if (!cancelado)
-          setCatalogo(entradas.filter((e) => e.tipoServicio === "Salud"));
-      })
-      .catch((err) => {
-        if (!cancelado)
-          setError(
-            err instanceof ApiError ? err.message : "No pudimos cargar el catálogo.",
-          );
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [carreraId, anioCursado]);
+  // Catálogo de Salud disponible para la carrera + año elegidos.
+  const catalogoCarga = useCarga(
+    carreraId && anioCursado > 0 ? `catalogo-Salud-${carreraId}-${anioCursado}` : null,
+    () => listarServiciosPermitidos(carreraId, anioCursado),
+  );
+  const catalogo = useMemo(
+    () => (catalogoCarga.datos ?? []).filter((e) => e.tipoServicio === "Salud"),
+    [catalogoCarga.datos],
+  );
 
   const seleccionado = useMemo(
     () => catalogo.find((c) => c.id === catalogoServicioId),
@@ -150,6 +136,12 @@ export function ServicioFormSalud({
     }
   }
 
+  const estadoCatalogo = catalogoCarga.error
+    ? { error: `No pudimos cargar el catálogo. ${catalogoCarga.error}` }
+    : catalogoCarga.datos && catalogo.length === 0
+      ? { ayuda: "Tu carrera no tiene entradas de esta vertical en el catálogo para tu año." }
+      : {};
+
   return (
     <FormShell
       titulo={editando ? "Editar servicio de salud" : "Publicar servicio de salud"}
@@ -178,13 +170,14 @@ export function ServicioFormSalud({
         </Field>
       )}
 
-      <Field label="Práctica del catálogo" htmlFor="catalogo">
+      <Field label="Práctica del catálogo" htmlFor="catalogo" {...estadoCatalogo}>
         <Select
           id="catalogo"
+          disabled={catalogoCarga.cargando}
           value={catalogoServicioId}
           onChange={(e) => setCatalogoServicioId(Number(e.target.value))}
         >
-          <option value={0}>Elegí una práctica…</option>
+          <option value={0}>{catalogoCarga.cargando ? "Cargando el catálogo…" : "Elegí una práctica…"}</option>
           {catalogo.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
@@ -194,14 +187,7 @@ export function ServicioFormSalud({
       </Field>
 
       {seleccionado && (
-        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-          {seleccionado.descripcion}
-          {seleccionado.observaciones && (
-            <span className="mt-1 block text-slate-400">
-              {seleccionado.observaciones}
-            </span>
-          )}
-        </p>
+        <DetalleCatalogo descripcion={seleccionado.descripcion} observaciones={seleccionado.observaciones} />
       )}
 
       <Field label="Supervisor matriculado" htmlFor="supervisor">
@@ -230,22 +216,22 @@ export function ServicioFormSalud({
       </Field>
 
       <Field label="Descripción" htmlFor="descripcion">
-        <textarea
+        <Textarea
           id="descripcion"
           rows={3}
           maxLength={1000}
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Contá en qué consiste la práctica…"
-          className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-focus/20"
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-end gap-3">
         <Field label="Precio ($)" htmlFor="precio">
           <Input
             id="precio"
             type="number"
+            inputMode="numeric"
             min="1"
             step="any"
             required
@@ -258,6 +244,7 @@ export function ServicioFormSalud({
           <Input
             id="duracion"
             type="number"
+            inputMode="numeric"
             min="1"
             step="1"
             required

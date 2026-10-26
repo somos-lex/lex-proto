@@ -10,7 +10,7 @@ import {
   type ServicioDetalleResponse,
 } from "@/lib/servicios";
 import { ApiError } from "@/lib/api";
-import { Field, Input, Select } from "@/components/ui";
+import { Field, Input, Select, Textarea } from "@/components/ui";
 import { FormShell } from "@/components/ServicioFormProyectoCerrado";
 
 const NIVELES: NivelClase[] = [
@@ -138,18 +138,17 @@ export function ServicioFormClase({
       </Field>
 
       <Field label="Descripción" htmlFor="descripcion">
-        <textarea
+        <Textarea
           id="descripcion"
           rows={3}
           maxLength={1000}
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Contá cómo son tus clases…"
-          className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-focus/20"
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-end gap-3">
         <Field label="Nivel" htmlFor="nivel">
           <Select
             id="nivel"
@@ -178,11 +177,12 @@ export function ServicioFormClase({
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-end gap-3">
         <Field label="Precio ($)" htmlFor="precio">
           <Input
             id="precio"
             type="number"
+            inputMode="numeric"
             min="1"
             step="any"
             required
@@ -195,6 +195,7 @@ export function ServicioFormClase({
           <Input
             id="duracion"
             type="number"
+            inputMode="numeric"
             min="1"
             step="1"
             required
@@ -204,10 +205,10 @@ export function ServicioFormClase({
         </Field>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink">
         <input
           type="checkbox"
-          className="accent-indigo-600"
+          className="size-5 shrink-0 accent-accent"
           checked={esPaquete}
           onChange={(e) => setEsPaquete(e.target.checked)}
         />
@@ -219,6 +220,7 @@ export function ServicioFormClase({
           <Input
             id="sesiones"
             type="number"
+            inputMode="numeric"
             min="2"
             step="1"
             required
