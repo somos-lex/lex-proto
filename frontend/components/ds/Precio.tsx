@@ -19,7 +19,7 @@ export function Precio({
 }) {
   return (
     <p className={`flex flex-wrap items-baseline gap-1.5 ${className}`}>
-      <span className={`font-bold whitespace-nowrap tabular-nums ${grande ? "text-amount-lg" : "text-amount"}`}>
+      <span className={`font-bold whitespace-nowrap ${grande ? "text-amount-lg" : "text-amount"}`}>
         {formatPrecio(monto)}
       </span>
       <span className="text-[14px] font-medium whitespace-nowrap text-ink-2">{unidad}</span>
