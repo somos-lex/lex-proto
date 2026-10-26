@@ -48,14 +48,14 @@ function PanelAgencia() {
               Buscá y contratá talento universitario verificado para proyectos de tu agencia.
             </p>
           </div>
-          <div className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-accent group-hover:text-accent-hover">
+          <div className="mt-5 flex items-center gap-1.5 text-[15px] font-semibold text-ink group-hover:text-ink-2">
             <span>Ir a la vidriera</span>
             <Icono nombre="chev-r" className="size-4" />
           </div>
         </Link>
 
         {/* Módulo próximo con estilo del sistema */}
-        <div className="flex flex-col justify-between rounded-card bg-surface-2/60 p-6 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+        <div className="flex flex-col justify-between rounded-card bg-surface-2 p-6 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
           <div>
             <Tesela icono="users" tono="neutro" />
             <h2 className="mt-4 text-base font-semibold text-ink sm:text-[17px]">

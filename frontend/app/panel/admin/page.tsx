@@ -199,7 +199,7 @@ function AdminIngresos() {
                       <td className="px-5 py-3.5 text-right tabular-nums">
                         {datos.cantidadTrabajosConPago}
                       </td>
-                      <td className="px-5 py-3.5 text-right text-accent tabular-nums">
+                      <td className="px-5 py-3.5 text-right font-medium text-ink tabular-nums">
                         {formatPrecio(datos.comisionLiberada)}
                       </td>
                       <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">
@@ -232,17 +232,13 @@ function Metrica({
     <div
       className={`flex flex-col justify-between rounded-card p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none ${
         destacada
-          ? "bg-accent-soft/40 shadow-[0_0_0_1.5px_var(--color-accent)]"
+          ? "bg-accent-soft shadow-[0_0_0_1.5px_var(--color-accent)]"
           : "bg-surface"
       }`}
     >
       <div>
         <p className="text-[14px] font-semibold text-ink-2">{label}</p>
-        <p
-          className={`mt-2 text-3xl font-bold tracking-tight tabular-nums ${
-            destacada ? "text-accent" : "text-ink"
-          }`}
-        >
+        <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-ink">
           {valor}
         </p>
       </div>

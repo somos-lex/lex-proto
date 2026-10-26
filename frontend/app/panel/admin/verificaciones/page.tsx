@@ -93,7 +93,7 @@ function Verificaciones() {
           <div className="mb-2">
             <Link
               href="/panel/admin"
-              className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:text-accent-hover"
+              className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-ink-2 hover:text-ink"
             >
               <Icono nombre="chev-r" className="size-4 rotate-180" />
               <span>Volver a ingresos</span>
