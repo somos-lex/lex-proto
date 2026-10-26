@@ -15,6 +15,7 @@ import { Suspense, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMenu } from "@/contexts/MenuContext";
 import { OSCURO_HABILITADO } from "@/lib/apariencia";
 import { usePendientes } from "@/lib/pendientes";
 import {
@@ -39,11 +40,8 @@ export function Navbar() {
   const pathname = usePathname();
   const pendientes = usePendientes();
   const [modalEstudiante, setModalEstudiante] = useState(false);
-  // El cajón queda abierto solo en la ruta donde se abrió: al navegar, se cierra.
-  const [abiertoEn, setAbiertoEn] = useState<string | null>(null);
-  const abierto = abiertoEn === pathname;
-  const abrir = () => setAbiertoEn(pathname);
-  const cerrar = () => setAbiertoEn(null);
+  // El estado del cajón vive en MenuContext: también lo abre la barra inferior.
+  const { abierto, abrir, cerrar } = useMenu();
 
   function handleLogout() {
     cerrar();
@@ -65,7 +63,7 @@ export function Navbar() {
           <Link
             href="/"
             aria-label="LEX, inicio"
-            className="inline-flex min-h-11 items-center text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
+            className="-ml-2 inline-flex min-h-11 min-w-11 items-center rounded-control px-2 text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
           >
             LEX
           </Link>

@@ -30,7 +30,7 @@ export function Hoja({
       ref={ref}
       aria-labelledby={idTitulo}
       onClick={alClickearVelo}
-      className="m-0 mt-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-scrim open:flex open:flex-col open:justify-end"
+      className="m-0 mt-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 outline-none backdrop:bg-scrim open:flex open:flex-col open:justify-end"
     >
       <div className="max-h-[88dvh] overflow-y-auto rounded-t-sheet bg-surface px-5 pt-2 pb-[calc(24px+env(safe-area-inset-bottom))] text-ink shadow-sheet transition-transform duration-[280ms] ease-out starting:translate-y-full motion-reduce:transition-none">
         <span aria-hidden="true" className="mx-auto mb-2.5 block h-[5px] w-10 rounded-[3px] bg-line-strong" />

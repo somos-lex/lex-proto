@@ -39,14 +39,13 @@ export function Chip({
 }
 
 /** Cuenta cosas pendientes. `etiqueta` es lo que oye un lector de pantalla
- *  ("2 por responder"). */
+ *  ("2 por responder"): el número se oculta y el texto va en sr-only, porque
+ *  aria-label en un span sin rol no lo leen todos los lectores. */
 export function Contador({ n, etiqueta }: { n: number; etiqueta: string }) {
   return (
-    <span
-      aria-label={etiqueta}
-      className="inline-grid h-5.5 min-w-5.5 place-items-center rounded-pill bg-accent px-[7px] text-[13px] font-bold text-on-accent tabular-nums"
-    >
-      {n}
+    <span className="inline-grid h-5.5 min-w-5.5 place-items-center rounded-pill bg-accent px-[7px] text-[13px] font-bold text-on-accent tabular-nums">
+      <span aria-hidden="true">{n}</span>
+      <span className="sr-only">{etiqueta}</span>
     </span>
   );
 }

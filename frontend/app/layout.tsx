@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Onest } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MenuProvider } from "@/contexts/MenuContext";
 import { Navbar } from "@/components/Navbar";
 import { Pie } from "@/components/Pie";
 import { SCRIPT_APARIENCIA } from "@/lib/apariencia";
@@ -50,11 +51,13 @@ export default function RootLayout({
           Saltar al contenido
         </a>
         <AuthProvider>
-          <Navbar />
-          <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
-            {children}
-          </main>
-          <Pie />
+          <MenuProvider>
+            <Navbar />
+            <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
+              {children}
+            </main>
+            <Pie />
+          </MenuProvider>
         </AuthProvider>
       </body>
     </html>

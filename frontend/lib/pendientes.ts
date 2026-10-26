@@ -89,7 +89,9 @@ export function usePendientes() {
     comoCliente,
     /** Todos los trabajos del usuario (para quien ya los necesite: evita otra llamada). */
     trabajos: propios,
-    cargando: s.cargando,
+    // En el primer render el efecto todavía no corrió: si hay usuario y el store
+    // no es suyo, cuenta como cargando (no como "sin pendientes").
+    cargando: usuarioId !== null && (s.usuarioId !== usuarioId || s.cargando),
     error: s.error,
     recargar: () => (usuarioId === null ? Promise.resolve() : cargarPendientes(usuarioId, true)),
   };
