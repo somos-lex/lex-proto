@@ -1,167 +1,251 @@
 "use client";
 
+// Acciones de un trabajo según su estado y el rol de la persona (las reglas son
+// las de lib/transicionesTrabajo.ts; el backend valida cada una). Dos zonas:
+//   - "principal": la acción que hace avanzar el trabajo (aceptar, empezar,
+//     entregar, confirmar), en primario, dentro de "Próximo paso".
+//   - "problemas": cancelar y abrir una disputa, en peligro y aparte, para que
+//     no queden al lado del primario.
+// Las que mueven plata o no se deshacen piden confirmación en un diálogo que dice
+// qué pasa con el pago.
+
 import { useState } from "react";
 import {
   aceptarTrabajo,
-  iniciarTrabajo,
-  entregarTrabajo,
-  completarTrabajo,
   cancelarTrabajo,
+  completarTrabajo,
   disputarTrabajo,
+  entregarTrabajo,
+  iniciarTrabajo,
   type TrabajoResponse,
 } from "@/lib/trabajos";
-import {
-  ACCIONES_META,
-  accionesDisponibles,
-  type AccionTrabajo,
-  type RolEnTrabajo,
-} from "@/lib/transicionesTrabajo";
-import { ApiError } from "@/lib/api";
-import { ErrorAlert } from "@/components/ui";
+import { accionesDisponibles, type AccionTrabajo, type RolEnTrabajo } from "@/lib/transicionesTrabajo";
+import { formatPrecio } from "@/lib/servicios";
+import { Boton } from "@/components/Boton";
+import { Aviso } from "@/components/ds/Aviso";
+import { Field, Textarea } from "@/components/ui";
+import { Dialogo } from "@/components/trabajo/Dialogo";
+import { mensajeDeError } from "@/components/trabajo/errores";
+import { nombreDe } from "@/components/trabajo/estado";
 
-const VARIANTE_CLASES: Record<string, string> = {
-  primary: "bg-indigo-600 text-white hover:bg-indigo-700",
-  secondary: "border border-slate-300 text-slate-700 hover:bg-slate-50",
-  danger: "border border-rose-300 text-rose-600 hover:bg-rose-50",
-  warning: "border border-amber-300 text-amber-700 hover:bg-amber-50",
-};
+const PRINCIPALES: AccionTrabajo[] = ["aceptar", "iniciar", "entregar", "completar"];
+const PROBLEMAS: AccionTrabajo[] = ["cancelar", "disputar"];
+
+interface Copia {
+  boton: string;
+  /** Sin confirmación: se ejecuta al tocar (igual que antes). */
+  confirmar?: { titulo: string; texto: string; boton: string };
+  exito: string;
+}
+
+function copiaDe(accion: AccionTrabajo, t: TrabajoResponse, rol: RolEnTrabajo): Copia {
+  const nombre = nombreDe(t, rol);
+  const enMinuscula = nombre.charAt(0).toLowerCase() + nombre.slice(1);
+  const laOtraParte = rol === "Cliente" ? t.estudianteNombre : t.clienteNombre;
+  switch (accion) {
+    case "aceptar":
+      return { boton: "Aceptar trabajo", exito: `Aceptaste el ${enMinuscula}.` };
+    case "iniciar":
+      return { boton: "Empezar el trabajo", exito: `Empezaste el ${enMinuscula}.` };
+    case "entregar":
+      return {
+        boton: "Marcar como entregado",
+        confirmar: {
+          titulo: "¿Marcás el trabajo como entregado?",
+          texto: `${t.clienteNombre} va a revisarlo. Cuando confirme la entrega, LEX te paga lo que te corresponde.`,
+          boton: "Marcar como entregado",
+        },
+        exito: `Marcaste como entregado el ${enMinuscula}.`,
+      };
+    case "completar":
+      return {
+        boton: "Confirmar la entrega",
+        confirmar: {
+          titulo: "¿Confirmás que recibiste el trabajo?",
+          texto: `Al confirmarlo, LEX le paga a ${t.estudianteNombre} y el trabajo queda completado. Hacelo solo si la entrega está bien: no se puede deshacer.`,
+          boton: "Confirmar y liberar el pago",
+        },
+        exito: `Confirmaste la entrega: le pagamos a ${t.estudianteNombre}.`,
+      };
+    case "cancelar":
+      return {
+        boton: rol === "Cliente" ? "Cancelar la contratación" : "Cancelar el trabajo",
+        confirmar: {
+          titulo: rol === "Cliente" ? "¿Cancelás la contratación?" : "¿Cancelás el trabajo?",
+          texto:
+            rol === "Cliente"
+              ? `LEX te devuelve el pago (${formatPrecio(t.precioAcordado)}) y ${t.estudianteNombre} deja de trabajar en esto. No se puede deshacer.`
+              : `LEX le devuelve el pago (${formatPrecio(t.precioAcordado)}) a ${t.clienteNombre}. No se puede deshacer.`,
+          boton: rol === "Cliente" ? "Sí, cancelar la contratación" : "Sí, cancelar el trabajo",
+        },
+        exito: `Cancelaste ${rol === "Cliente" ? "la" : "el"} ${enMinuscula}.`,
+      };
+    case "disputar":
+      return {
+        boton: "Abrir una disputa",
+        confirmar: {
+          titulo: "¿Abrís una disputa?",
+          texto: `Mientras dure, el pago queda congelado: no se libera ni se devuelve. Contá qué pasó con ${laOtraParte}.`,
+          boton: "Abrir la disputa",
+        },
+        exito: `Abriste una disputa por ${rol === "Cliente" ? "la" : "el"} ${enMinuscula}.`,
+      };
+  }
+}
+
+async function ejecutar(accion: AccionTrabajo, id: number, motivo?: string) {
+  switch (accion) {
+    case "aceptar":
+      return aceptarTrabajo(id);
+    case "iniciar":
+      return iniciarTrabajo(id);
+    case "entregar":
+      return entregarTrabajo(id);
+    case "completar":
+      return completarTrabajo(id);
+    case "cancelar":
+      return cancelarTrabajo(id);
+    case "disputar":
+      return disputarTrabajo(id, motivo ?? "");
+  }
+}
+
+export function accionesDeZona(t: TrabajoResponse, rol: RolEnTrabajo, zona: "principal" | "problemas") {
+  const todas = accionesDisponibles(t.estado, rol, t.tipo);
+  return todas.filter((a) => (zona === "principal" ? PRINCIPALES : PROBLEMAS).includes(a));
+}
 
 export function AccionesTrabajo({
   trabajo,
   rolUsuario,
+  zona,
   onAccionCompletada,
 }: {
   trabajo: TrabajoResponse;
   rolUsuario: RolEnTrabajo;
-  onAccionCompletada: () => void;
+  zona: "principal" | "problemas";
+  /** Recibe el mensaje de éxito para el toast. */
+  onAccionCompletada: (mensaje: string) => void;
 }) {
   const [ejecutando, setEjecutando] = useState<AccionTrabajo | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [disputaAbierta, setDisputaAbierta] = useState(false);
+  const [confirmando, setConfirmando] = useState<AccionTrabajo | null>(null);
   const [motivo, setMotivo] = useState("");
+  const [errorMotivo, setErrorMotivo] = useState<string | null>(null);
 
-  const acciones = accionesDisponibles(
-    trabajo.estado,
-    rolUsuario,
-    trabajo.tipo,
-  );
+  const acciones = accionesDeZona(trabajo, rolUsuario, zona);
   if (acciones.length === 0) return null;
 
-  async function ejecutar(accion: AccionTrabajo, motivoDisputa?: string) {
+  async function hacer(accion: AccionTrabajo, motivoDisputa?: string) {
     setEjecutando(accion);
     setError(null);
     try {
-      switch (accion) {
-        case "aceptar":
-          await aceptarTrabajo(trabajo.id);
-          break;
-        case "iniciar":
-          await iniciarTrabajo(trabajo.id);
-          break;
-        case "entregar":
-          await entregarTrabajo(trabajo.id);
-          break;
-        case "completar":
-          await completarTrabajo(trabajo.id);
-          break;
-        case "cancelar":
-          await cancelarTrabajo(trabajo.id);
-          break;
-        case "disputar":
-          await disputarTrabajo(trabajo.id, motivoDisputa ?? "");
-          break;
-      }
-      onAccionCompletada();
+      await ejecutar(accion, trabajo.id, motivoDisputa);
+      setConfirmando(null);
+      onAccionCompletada(copiaDe(accion, trabajo, rolUsuario).exito);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "No pudimos ejecutar la acción.",
-      );
+      setConfirmando(null);
+      setError(mensajeDeError(err, "No pudimos hacerlo. Revisá tu conexión y probá de nuevo."));
     } finally {
       setEjecutando(null);
     }
   }
 
-  function onClick(accion: AccionTrabajo) {
-    const meta = ACCIONES_META[accion];
-    if (meta.requiereMotivo) {
-      setDisputaAbierta(true);
+  function tocar(accion: AccionTrabajo) {
+    if (ejecutando !== null) return; // aria-disabled no frena el click
+    if (copiaDe(accion, trabajo, rolUsuario).confirmar) {
+      setMotivo("");
+      setErrorMotivo(null);
+      setConfirmando(accion);
       return;
     }
-    if (meta.requiereConfirmacion) {
-      if (!confirm(meta.mensajeConfirmacion ?? "¿Confirmás la acción?")) return;
-    }
-    ejecutar(accion);
+    hacer(accion);
   }
 
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-slate-900">Acciones</h2>
-      {error && (
-        <div className="mt-3">
-          <ErrorAlert message={error} />
-        </div>
-      )}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {acciones.map((a) => {
-          const meta = ACCIONES_META[a];
-          return (
-            <button
-              key={a}
-              onClick={() => onClick(a)}
-              disabled={ejecutando !== null}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTE_CLASES[meta.variante]}`}
-              title={meta.descripcion}
-            >
-              {ejecutando === a ? "Procesando…" : meta.etiqueta}
-            </button>
-          );
-        })}
-      </div>
+  function confirmar() {
+    if (!confirmando || ejecutando !== null) return;
+    if (confirmando === "disputar" && !motivo.trim()) {
+      setErrorMotivo("Contá qué pasó: sin el motivo no se puede abrir la disputa.");
+      return;
+    }
+    hacer(confirmando, confirmando === "disputar" ? motivo.trim() : undefined);
+  }
 
-      {disputaAbierta && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setDisputaAbierta(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-slate-900">Iniciar disputa</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              {ACCIONES_META.disputar.mensajeConfirmacion}
-            </p>
-            <textarea
-              rows={3}
+  const copiaConfirmando = confirmando ? copiaDe(confirmando, trabajo, rolUsuario) : null;
+
+  const botones = acciones.map((a) => {
+    const c = copiaDe(a, trabajo, rolUsuario);
+    const cargando = ejecutando === a && !c.confirmar;
+    return (
+      <Boton
+        key={a}
+        variante={zona === "principal" ? "primario" : "peligro"}
+        tamano={zona === "principal" ? "md" : "sm"}
+        className={zona === "principal" ? "max-sm:w-full" : ""}
+        onClick={() => tocar(a)}
+        aria-disabled={ejecutando !== null || undefined}
+        aria-busy={cargando || undefined}
+      >
+        {cargando && <Giro />}
+        {cargando ? "Guardando…" : c.boton}
+      </Boton>
+    );
+  });
+
+  return (
+    <div className="grid gap-3">
+      {error && (
+        <Aviso tono="danger" titulo="No se pudo completar la acción.">
+          {error}
+        </Aviso>
+      )}
+      <div className="flex flex-wrap gap-2">{botones}</div>
+
+      <Dialogo
+        abierto={confirmando !== null}
+        onCerrar={() => setConfirmando(null)}
+        titulo={copiaConfirmando?.confirmar?.titulo}
+        pie={
+          <>
+            <Boton variante="secundario" onClick={() => setConfirmando(null)} className="max-sm:w-full">
+              Volver
+            </Boton>
+            <Boton
+              variante={confirmando === "cancelar" || confirmando === "disputar" ? "peligro" : "primario"}
+              onClick={confirmar}
+              aria-busy={ejecutando !== null || undefined}
+              aria-disabled={ejecutando !== null || undefined}
+              className="max-sm:w-full"
+            >
+              {ejecutando !== null && <Giro />}
+              {ejecutando !== null ? "Guardando…" : copiaConfirmando?.confirmar?.boton}
+            </Boton>
+          </>
+        }
+      >
+        <p>{copiaConfirmando?.confirmar?.texto}</p>
+        {confirmando === "disputar" && (
+          <Field label="Qué pasó" htmlFor={`motivo-disputa-${trabajo.id}`} error={errorMotivo}>
+            <Textarea
+              id={`motivo-disputa-${trabajo.id}`}
+              rows={4}
               maxLength={500}
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Describí el motivo…"
-              className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                if (errorMotivo) setErrorMotivo(null);
+              }}
+              aria-invalid={!!errorMotivo || undefined}
+              aria-describedby={errorMotivo ? `motivo-disputa-${trabajo.id}-error` : undefined}
+              placeholder="Por ejemplo: la entrega no incluye lo que acordamos."
             />
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => setDisputaAbierta(false)}
-                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  setDisputaAbierta(false);
-                  ejecutar("disputar", motivo.trim());
-                }}
-                disabled={!motivo.trim()}
-                className="flex-1 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Confirmar disputa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </Field>
+        )}
+      </Dialogo>
     </div>
   );
+}
+
+function Giro() {
+  return <span aria-hidden="true" className="size-[18px] animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />;
 }
