@@ -37,6 +37,40 @@ export interface ServicioResponse {
   fechaPublicacion: string; // ISO UTC
   imagenUrl: string | null;
   tipo: TipoServicio;
+  // Credencial y tarjeta (D5). Los completan el listado, el detalle y el portafolio;
+  // la alta y la edicion por vertical los devuelven en null. Opcionales para tolerar
+  // un backend anterior.
+  /** Carrera VERIFICADA del estudiante; null si hoy no tiene ninguna verificada. */
+  credencial?: CredencialEstudiante | null;
+  /** Solo en Salud. */
+  supervisor?: SupervisorResumen | null;
+  /** Nombre del catálogo (Proyecto cerrado y Salud) o la materia (Clase). */
+  tema?: string | null;
+  condiciones?: CondicionesServicio | null;
+}
+
+export interface CredencialEstudiante {
+  carrera: string;
+  /** Completa: "Universidad Nacional del Nordeste (UNNE)". */
+  institucion: string;
+  anioCursado: number | null;
+}
+
+export interface SupervisorResumen {
+  nombre: string;
+  matricula: string;
+}
+
+export interface CondicionesServicio {
+  /** Clase y Salud. */
+  duracionMinutosSesion: number | null;
+  /** Clase: ModalidadClase. Salud: ModalidadSalud. */
+  modalidad: string | null;
+  /** Proyecto cerrado. */
+  plazoEntregaDias: number | null;
+  /** Clase: si es paquete, el precio es del paquete entero. */
+  esPaquete: boolean | null;
+  cantidadSesionesPaquete: number | null;
 }
 
 // Bloques `detalle` polimorficos por vertical.
