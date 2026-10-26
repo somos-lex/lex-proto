@@ -4,6 +4,13 @@ import { ApiError } from "@/lib/api";
 import ServiceCard from "@/components/ServiceCard";
 import { ResenasList } from "@/components/ResenasList";
 import { StarsRow } from "@/components/Stars";
+import { Carnet } from "@/components/ds/Credencial";
+import { formatCalificacion } from "@/components/publico/presentacion";
+import { CLASES_GRILLA } from "@/components/publico/EsqueletoServicio";
+
+// Perfil público del estudiante: quién es, su credencial, lo que ofrece y lo que dicen
+// de su trabajo. En público solo se muestran las carreras que LEX verificó: los estados
+// "en revisión" o "rechazada" existen solo en el panel del propio estudiante.
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,155 +30,86 @@ export default async function PortafolioPage({ params }: Props) {
     throw err;
   }
 
-  const inicial = portafolio.nombreCompleto.trim().charAt(0).toUpperCase() || "?";
+  const nombre = portafolio.nombreCompleto.trim().split(/\s+/)[0];
+  const verificadas = portafolio.carreras.filter((c) => c.estadoVerificacion === "Verificado");
+  const n = portafolio.resenas.length;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
-      {/* Hero */}
-      <section className="flex flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:flex-row sm:text-left">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-4xl font-extrabold text-white shadow-inner">
-          {inicial}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+    <div className="mx-auto max-w-lex px-4 pt-5 md:px-6 lg:px-8 lg:pt-10">
+      <section aria-labelledby="t-perfil" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-12">
+        <div className="grid content-start gap-3">
+          <h1 id="t-perfil" className="text-title-1-mobile text-balance lg:text-title-1">
             {portafolio.nombreCompleto}
           </h1>
-          {portafolio.anioCursado != null && (
-            <p className="mt-1 text-sm font-medium text-indigo-700">
-              {portafolio.anioCursado}° año
+          {n > 0 && portafolio.calificacionPromedio > 0 && (
+            <p className="flex flex-wrap items-center gap-2 text-[15px] text-ink-2">
+              <StarsRow value={Math.round(portafolio.calificacionPromedio)} />
+              <span className="font-semibold text-ink">{formatCalificacion(portafolio.calificacionPromedio)}</span>
+              <span>
+                en {n} {n === 1 ? "reseña" : "reseñas"}
+              </span>
             </p>
           )}
           {portafolio.bio && (
-            <p className="mt-3 max-w-2xl whitespace-pre-line text-sm text-slate-600">
-              {portafolio.bio}
+            <p className="max-w-[62ch] text-[17px] leading-[1.5] whitespace-pre-line text-ink-2 lg:text-lead">{portafolio.bio}</p>
+          )}
+          {portafolio.trabajosCompletados > 0 && (
+            <p className="text-[15px] text-ink-2">
+              Completó {portafolio.trabajosCompletados} {portafolio.trabajosCompletados === 1 ? "trabajo" : "trabajos"} en LEX.
             </p>
           )}
-          <div className="mt-4 flex items-center justify-center gap-2 sm:justify-start">
-            {portafolio.calificacionPromedio > 0 ? (
-              <>
-                <StarsRow value={Math.round(portafolio.calificacionPromedio)} />
-                <span className="text-lg font-bold text-slate-900">
-                  {portafolio.calificacionPromedio.toFixed(1)}
-                </span>
-                <span className="text-sm text-slate-400">
-                  ({portafolio.resenas.length} reseña
-                  {portafolio.resenas.length !== 1 ? "s" : ""})
-                </span>
-              </>
-            ) : (
-              <span className="text-sm text-slate-400">
-                Todavía sin calificación
-              </span>
-            )}
-          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {verificadas.length > 0 ? (
+            verificadas.map((c) => (
+              <Carnet
+                key={c.carreraId}
+                rol="Estudiante"
+                nombre={portafolio.nombreCompleto}
+                carrera={c.carrera}
+                anio={portafolio.anioCursado}
+                institucion={c.institucion}
+              />
+            ))
+          ) : (
+            <p className="rounded-card bg-surface-2 px-5 py-4 text-[15px] text-ink-2">
+              {nombre} no tiene una carrera verificada en este momento.
+            </p>
+          )}
         </div>
       </section>
 
-      {/* Sello de verificación institucional */}
-      {portafolio.carreras.length > 0 && (
-        <section className="mt-6 grid gap-3 sm:grid-cols-2">
-          {portafolio.carreras.map((c) => {
-            const verificado = c.estadoVerificacion === "Verificado";
-            return (
-              <div
-                key={c.carreraId}
-                className={`flex items-start gap-3 rounded-xl border p-4 ${
-                  verificado
-                    ? "border-emerald-200 bg-emerald-50/60"
-                    : "border-amber-200 bg-amber-50/60"
-                }`}
-              >
-                <span
-                  className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    verificado
-                      ? "bg-emerald-500 text-white"
-                      : "bg-amber-500 text-white"
-                  }`}
-                  aria-hidden="true"
-                >
-                  {verificado ? "✓" : "!"}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-900">{c.carrera}</p>
-                  <p className="text-sm text-slate-600">{c.institucion}</p>
-                  <span
-                    className={`mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      verificado
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {verificado ? "Verificado" : "Pendiente de verificación"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      )}
-
-      {/* Stats */}
-      <section className="mt-6 grid grid-cols-3 gap-3">
-        <StatCard
-          valor={portafolio.trabajosCompletados}
-          label="Trabajos completados"
-        />
-        <StatCard
-          valor={
-            portafolio.calificacionPromedio > 0
-              ? portafolio.calificacionPromedio.toFixed(1)
-              : "—"
-          }
-          label="Calificación"
-        />
-        <StatCard valor={portafolio.resenas.length} label="Reseñas" />
-      </section>
-
-      {/* Servicios */}
-      <section className="mt-12">
-        <h2 className="text-lg font-bold text-slate-900">
-          Servicios{" "}
-          <span className="font-normal text-slate-400">
-            ({portafolio.servicios.length})
-          </span>
+      <section aria-labelledby="t-servicios" className="mt-12">
+        <h2 id="t-servicios" className="mb-4 text-title-2-mobile lg:text-title-2">
+          Servicios de {nombre}
         </h2>
         {portafolio.servicios.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
-            Este estudiante todavía no publicó servicios.
+          <p className="rounded-card bg-surface-2 px-4 py-4 text-[15px] text-ink-2">
+            {nombre} todavía no publicó servicios.
           </p>
         ) : (
-          <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className={CLASES_GRILLA}>
             {portafolio.servicios.map((s) => (
-              <ServiceCard key={s.id} servicio={s} />
+              <li key={s.id} className="grid">
+                <ServiceCard servicio={s} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
 
-      {/* Reseñas */}
-      <section className="mt-12">
-        <h2 className="text-lg font-bold text-slate-900">
-          Reseñas{" "}
-          <span className="font-normal text-slate-400">
-            ({portafolio.resenas.length})
-          </span>
+      <section aria-labelledby="t-resenas" className="mt-12">
+        <h2 id="t-resenas" className="mb-4 text-title-2-mobile lg:text-title-2">
+          Reseñas
         </h2>
-        <div className="mt-4">
+        <div className="max-w-3xl">
           <ResenasList
             resenas={portafolio.resenas}
-            emptyText="Todavía no tiene reseñas. ¡Podés ser su primer cliente!"
+            emptyText={`Todavía no tiene reseñas. Aparecen cuando quien contrató a ${nombre} termina el trabajo y lo califica.`}
           />
         </div>
       </section>
-    </div>
-  );
-}
-
-function StatCard({ valor, label }: { valor: number | string; label: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{valor}</p>
-      <p className="mt-1 text-xs sm:text-sm text-slate-500">{label}</p>
     </div>
   );
 }

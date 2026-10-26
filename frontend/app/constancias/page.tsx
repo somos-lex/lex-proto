@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import { FormularioCodigo } from "./FormularioCodigo";
 
-// Formulario de verificación de constancias (Server Component). Un GET plano a esta misma
-// página con ?codigo= redirige al detalle, así funciona sin JavaScript.
+// Verificar una constancia del Banco de Turnos (Server Component). Un GET plano a esta
+// misma página con ?codigo= redirige al detalle, así funciona sin JavaScript.
 
 interface Props {
   searchParams: Promise<{ codigo?: string }>;
@@ -9,29 +10,20 @@ interface Props {
 
 export default async function VerificarConstanciaPage({ searchParams }: Props) {
   const { codigo } = await searchParams;
-  if (codigo?.trim()) redirect(`/constancias/${encodeURIComponent(codigo.trim())}`);
+  if (codigo?.trim()) redirect(`/constancias/${encodeURIComponent(codigo.trim().toUpperCase())}`);
 
   return (
-    <div className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Verificar una constancia</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Ingresá el código que figura en la constancia de práctica clínica (por ejemplo
-        LEX-7K3M-9QXR) para confirmar que es auténtica.
-      </p>
-      <form method="get" className="mt-6 flex gap-2">
-        <input
-          name="codigo"
-          required
-          placeholder="LEX-XXXX-XXXX"
-          className="flex-1 rounded-lg border border-slate-200 px-3.5 py-2.5 font-mono text-sm uppercase tracking-wider"
-        />
-        <button
-          type="submit"
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
-        >
-          Verificar
-        </button>
-      </form>
+    <div className="mx-auto max-w-lex px-4 pt-5 md:px-6 lg:px-8 lg:pt-10">
+      <div className="max-w-2xl">
+        <h1 className="text-title-1-mobile lg:text-title-1">Verificar una constancia</h1>
+        <p className="mt-2.5 text-[17px] leading-[1.5] text-ink-2 lg:text-lead">
+          Cada turno del Banco de Turnos que se atiende deja una constancia con un código. Ingresalo para confirmar que
+          la emitió LEX. La verificación no muestra ningún dato del paciente.
+        </p>
+        <div className="mt-6">
+          <FormularioCodigo />
+        </div>
+      </div>
     </div>
   );
 }

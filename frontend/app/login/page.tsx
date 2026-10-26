@@ -1,81 +1,18 @@
-"use client";
+import { MarcoAcceso, rutaSegura } from "@/components/publico/Acceso";
+import { FormularioLogin } from "./FormularioLogin";
 
-import { useState, type FormEvent } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { ApiError } from "@/lib/api";
-import { ErrorAlert, Field, Input, SubmitButton } from "@/components/ui";
+// Ingresar. `?volver=` (solo rutas internas) lleva de vuelta adonde estaba la persona:
+// lo pasan RequireRole, la ficha de un servicio y la de un turno.
 
-export default function LoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
+interface Props {
+  searchParams: Promise<{ volver?: string }>;
+}
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      await login(email, password);
-      router.push("/");
-    } catch (err) {
-      // El mensaje viene del backend (ej: credenciales inválidas → 401).
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "No pudimos conectarnos. ¿Está corriendo el backend?",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
+export default async function LoginPage({ searchParams }: Props) {
+  const { volver } = await searchParams;
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:py-24">
-      <h1 className="text-2xl font-bold tracking-tight text-ink">
-        Iniciá sesión
-      </h1>
-      <p className="mt-2 text-sm text-gray-600">
-        ¿No tenés cuenta?{" "}
-        <Link href="/registro" className="font-semibold text-link hover:underline">
-          Creá una
-        </Link>
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        {error && <ErrorAlert message={error} />}
-
-        <Field label="Email" htmlFor="email">
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-          />
-        </Field>
-
-        <Field label="Contraseña" htmlFor="password">
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </Field>
-
-        <SubmitButton loading={submitting}>Entrar</SubmitButton>
-      </form>
-    </div>
+    <MarcoAcceso>
+      <FormularioLogin volver={rutaSegura(volver)} />
+    </MarcoAcceso>
   );
 }
