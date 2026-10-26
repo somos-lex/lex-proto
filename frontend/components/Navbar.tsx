@@ -5,7 +5,8 @@
 // - Sin selector de vistas (D2): con sesión, el menú agrupa "Como estudiante" y
 //   "Como cliente" según los roles reales de la identidad.
 // - Mobile: el botón "Menú" abre el cajón con el árbol completo (D4). La barra
-//   inferior con sesión llega después, en el área del panel.
+//   inferior con sesión llega después, en el área del panel. El árbol vive en
+//   lib/navegacion.ts y lo comparte el lateral del panel.
 // - Escritorio: navegación pública arriba; con sesión, el mismo cajón detrás del
 //   botón de la cuenta, hasta que el panel tenga su lateral.
 // - Solo enlaza páginas que existen hoy.
@@ -14,89 +15,13 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Identidad } from "@/lib/perfil";
 import { OPCIONES_APARIENCIA, OSCURO_HABILITADO } from "@/lib/apariencia";
 import { useApariencia } from "@/lib/useApariencia";
 import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
 import { Cajon } from "@/components/Cajon";
 import { Icono, type NombreIcono } from "@/components/Icono";
+import { NAV_PUBLICA, credencialCorta, iniciales, seccionesDe, type ItemMenu } from "@/lib/navegacion";
 import { clasesBoton } from "@/components/Boton";
-
-const NAV_PUBLICA = [
-  { href: "/", label: "Servicios", activo: (p: string) => p === "/" || p.startsWith("/servicios") },
-  { href: "/practicas", label: "Banco de Turnos", activo: (p: string) => p.startsWith("/practicas") },
-];
-
-interface ItemMenu {
-  href: string;
-  label: string;
-  icono: NombreIcono;
-}
-
-interface SeccionMenu {
-  titulo: string;
-  items: ItemMenu[];
-}
-
-function seccionesDe(roles: string[], identidad: Identidad | null): SeccionMenu[] {
-  const secciones: SeccionMenu[] = [];
-  if (identidad?.esEstudiante || roles.includes("Estudiante")) {
-    secciones.push({
-      titulo: "Como estudiante",
-      items: [
-        { href: "/panel/servicios", label: "Mis servicios", icono: "briefcase" },
-        { href: "/panel/disponibilidad", label: "Agenda y disponibilidad", icono: "calendar" },
-        { href: "/panel/trabajos", label: "Trabajos recibidos", icono: "inbox" },
-        { href: "/panel/practicas", label: "Turnos que publico", icono: "calendar-plus" },
-      ],
-    });
-  }
-  if (roles.includes("Cliente")) {
-    secciones.push({
-      titulo: "Como cliente",
-      items: [
-        { href: "/panel/trabajos", label: "Contrataciones", icono: "receipt" },
-        { href: "/panel/inscripciones", label: "Mis turnos del Banco", icono: "calendar" },
-        { href: "/panel/pacientes", label: "Personas y mascotas", icono: "users" },
-      ],
-    });
-  }
-  if (roles.includes("Agencia")) {
-    secciones.push({
-      titulo: "Agencia",
-      items: [{ href: "/panel/agencia", label: "Panel de agencia", icono: "briefcase" }],
-    });
-  }
-  if (roles.includes("Admin")) {
-    secciones.push({
-      titulo: "Administración",
-      items: [
-        { href: "/panel/admin", label: "Ingresos", icono: "receipt" },
-        { href: "/panel/admin/verificaciones", label: "Verificaciones", icono: "id" },
-      ],
-    });
-  }
-  secciones.push({
-    titulo: "Explorar",
-    items: [
-      { href: "/", label: "Catálogo de servicios", icono: "compass" },
-      { href: "/practicas", label: "Banco de Turnos", icono: "calendar" },
-    ],
-  });
-  return secciones;
-}
-
-function iniciales(nombre: string | undefined) {
-  if (!nombre) return "?";
-  const partes = nombre.trim().split(/\s+/);
-  return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
-}
-
-function credencialCorta(identidad: Identidad | null) {
-  const c = identidad?.carreras[0];
-  if (!c) return null;
-  return c.anioCursado ? `${c.carreraNombre}, ${c.anioCursado}.º año` : c.carreraNombre;
-}
 
 export function Navbar() {
   const { isAuthenticated, user, identidad, roles, logout, loading } = useAuth();
