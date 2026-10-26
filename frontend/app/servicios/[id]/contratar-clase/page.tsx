@@ -14,13 +14,21 @@ import { contratarClase } from "@/lib/trabajos";
 import { ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { SelectorSlots } from "@/components/SelectorSlots";
-import { ErrorAlert } from "@/components/ui";
+import { Field, Textarea } from "@/components/ui";
+import { Boton, clasesBoton } from "@/components/Boton";
+import { Aviso } from "@/components/ds/Aviso";
+import {
+  CabeceraFlujo,
+  EsqueletoFlujo,
+  LayoutFlujo,
+  Paso,
+  ResumenContratar,
+  faltante,
+} from "@/components/publico/FlujoContratar";
 
-export default function ContratarClasePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+type ServicioClase = ServicioDetalleResponse & { detalle: DetalleClase };
+
+export default function ContratarClasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
     <RequireRole roles={["Cliente"]} vista="Cliente">
@@ -31,11 +39,9 @@ export default function ContratarClasePage({
 
 function ContratarClase({ servicioId }: { servicioId: number }) {
   const router = useRouter();
-  const [servicio, setServicio] = useState<
-    (ServicioDetalleResponse & { detalle: DetalleClase }) | null
-  >(null);
-  const [cargando, setCargando] = useState(true);
+  const [servicio, setServicio] = useState<ServicioClase | null>(null);
   const [cargaError, setCargaError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
 
   const [slotsElegidos, setSlotsElegidos] = useState<string[]>([]);
   const [notas, setNotas] = useState("");
@@ -47,57 +53,58 @@ function ContratarClase({ servicioId }: { servicioId: number }) {
     obtenerServicio(servicioId)
       .then((s) => {
         if (cancelado) return;
-        if (!esClase(s)) {
-          setCargaError("Este servicio no es de tipo Clase.");
-          return;
-        }
-        setServicio(s);
+        if (!esClase(s)) setCargaError("Este servicio no es una clase.");
+        else setServicio(s);
       })
       .catch((err) => {
-        if (!cancelado)
-          setCargaError(
-            err instanceof ApiError
-              ? err.message
-              : "No pudimos cargar el servicio.",
-          );
-      })
-      .finally(() => {
-        if (!cancelado) setCargando(false);
+        if (!cancelado) setCargaError(err instanceof ApiError ? err.message : "No pudimos cargar el servicio.");
       });
     return () => {
       cancelado = true;
     };
-  }, [servicioId]);
+  }, [servicioId, intento]);
 
-  if (cargando) {
+  if (cargaError)
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-      </div>
-    );
-  }
-
-  if (cargaError || !servicio) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-16">
-        <ErrorAlert message={cargaError ?? "Servicio no encontrado."} />
-        <Link
-          href="/"
-          className="mt-6 inline-block text-sm font-semibold text-indigo-700 hover:underline"
+      <div className="mx-auto max-w-lex px-4 py-10 md:px-6 lg:px-8">
+        <Aviso
+          tono="danger"
+          titulo="No pudimos abrir la contratación."
+          acciones={
+            <>
+              <Boton
+                variante="secundario"
+                tamano="sm"
+                onClick={() => {
+                  setCargaError(null);
+                  setIntento((n) => n + 1);
+                }}
+              >
+                Reintentar
+              </Boton>
+              <Link href="/" className={clasesBoton({ variante: "fantasma", tamano: "sm" })}>
+                Ir al catálogo
+              </Link>
+            </>
+          }
         >
-          ← Volver al catálogo
-        </Link>
+          {cargaError}
+        </Aviso>
       </div>
     );
-  }
 
-  const cantidad = servicio.detalle.esPaquete
-    ? (servicio.detalle.cantidadSesionesPaquete ?? 1)
-    : 1;
-  const completo = slotsElegidos.length === cantidad;
+  if (!servicio) return <EsqueletoFlujo />;
 
-  async function handleConfirmar() {
-    if (!completo || !servicio) return;
+  const d = servicio.detalle;
+  const cantidad = d.esPaquete ? (d.cantidadSesionesPaquete ?? 1) : 1;
+  const faltan = cantidad - slotsElegidos.length;
+  const falta = faltante(
+    faltan > 0 ? [cantidad === 1 ? "elegir el horario" : `elegir ${faltan} horario${faltan === 1 ? "" : "s"} más`] : [],
+  );
+  const nombre = servicio.estudianteNombre.trim().split(/\s+/)[0];
+
+  async function confirmar() {
+    if (falta || !servicio || enviando) return;
     setEnviando(true);
     setError(null);
     try {
@@ -108,95 +115,66 @@ function ContratarClase({ servicioId }: { servicioId: number }) {
       });
       router.push(`/panel/trabajos/${trabajo.id}`);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "No pudimos confirmar la contratación.",
-      );
+      setError(err instanceof ApiError ? err.message : "No pudimos confirmar la contratación. Probá de nuevo.");
       setEnviando(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/servicios/${servicio.id}`}
-        className="mb-4 inline-block text-sm text-slate-500 transition hover:text-indigo-700"
-      >
-        ← Volver al servicio
-      </Link>
-
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-        Contratar servicio de tutoría
-      </h1>
-
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="font-semibold text-slate-900">{servicio.titulo}</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          por {servicio.estudianteNombre} · {servicio.detalle.materia} ·{" "}
-          {servicio.detalle.duracionMinutosSesion} min por sesión
-        </p>
-        <p className="mt-2 text-lg font-bold text-slate-900">
-          {formatPrecio(servicio.precio)}
-          {servicio.detalle.esPaquete && (
-            <span className="ml-2 text-sm font-normal text-slate-500">
-              paquete de {cantidad} sesiones
-            </span>
+    <LayoutFlujo
+      cabecera={<CabeceraFlujo servicio={servicio} />}
+      resumen={
+        <ResumenContratar servicio={servicio}>
+          <Boton
+            tamano="lg"
+            bloque
+            onClick={confirmar}
+            aria-disabled={!!falta || undefined}
+            aria-describedby="estado-confirmar"
+            aria-busy={enviando || undefined}
+          >
+            {enviando && (
+              <span aria-hidden="true" className="size-[18px] animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />
+            )}
+            {enviando ? "Confirmando…" : "Confirmar y pagar"}
+          </Boton>
+          <p id="estado-confirmar" className="mt-2.5 text-[15px] text-ink-2">
+            {falta ?? `Pagás ${formatPrecio(servicio.precio)}. LEX lo guarda y se lo pasa a ${nombre} con cada clase realizada.`}
+          </p>
+          {error && (
+            <Aviso tono="danger" className="mt-3">
+              {error}
+            </Aviso>
           )}
-        </p>
-      </div>
-
-      <p className="mt-6 text-sm text-slate-600">
-        {servicio.detalle.esPaquete
-          ? `Elegí los ${cantidad} horarios para tus sesiones.`
-          : "Elegí el horario para tu sesión."}
-      </p>
-
-      <div className="mt-3">
+        </ResumenContratar>
+      }
+    >
+      <Paso
+        n={1}
+        titulo={cantidad === 1 ? "Elegí el horario" : `Elegí los ${cantidad} horarios del paquete`}
+        ayuda={`Cada clase dura ${d.duracionMinutosSesion} min. Los horarios están en hora de Argentina.`}
+      >
         <SelectorSlots
           estudianteId={servicio.estudianteId}
-          duracionMinutos={servicio.detalle.duracionMinutosSesion}
+          duracionMinutos={d.duracionMinutosSesion}
           cantidadRequerida={cantidad}
           slotsElegidos={slotsElegidos}
           onCambiarSeleccion={setSlotsElegidos}
         />
-      </div>
+      </Paso>
 
-      <div className="mt-6">
-        <label
-          htmlFor="notas"
-          className="mb-1.5 block text-sm font-medium text-slate-700"
-        >
-          Notas para el estudiante (opcional)
-        </label>
-        <textarea
-          id="notas"
-          rows={3}
-          maxLength={500}
-          value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          placeholder="Contale qué querés reforzar…"
-          className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-        />
-      </div>
-
-      {error && (
-        <div className="mt-4">
-          <ErrorAlert message={error} />
-        </div>
-      )}
-
-      <button
-        onClick={handleConfirmar}
-        disabled={!completo || enviando}
-        className="mt-6 w-full rounded-lg bg-indigo-600 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {enviando
-          ? "Confirmando…"
-          : completo
-            ? "Confirmar contratación"
-            : `Elegí ${cantidad - slotsElegidos.length} horario${cantidad - slotsElegidos.length !== 1 ? "s" : ""} más`}
-      </button>
-    </div>
+      <Paso n={2} titulo="Contale qué necesitás">
+        <Field label="Notas para el estudiante (opcional)" htmlFor="notas" ayuda="Por ejemplo, qué tema querés reforzar o para cuándo es el examen.">
+          <Textarea
+            id="notas"
+            rows={3}
+            maxLength={500}
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            aria-describedby="notas-ayuda"
+          />
+        </Field>
+      </Paso>
+    </LayoutFlujo>
   );
 }
