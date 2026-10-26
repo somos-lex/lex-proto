@@ -42,6 +42,8 @@ const TRAZOS = {
   "syringe": "<path d=\"m15.5 3.5 5 5M18 6l-2.6 2.6M16.6 7.4 8 16l-3-3 8.6-8.6zM5 19l2-2M3.5 20.5 5 19M11 10l1.5 1.5M8.8 12.2l1.5 1.5\"/>",
   "browser": "<rect x=\"3\" y=\"4.5\" width=\"18\" height=\"15\" rx=\"2.5\"/><path d=\"M3 9h18M6.3 6.8h.1M8.6 6.8h.1M6.5 13h6.5M6.5 16h4\"/><rect x=\"15\" y=\"12.3\" width=\"3\" height=\"4.2\" rx=\".8\"/>",
   "sigma": "<path d=\"M17 5H7l5.5 7L7 19h10\"/>",
+  "code": "<path d=\"M8.5 7.5 4 12l4.5 4.5M15.5 7.5 20 12l-4.5 4.5M13.5 5l-3 14\"/>",
+  "bag": "<path d=\"M5 8h14l-1 11.6a1.5 1.5 0 0 1-1.5 1.4h-9A1.5 1.5 0 0 1 6 19.6z\"/><path d=\"M9 10.5V7a3 3 0 0 1 6 0v3.5\"/>",
 } as const;
 
 export type NombreIcono = keyof typeof TRAZOS;

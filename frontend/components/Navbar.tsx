@@ -172,9 +172,12 @@ export function Navbar() {
                 <Link href="/login" className={clasesBoton({ variante: "texto", tamano: "sm" })}>
                   Ingresar
                 </Link>
-                <Link href="/registro" className={clasesBoton({ variante: "fuerte", tamano: "sm", className: "hidden lg:inline-flex" })}>
-                  Crear cuenta
-                </Link>
+                {/* El hidden va en un contenedor: en el mismo elemento competiría con el inline-flex del botón. */}
+                <span className="hidden lg:inline-flex">
+                  <Link href="/registro" className={clasesBoton({ variante: "fuerte", tamano: "sm" })}>
+                    Crear cuenta
+                  </Link>
+                </span>
                 <button
                   type="button"
                   onClick={abrir}
