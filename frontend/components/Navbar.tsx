@@ -4,29 +4,40 @@
 //
 // - Sin selector de vistas (D2): con sesión, el menú agrupa "Como estudiante" y
 //   "Como cliente" según los roles reales de la identidad.
-// - Mobile: el botón "Menú" abre el cajón con el árbol completo (D4). La barra
-//   inferior con sesión llega después, en el área del panel. El árbol vive en
-//   lib/navegacion.ts y lo comparte el lateral del panel.
+// - Mobile: el botón "Menú" abre el cajón con el árbol completo (D4). Con sesión
+//   se suma la barra inferior del panel. El árbol vive en lib/navegacion.ts y lo
+//   comparte el lateral del panel.
 // - Escritorio: navegación pública arriba; con sesión, el mismo cajón detrás del
-//   botón de la cuenta, hasta que el panel tenga su lateral.
-// - Solo enlaza páginas que existen hoy.
+//   botón de la cuenta.
+// - El contador cuenta los trabajos donde te toca actuar (lib/pendientes.ts).
 
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { OPCIONES_APARIENCIA, OSCURO_HABILITADO } from "@/lib/apariencia";
-import { useApariencia } from "@/lib/useApariencia";
+import { OSCURO_HABILITADO } from "@/lib/apariencia";
+import { usePendientes } from "@/lib/pendientes";
+import {
+  NAV_PUBLICA,
+  credencialCorta,
+  esItemActual,
+  iniciales,
+  seccionesDe,
+  type ItemMenu,
+  type SeccionMenu,
+} from "@/lib/navegacion";
 import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
 import { Cajon } from "@/components/Cajon";
+import { ControlApariencia } from "@/components/ControlApariencia";
 import { Icono, type NombreIcono } from "@/components/Icono";
-import { NAV_PUBLICA, credencialCorta, iniciales, seccionesDe, type ItemMenu } from "@/lib/navegacion";
+import { Contador } from "@/components/ds/Chip";
 import { clasesBoton } from "@/components/Boton";
 
 export function Navbar() {
   const { isAuthenticated, user, identidad, roles, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const pendientes = usePendientes();
   const [modalEstudiante, setModalEstudiante] = useState(false);
   // El cajón queda abierto solo en la ruta donde se abrió: al navegar, se cierra.
   const [abiertoEn, setAbiertoEn] = useState<string | null>(null);
@@ -45,6 +56,7 @@ export function Navbar() {
 
   const secciones = isAuthenticated ? seccionesDe(roles, identidad) : [];
   const credencial = credencialCorta(identidad);
+  const cuentas = { estudiante: pendientes.comoEstudiante.length, cliente: pendientes.comoCliente.length };
 
   return (
     <>
@@ -91,6 +103,9 @@ export function Navbar() {
                   {iniciales(user?.nombreCompleto)}
                 </span>
                 Menú
+                {pendientes.total > 0 && (
+                  <Contador n={pendientes.total} etiqueta={`${pendientes.total} donde te toca actuar`} />
+                )}
               </button>
             ) : (
               <>
@@ -142,31 +157,24 @@ export function Navbar() {
         {isAuthenticated ? (
           <nav aria-label="Menú de la cuenta">
             {mostrarCtaEstudiante && (
-              <TituloSeccion>Como estudiante</TituloSeccion>
+              <>
+                <TituloSeccion>Como estudiante</TituloSeccion>
+                <ItemBoton
+                  icono="cap"
+                  onClick={() => {
+                    cerrar();
+                    setModalEstudiante(true);
+                  }}
+                >
+                  Ofrecé tus servicios
+                </ItemBoton>
+              </>
             )}
-            {mostrarCtaEstudiante && (
-              <ItemBoton
-                icono="cap"
-                onClick={() => {
-                  cerrar();
-                  setModalEstudiante(true);
-                }}
-              >
-                Ofrecé tus servicios
-              </ItemBoton>
-            )}
-            {secciones.map((s) => (
-              <div key={s.titulo}>
-                <TituloSeccion>{s.titulo}</TituloSeccion>
-                <ul>
-                  {s.items.map((it) => (
-                    <li key={it.href + it.label}>
-                      <ItemLink item={it} actual={pathname === it.href} onNavegar={cerrar} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* useSearchParams necesita Suspense en las páginas estáticas: mientras tanto,
+                se marca el actual solo por pathname. */}
+            <Suspense fallback={<Secciones secciones={secciones} pathname={pathname} params={null} cuentas={cuentas} onNavegar={cerrar} />}>
+              <SeccionesConParams secciones={secciones} pathname={pathname} cuentas={cuentas} onNavegar={cerrar} />
+            </Suspense>
             <TituloSeccion>Cuenta</TituloSeccion>
             {OSCURO_HABILITADO && <ControlApariencia />}
             <ItemBoton icono="logout" onClick={handleLogout}>
@@ -205,6 +213,42 @@ export function Navbar() {
   );
 }
 
+interface PropsSecciones {
+  secciones: SeccionMenu[];
+  pathname: string;
+  cuentas: { estudiante: number; cliente: number };
+  onNavegar: () => void;
+}
+
+function SeccionesConParams(props: PropsSecciones) {
+  const params = useSearchParams();
+  return <Secciones {...props} params={params} />;
+}
+
+function Secciones({ secciones, pathname, params, cuentas, onNavegar }: PropsSecciones & { params: URLSearchParams | null }) {
+  return (
+    <>
+      {secciones.map((s, i) => (
+        <div key={s.titulo ?? `sin-titulo-${i}`}>
+          {s.titulo && <TituloSeccion>{s.titulo}</TituloSeccion>}
+          <ul>
+            {s.items.map((it) => (
+              <li key={it.href + it.label}>
+                <ItemLink
+                  item={it}
+                  actual={esItemActual(it.href, pathname, params)}
+                  contador={it.pendientes ? cuentas[it.pendientes] : 0}
+                  onNavegar={onNavegar}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function TituloSeccion({ children }: { children: ReactNode }) {
   return <p className="px-3 pt-4 pb-1.5 text-label text-ink-2">{children}</p>;
 }
@@ -215,10 +259,12 @@ const ITEM =
 function ItemLink({
   item,
   actual,
+  contador = 0,
   onNavegar,
 }: {
   item: ItemMenu;
   actual: boolean;
+  contador?: number;
   onNavegar: () => void;
 }) {
   return (
@@ -234,6 +280,11 @@ function ItemLink({
     >
       <Icono nombre={item.icono} className={`size-5.5 ${actual ? "" : "text-ink-2"}`} />
       {item.label}
+      {contador > 0 && (
+        <span className="ml-auto">
+          <Contador n={contador} etiqueta={`${contador} donde te toca actuar`} />
+        </span>
+      )}
     </Link>
   );
 }
@@ -252,35 +303,5 @@ function ItemBoton({
       <Icono nombre={icono} className="size-5.5 text-ink-2" />
       {children}
     </button>
-  );
-}
-
-function ControlApariencia() {
-  const [apariencia, elegir] = useApariencia();
-  return (
-    <fieldset className="px-3 pb-2">
-      <legend className="flex min-h-12 items-center gap-3 text-base font-medium">
-        <Icono nombre="contrast" className="size-5.5 text-ink-2" />
-        Apariencia
-      </legend>
-      <div className="flex gap-0.5 rounded-pill bg-surface-2 p-[3px]">
-        {OPCIONES_APARIENCIA.map((o) => (
-          <label
-            key={o.valor}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-pill px-2 text-center text-[14px] font-[550] text-ink-2 has-checked:bg-surface has-checked:font-[620] has-checked:text-ink has-checked:shadow-thumb has-focus-visible:outline-2 has-focus-visible:outline-focus dark:has-checked:bg-surface-3"
-          >
-            <input
-              type="radio"
-              name="apariencia"
-              value={o.valor}
-              checked={apariencia === o.valor}
-              onChange={() => elegir(o.valor)}
-              className="sr-only"
-            />
-            {o.etiqueta}
-          </label>
-        ))}
-      </div>
-    </fieldset>
   );
 }

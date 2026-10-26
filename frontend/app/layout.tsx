@@ -3,6 +3,7 @@ import { Onest } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/Navbar";
+import { Pie } from "@/components/Pie";
 import { SCRIPT_APARIENCIA } from "@/lib/apariencia";
 
 const onest = Onest({
@@ -53,6 +54,7 @@ export default function RootLayout({
           <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
             {children}
           </main>
+          <Pie />
         </AuthProvider>
       </body>
     </html>

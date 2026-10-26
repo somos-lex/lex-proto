@@ -3,6 +3,7 @@
 
 import type { NombreIcono } from "@/components/Icono";
 import type { Identidad } from "@/lib/perfil";
+import { institucionCorta } from "@/components/ds/Credencial";
 
 /** Navegación pública del encabezado. */
 export const NAV_PUBLICA = [
@@ -11,26 +12,33 @@ export const NAV_PUBLICA = [
 ];
 
 export interface ItemMenu {
+  /** Puede llevar query: los dos ítems de trabajos comparten pathname. */
   href: string;
   label: string;
   icono: NombreIcono;
+  /** Muestra el contador de trabajos donde te toca actuar con ese rol (lib/pendientes). */
+  pendientes?: "estudiante" | "cliente";
 }
 
 export interface SeccionMenu {
-  titulo: string;
+  /** Sin título: la primera sección, con Inicio. */
+  titulo?: string;
   items: ItemMenu[];
 }
 
 export function seccionesDe(roles: string[], identidad: Identidad | null): SeccionMenu[] {
-  const secciones: SeccionMenu[] = [];
+  const secciones: SeccionMenu[] = [
+    { items: [{ href: "/panel", label: "Inicio", icono: "home" }] },
+  ];
   if (identidad?.esEstudiante || roles.includes("Estudiante")) {
     secciones.push({
       titulo: "Como estudiante",
       items: [
         { href: "/panel/servicios", label: "Mis servicios", icono: "briefcase" },
         { href: "/panel/disponibilidad", label: "Agenda y disponibilidad", icono: "calendar" },
-        { href: "/panel/trabajos", label: "Trabajos recibidos", icono: "inbox" },
+        { href: "/panel/trabajos?como=estudiante", label: "Trabajos recibidos", icono: "inbox", pendientes: "estudiante" },
         { href: "/panel/practicas", label: "Turnos que publico", icono: "calendar-plus" },
+        { href: "/panel/perfil", label: "Perfil y verificación", icono: "id" },
       ],
     });
   }
@@ -38,7 +46,7 @@ export function seccionesDe(roles: string[], identidad: Identidad | null): Secci
     secciones.push({
       titulo: "Como cliente",
       items: [
-        { href: "/panel/trabajos", label: "Contrataciones", icono: "receipt" },
+        { href: "/panel/trabajos?como=cliente", label: "Contrataciones", icono: "receipt", pendientes: "cliente" },
         { href: "/panel/inscripciones", label: "Mis turnos del Banco", icono: "calendar" },
         { href: "/panel/pacientes", label: "Personas y mascotas", icono: "users" },
       ],
@@ -75,8 +83,20 @@ export function iniciales(nombre: string | undefined) {
   return ((partes[0]?.[0] ?? "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
 }
 
+/** "Odontología, UNNE". Sin año: /perfil/yo no lo trae. */
 export function credencialCorta(identidad: Identidad | null) {
   const c = identidad?.carreras[0];
   if (!c) return null;
-  return c.anioCursado ? `${c.carreraNombre}, ${c.anioCursado}.º año` : c.carreraNombre;
+  return `${c.carrera}, ${institucionCorta(c.institucion)}`;
+}
+
+/** Si un ítem es la página actual. Compara pathname y, si el href lleva query,
+ *  también esos parámetros (los dos ítems de /panel/trabajos se distinguen por `como`). */
+export function esItemActual(href: string, pathname: string, params: URLSearchParams | null): boolean {
+  const [ruta, query] = href.split("?");
+  if (ruta !== pathname) return false;
+  if (!query) return !params?.get("como");
+  const esperados = new URLSearchParams(query);
+  for (const [k, v] of esperados) if (params?.get(k) !== v) return false;
+  return true;
 }

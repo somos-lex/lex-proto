@@ -13,11 +13,15 @@ export type TipoCliente = "Particular" | "Empresa";
 /** Las "vistas" que puede habitar un usuario. Cada una define navbar + paneles. */
 export type Vista = "Cliente" | "Estudiante" | "Agencia";
 
+export type EstadoVerificacion = "Pendiente" | "Verificado" | "Rechazado";
+
+/** Espeja CarreraEstudianteResponse de GET /api/perfil/yo. El año de cursado no
+ *  viene acá: está en el portafolio (/api/estudiantes/{id}/portafolio). */
 export interface CarreraEstudiante {
   carreraId: number;
-  carreraNombre: string;
-  bio: string | null;
-  anioCursado: number | null;
+  carrera: string;
+  institucion: string;
+  estadoVerificacion: EstadoVerificacion;
 }
 
 export interface Identidad {
