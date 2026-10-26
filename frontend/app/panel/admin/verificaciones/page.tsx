@@ -16,7 +16,14 @@ import {
 } from "@/lib/verificaciones";
 import { ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
-import { ErrorAlert } from "@/components/ui";
+import { Boton, clasesBoton } from "@/components/Boton";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Dialogo } from "@/components/ds/Dialogo";
+import { Cargando, Esqueleto, Vacio } from "@/components/ds/Estados";
+import { Toast } from "@/components/ds/Toast";
+import { Field, Textarea } from "@/components/ui";
+import { EncabezadoPagina, Pagina } from "@/components/trabajo/Pagina";
 
 export default function VerificacionesPage() {
   return (
@@ -34,12 +41,17 @@ function Verificaciones() {
   const [pendientes, setPendientes] = useState<VerificacionPendiente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
     listarVerificacionesPendientes()
       .then((data) => {
-        if (!cancelado) setPendientes(data);
+        if (!cancelado) {
+          setPendientes(data);
+          setError(null);
+        }
       })
       .catch((err) => {
         if (!cancelado)
@@ -55,62 +67,106 @@ function Verificaciones() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [version]);
 
-  // Resuelto (aprobado o rechazado) sale de la bandeja: ya no está Pendiente.
-  function quitar(v: VerificacionPendiente) {
+  function recargar() {
+    setLoading(true);
+    setError(null);
+    setVersion((v) => v + 1);
+  }
+
+  function quitar(v: VerificacionPendiente, accion: "aprobada" | "rechazada") {
     setPendientes((actuales) => actuales.filter((p) => claveDe(p) !== claveDe(v)));
+    setToast(
+      accion === "aprobada"
+        ? `Se aprobó la verificación de ${v.estudianteNombre}.`
+        : `Se rechazó la verificación de ${v.estudianteNombre}.`,
+    );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <Link href="/panel/admin" className="text-sm font-medium text-link hover:underline">
-        ← Panel de admin
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-        Verificaciones pendientes
-      </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Vínculos estudiante–carrera esperando validación institucional, los más
-        antiguos primero.
-      </p>
+    <Pagina>
+      <EncabezadoPagina
+        titulo="Verificaciones pendientes"
+        bajada="Vínculos estudiante–carrera esperando validación institucional, los más antiguos primero."
+        antes={
+          <div className="mb-2">
+            <Link
+              href="/panel/admin"
+              className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:text-accent-hover"
+            >
+              <Icono nombre="chev-r" className="size-4 rotate-180" />
+              <span>Volver a ingresos</span>
+            </Link>
+          </div>
+        }
+      />
 
       {error && (
         <div className="mt-6">
-          <ErrorAlert message={error} />
+          <Aviso
+            tono="danger"
+            titulo="No pudimos cargar las verificaciones"
+            acciones={
+              <Boton variante="secundario" onClick={recargar}>
+                Reintentar
+              </Boton>
+            }
+          >
+            {error}
+          </Aviso>
         </div>
       )}
 
-      {loading ? (
-        <div className="mt-8 space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
-          ))}
-        </div>
-      ) : pendientes.length === 0 && !error ? (
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 px-6 py-12 text-center text-sm text-slate-500">
-          No hay verificaciones pendientes.
-        </div>
-      ) : (
-        <ul className="mt-8 space-y-3">
-          {pendientes.map((v) => (
-            <TarjetaVerificacion key={claveDe(v)} verificacion={v} onResuelta={() => quitar(v)} />
-          ))}
-        </ul>
-      )}
-    </div>
+      <div className="mt-8">
+        {loading ? (
+          <Cargando etiqueta="Cargando verificaciones pendientes">
+            <div className="space-y-4">
+              <EsqueletoVerificacion />
+              <EsqueletoVerificacion />
+              <EsqueletoVerificacion />
+            </div>
+          </Cargando>
+        ) : pendientes.length === 0 && !error ? (
+          <Vacio
+            icono="id"
+            titulo="No hay verificaciones pendientes"
+            acciones={
+              <Link
+                href="/panel/admin"
+                className={clasesBoton({ variante: "secundario" })}
+              >
+                Volver al panel de ingresos
+              </Link>
+            }
+          >
+            Todas las solicitudes de acreditación institucional fueron procesadas.
+          </Vacio>
+        ) : (
+          <ul className="space-y-4">
+            {pendientes.map((v) => (
+              <TarjetaVerificacion
+                key={claveDe(v)}
+                verificacion={v}
+                onResuelta={(accion) => quitar(v, accion)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <Toast mensaje={toast} onCerrar={() => setToast(null)} conLateral />
+    </Pagina>
   );
 }
 
-// El comprobante es un link que pegó el estudiante. Se abre en otra pestaña y solo si es
-// http(s): el backend ya lo valida al activar, pero esto no confía en datos viejos (un
-// "javascript:" en un href se ejecutaría al hacer click).
 function Comprobante({ valor }: { valor: string | null }) {
   if (!valor) {
     return (
-      <p className="mt-2 text-xs italic text-amber-700">
-        Sin comprobante cargado: pedíselo, o al aprobar dejá escrito cómo lo verificaste.
-      </p>
+      <div className="mt-3 flex items-center gap-1.5 text-[14px] text-warn-ink">
+        <Icono nombre="alert" className="size-4 text-warn-ink" />
+        <span>Sin comprobante cargado: al aprobar es obligatorio registrar cómo se verificó.</span>
+      </div>
     );
   }
 
@@ -123,8 +179,8 @@ function Comprobante({ valor }: { valor: string | null }) {
 
   if (!url || (url.protocol !== "https:" && url.protocol !== "http:")) {
     return (
-      <p className="mt-2 break-all text-xs text-slate-600">
-        Comprobante (no es un link válido): <span className="font-mono">{valor}</span>
+      <p className="mt-2 break-all text-[14px] text-ink-2">
+        Comprobante (enlace no navegable): <span className="font-mono text-ink">{valor}</span>
       </p>
     );
   }
@@ -134,10 +190,12 @@ function Comprobante({ valor }: { valor: string | null }) {
       href={url.href}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+      className="mt-3 inline-flex items-center gap-2 rounded-control bg-surface-2 px-3.5 py-2 text-[14px] font-semibold text-ink shadow-[0_0_0_1px_var(--color-line)] transition-colors hover:bg-surface-3"
     >
-      Abrir comprobante
-      <span className="font-normal text-indigo-500">({url.hostname})</span> ↗
+      <Icono nombre="file-check" className="size-4 text-accent" />
+      <span>Abrir comprobante</span>
+      <span className="font-normal text-ink-3">({url.hostname})</span>
+      <Icono nombre="chev-r" className="size-3.5 -rotate-45 text-ink-3" />
     </a>
   );
 }
@@ -147,20 +205,18 @@ function TarjetaVerificacion({
   onResuelta,
 }: {
   verificacion: VerificacionPendiente;
-  onResuelta: () => void;
+  onResuelta: (accion: "aprobada" | "rechazada") => void;
 }) {
-  const [modo, setModo] = useState<"ninguno" | "aprobar" | "rechazar">("ninguno");
+  const [dialogo, setDialogo] = useState<"aprobar" | "rechazar" | null>(null);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sin comprobante, aprobar exige dejar escrito cómo se verificó (mismo guard que el
-  // backend): nunca se aprueba sin evidencia ni registro.
   const sinComprobante = !v.documentoComprobante?.trim();
-  const observacionesObligatorias = modo === "aprobar" && sinComprobante;
+  const observacionesObligatorias = dialogo === "aprobar" && sinComprobante;
 
   async function confirmar() {
-    if (modo === "rechazar" && !texto.trim()) {
+    if (dialogo === "rechazar" && !texto.trim()) {
       setError("El motivo del rechazo es obligatorio.");
       return;
     }
@@ -173,101 +229,172 @@ function TarjetaVerificacion({
     setEnviando(true);
     setError(null);
     try {
-      if (modo === "aprobar") await aprobarVerificacion(v.estudianteId, v.carreraId, texto);
-      else await rechazarVerificacion(v.estudianteId, v.carreraId, texto.trim());
-      onResuelta();
+      if (dialogo === "aprobar") {
+        await aprobarVerificacion(v.estudianteId, v.carreraId, texto);
+        onResuelta("aprobada");
+      } else {
+        await rechazarVerificacion(v.estudianteId, v.carreraId, texto.trim());
+        onResuelta("rechazada");
+      }
+      setDialogo(null);
+      setTexto("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo resolver la verificación.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo resolver la verificación. Probá de nuevo.",
+      );
       setEnviando(false);
     }
   }
 
   return (
-    <li className="rounded-xl border border-slate-200 bg-white px-5 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-semibold text-slate-900">{v.estudianteNombre}</p>
-          <p className="text-sm text-slate-500">{v.estudianteEmail}</p>
-          <p className="mt-2 text-sm text-slate-700">
-            {v.carreraNombre} · {v.institucionNombre}
-            {v.anioCursado != null && <> · {v.anioCursado}° año</>}
-          </p>
-          <Comprobante valor={v.documentoComprobante} />
-        </div>
-
-        {modo === "ninguno" && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setModo("aprobar")}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition hover:bg-accent-hover"
-            >
-              Aprobar
-            </button>
-            <button
-              onClick={() => setModo("rechazar")}
-              className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
-            >
-              Rechazar
-            </button>
-          </div>
-        )}
-      </div>
-
-      {modo !== "ninguno" && (
-        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-          <label className="block text-sm font-medium text-slate-700" htmlFor={`texto-${v.estudianteId}-${v.carreraId}`}>
-            {modo === "rechazar"
-              ? "Motivo del rechazo"
-              : observacionesObligatorias
-                ? "¿Cómo verificaste el vínculo? (obligatorio: no hay comprobante)"
-                : "Observaciones (opcional)"}
-          </label>
-          <textarea
-            id={`texto-${v.estudianteId}-${v.carreraId}`}
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            rows={2}
-            maxLength={1000}
-            placeholder={
-              modo === "rechazar"
-                ? "Ej: la foto de la constancia no se lee; reenviala."
-                : observacionesObligatorias
-                  ? "Ej: constancia de alumno regular en papel vista en la cátedra el 23/10/2026."
-                  : "Ej: constancia de alumno regular 2026 verificada."
-            }
-            className="w-full rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-focus/20"
-          />
-          {modo === "rechazar" && (
-            <p className="text-xs text-slate-500">
-              Un rechazo no es definitivo: si el estudiante reenvía el comprobante,
-              se puede aprobar después.
+    <li className="flex flex-col justify-between gap-4 rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+      <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-ink sm:text-[17px]">
+              {v.estudianteNombre}
+            </h2>
+            <p className="text-[14px] text-ink-2">{v.estudianteEmail}</p>
+            <p className="mt-2 text-[15px] font-medium text-ink">
+              {v.carreraNombre} · {v.institucionNombre}
+              {v.anioCursado != null && <> · {v.anioCursado}° año</>}
             </p>
-          )}
-          {error && <ErrorAlert message={error} />}
-          <div className="flex gap-2">
-            <button
-              onClick={confirmar}
-              disabled={enviando}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
-                modo === "aprobar" ? "bg-accent text-on-accent hover:bg-accent-hover" : "bg-red-600 text-white hover:bg-red-700"
-              }`}
-            >
-              {enviando ? "Guardando…" : modo === "aprobar" ? "Confirmar aprobación" : "Confirmar rechazo"}
-            </button>
-            <button
+            <Comprobante valor={v.documentoComprobante} />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Boton
               onClick={() => {
-                setModo("ninguno");
+                setDialogo("aprobar");
                 setTexto("");
                 setError(null);
               }}
-              disabled={enviando}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Volver
-            </button>
+              Aprobar
+            </Boton>
+            <Boton
+              variante="peligro"
+              onClick={() => {
+                setDialogo("rechazar");
+                setTexto("");
+                setError(null);
+              }}
+            >
+              Rechazar
+            </Boton>
           </div>
         </div>
+      </div>
+
+      {/* Diálogo modal accesible para resolver la verificación */}
+      {dialogo && (
+        <Dialogo
+          abierto={true}
+          onCerrar={() => {
+            if (!enviando) {
+              setDialogo(null);
+              setTexto("");
+              setError(null);
+            }
+          }}
+          titulo={
+            dialogo === "aprobar"
+              ? `Aprobar verificación de ${v.estudianteNombre}`
+              : `Rechazar verificación de ${v.estudianteNombre}`
+          }
+          pie={
+            <>
+              <Boton
+                variante="secundario"
+                onClick={() => setDialogo(null)}
+                disabled={enviando}
+              >
+                Volver
+              </Boton>
+              <Boton
+                variante={dialogo === "aprobar" ? "primario" : "peligro"}
+                onClick={confirmar}
+                disabled={enviando}
+              >
+                {enviando
+                  ? "Guardando…"
+                  : dialogo === "aprobar"
+                    ? "Confirmar aprobación"
+                    : "Confirmar rechazo"}
+              </Boton>
+            </>
+          }
+        >
+          <div className="grid gap-4">
+            <p className="text-[15px] text-ink-2">
+              {dialogo === "aprobar"
+                ? `Al confirmar, ${v.estudianteNombre} quedará verificado/a institucionalmente en ${v.carreraNombre} y podrá publicar servicios y prácticas clínicas.`
+                : `Indicá el motivo del rechazo para que ${v.estudianteNombre} sepa qué corregir en su constancia.`}
+            </p>
+
+            <Field
+              label={
+                dialogo === "rechazar"
+                  ? "Motivo del rechazo"
+                  : observacionesObligatorias
+                    ? "¿Cómo verificaste el vínculo? (obligatorio: no hay comprobante)"
+                    : "Observaciones (opcional)"
+              }
+              htmlFor={`texto-dialogo-${v.estudianteId}-${v.carreraId}`}
+              ayuda={
+                dialogo === "rechazar"
+                  ? "Un rechazo no es definitivo: si el estudiante reenvía el comprobante, se puede revisar de nuevo."
+                  : undefined
+              }
+            >
+              <Textarea
+                id={`texto-dialogo-${v.estudianteId}-${v.carreraId}`}
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder={
+                  dialogo === "rechazar"
+                    ? "Ej: la foto de la constancia no es legible; por favor reenviala con mejor definición."
+                    : observacionesObligatorias
+                      ? "Ej: constancia de alumno regular en papel constatada en la secretaría académica."
+                      : "Ej: constancia de alumno regular vigente validada."
+                }
+              />
+            </Field>
+
+            {error && (
+              <Aviso tono="danger" titulo="Revisá el formulario">
+                {error}
+              </Aviso>
+            )}
+          </div>
+        </Dialogo>
       )}
     </li>
+  );
+}
+
+function EsqueletoVerificacion() {
+  return (
+    <div
+      aria-hidden="true"
+      className="rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Esqueleto className="h-5 w-40" />
+          <Esqueleto className="h-4 w-32" />
+          <Esqueleto className="h-4 w-56" />
+          <Esqueleto className="h-9 w-36 rounded-control" />
+        </div>
+        <div className="flex gap-2">
+          <Esqueleto className="h-11 w-24 rounded-button" />
+          <Esqueleto className="h-11 w-24 rounded-button" />
+        </div>
+      </div>
+    </div>
   );
 }
