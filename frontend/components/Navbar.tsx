@@ -65,7 +65,7 @@ export function Navbar() {
           <Link
             href="/"
             aria-label="LEX, inicio"
-            className="inline-flex min-h-11 items-center text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
+            className="-ml-2 inline-flex min-h-11 min-w-11 items-center rounded-control px-2 text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
           >
             LEX
           </Link>
