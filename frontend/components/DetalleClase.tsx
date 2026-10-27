@@ -1,31 +1,27 @@
 import type { DetalleTrabajoClase } from "@/lib/trabajos";
+import { Dato, Datos } from "@/components/trabajo/Datos";
 
-export function DetalleClase({
-  detalle,
-}: {
-  detalle: DetalleTrabajoClase;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-slate-900">Detalles de la clase</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Dato label="Materia" valor={detalle.materiaSnapshot} />
-        <Dato label="Nivel" valor={detalle.nivelSnapshot} />
-        <Dato label="Modalidad" valor={detalle.modalidadSnapshot} />
-        <Dato
-          label="Sesiones"
-          valor={`${detalle.sesionesCompletadas} / ${detalle.cantidadSesionesTotales}`}
-        />
-      </dl>
-    </div>
-  );
-}
+const MODALIDAD: Record<string, string> = {
+  Online: "Online",
+  Presencial: "Presencial",
+  Ambas: "Online o presencial",
+};
 
-function Dato({ label, valor }: { label: string; valor: string }) {
+export function DetalleClase({ detalle }: { detalle: DetalleTrabajoClase }) {
   return (
-    <div>
-      <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-0.5 font-medium text-slate-900">{valor}</dd>
-    </div>
+    <Datos>
+      <Dato icono="cap" rotulo="Materia">
+        {detalle.materiaSnapshot}
+      </Dato>
+      <Dato icono="users" rotulo="Nivel">
+        {detalle.nivelSnapshot}
+      </Dato>
+      <Dato icono="pin" rotulo="Modalidad">
+        {MODALIDAD[detalle.modalidadSnapshot] ?? detalle.modalidadSnapshot}
+      </Dato>
+      <Dato icono="calendar" rotulo="Sesiones">
+        {detalle.sesionesCompletadas} de {detalle.cantidadSesionesTotales} realizadas
+      </Dato>
+    </Datos>
   );
 }

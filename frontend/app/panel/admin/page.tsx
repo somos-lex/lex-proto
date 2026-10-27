@@ -17,11 +17,14 @@ import {
 import { formatPrecio, tipoEtiqueta, type TipoServicio } from "@/lib/servicios";
 import { ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
-import { ErrorAlert } from "@/components/ui";
+import { Boton, clasesBoton } from "@/components/Boton";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Cargando, Esqueleto } from "@/components/ds/Estados";
+import { EncabezadoPagina, Pagina, TituloSeccion } from "@/components/trabajo/Pagina";
 
 const VERTICALES: TipoServicio[] = ["ProyectoCerrado", "Clase", "Salud"];
 
-// El backend siempre manda las 3 verticales, pero no dependemos de eso.
 const VACIA: IngresosPorVertical = {
   cantidadTrabajos: 0,
   comisionLiberada: 0,
@@ -40,12 +43,16 @@ function AdminIngresos() {
   const [datos, setDatos] = useState<IngresosAdminResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
     obtenerIngresosAdmin()
       .then((data) => {
-        if (!cancelado) setDatos(data);
+        if (!cancelado) {
+          setDatos(data);
+          setError(null);
+        }
       })
       .catch((err) => {
         if (!cancelado)
@@ -61,50 +68,61 @@ function AdminIngresos() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [version]);
+
+  function recargar() {
+    setLoading(true);
+    setError(null);
+    setVersion((v) => v + 1);
+  }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Ingresos de LEX
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Comisión efectiva (pagos ya liberados) y potencial (retenida en escrow),
-            con breakdown por vertical.
-          </p>
-        </div>
-        <Link
-          href="/panel/admin/verificaciones"
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          Verificaciones pendientes →
-        </Link>
-      </div>
+    <Pagina>
+      <EncabezadoPagina
+        titulo="Ingresos de LEX"
+        bajada="Comisión efectiva (pagos ya liberados) y potencial (retenida en pago protegido), con desglose por vertical."
+        acciones={
+          <Link
+            href="/panel/admin/verificaciones"
+            className={clasesBoton({ variante: "secundario" })}
+          >
+            <span>Verificaciones pendientes</span>
+            <Icono nombre="chev-r" className="size-4" />
+          </Link>
+        }
+      />
 
       {error && (
         <div className="mt-6">
-          <ErrorAlert message={error} />
+          <Aviso
+            tono="danger"
+            titulo="No pudimos cargar los ingresos"
+            acciones={
+              <Boton variante="secundario" onClick={recargar}>
+                Reintentar
+              </Boton>
+            }
+          >
+            {error}
+          </Aviso>
         </div>
       )}
 
       {loading ? (
-        <div className="mt-8 space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-32 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
-              />
-            ))}
+        <Cargando etiqueta="Cargando ingresos de LEX">
+          <div className="mt-8 space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <EsqueletoMetrica />
+              <EsqueletoMetrica />
+              <EsqueletoMetrica />
+            </div>
+            <Esqueleto className="h-48 w-full rounded-card" />
           </div>
-          <div className="h-64 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
-        </div>
+        </Cargando>
       ) : datos ? (
-        <>
-          {/* ZONA 1 — números destacados */}
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-8 space-y-8">
+          {/* Métricas destacadas */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Metrica
               valor={formatPrecio(datos.comisionTotal)}
               label="Comisión LEX total"
@@ -121,66 +139,81 @@ function AdminIngresos() {
             <Metrica
               valor={String(datos.cantidadTrabajosConPago)}
               label="Trabajos con pago"
-              detalle={`${datos.cantidadPagosRetenidos} en escrow · ${datos.cantidadPagosReembolsados} reembolsado${
+              detalle={`${datos.cantidadPagosRetenidos} en pago protegido · ${datos.cantidadPagosReembolsados} reembolsado${
                 datos.cantidadPagosReembolsados === 1 ? "" : "s"
               }`}
             />
           </div>
 
-          {/* Card de apoyo */}
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-slate-50/60 px-5 py-4">
-            <span className="text-lg font-semibold text-slate-900">
+          {/* Tarjeta de promedio */}
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-card bg-surface p-4 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+            <span className="text-title-3 font-semibold text-ink">
               {formatPrecio(datos.ingresoPromedioPorTrabajoCompletado)}
             </span>
-            <span className="text-sm text-slate-600">
+            <span className="text-[15px] text-ink-2">
               de comisión promedio por trabajo cobrado
             </span>
-            <span className="text-xs text-slate-400">
+            <span className="text-[13px] text-ink-3">
               (sobre pagos liberados)
             </span>
           </div>
 
-          {/* ZONA 2 — breakdown por vertical */}
-          <div className="mt-8 overflow-hidden rounded-xl border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <Th align="left">Vertical</Th>
-                    <Th>Trabajos</Th>
-                    <Th>Comisión liberada</Th>
-                    <Th>Comisión retenida</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {VERTICALES.map((vertical) => {
-                    const v = datos.breakdownPorVertical[vertical] ?? VACIA;
-                    return (
-                      <tr key={vertical} className="hover:bg-slate-50/60">
-                        <td className="px-5 py-3.5 font-medium text-slate-900">
-                          {tipoEtiqueta(vertical)}
-                        </td>
-                        <Td>{v.cantidadTrabajos}</Td>
-                        <Td>{formatPrecio(v.comisionLiberada)}</Td>
-                        <Td>{formatPrecio(v.comisionRetenida)}</Td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="border-t-2 border-slate-200 bg-slate-50">
-                  <tr className="font-semibold text-slate-900">
-                    <td className="px-5 py-3.5">Total</td>
-                    <Td>{datos.cantidadTrabajosConPago}</Td>
-                    <Td>{formatPrecio(datos.comisionLiberada)}</Td>
-                    <Td>{formatPrecio(datos.comisionRetenida)}</Td>
-                  </tr>
-                </tfoot>
-              </table>
+          {/* Desglose por vertical */}
+          <section>
+            <TituloSeccion>Desglose por vertical</TituloSeccion>
+            <div className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-line text-[15px]">
+                  <thead>
+                    <tr className="bg-surface-2 text-ink-2">
+                      <th scope="col" className="px-5 py-3 text-left font-semibold">Vertical</th>
+                      <th scope="col" className="px-5 py-3 text-right font-semibold">Trabajos</th>
+                      <th scope="col" className="px-5 py-3 text-right font-semibold">Comisión liberada</th>
+                      <th scope="col" className="px-5 py-3 text-right font-semibold">Comisión retenida</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {VERTICALES.map((vertical) => {
+                      const v = datos.breakdownPorVertical[vertical] ?? VACIA;
+                      return (
+                        <tr key={vertical} className="hover:bg-surface-2/60 transition-colors">
+                          <td className="px-5 py-3.5 font-medium text-ink">
+                            {tipoEtiqueta(vertical)}
+                          </td>
+                          <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">
+                            {v.cantidadTrabajos}
+                          </td>
+                          <td className="px-5 py-3.5 text-right font-medium text-ink tabular-nums">
+                            {formatPrecio(v.comisionLiberada)}
+                          </td>
+                          <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">
+                            {formatPrecio(v.comisionRetenida)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="border-t-2 border-line bg-surface-2">
+                    <tr className="font-semibold text-ink">
+                      <td className="px-5 py-3.5">Total</td>
+                      <td className="px-5 py-3.5 text-right tabular-nums">
+                        {datos.cantidadTrabajosConPago}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-medium text-ink tabular-nums">
+                        {formatPrecio(datos.comisionLiberada)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">
+                        {formatPrecio(datos.comisionRetenida)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
-          </div>
-        </>
+          </section>
+        </div>
       ) : null}
-    </div>
+    </Pagina>
   );
 }
 
@@ -197,48 +230,32 @@ function Metrica({
 }) {
   return (
     <div
-      className={`rounded-xl border px-5 py-6 ${
+      className={`flex flex-col justify-between rounded-card p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none ${
         destacada
-          ? "border-indigo-200 bg-indigo-50/60"
-          : "border-slate-200 bg-white"
+          ? "bg-accent-soft shadow-[0_0_0_1.5px_var(--color-accent)]"
+          : "bg-surface"
       }`}
     >
-      <p
-        className={`text-3xl font-bold tracking-tight tabular-nums ${
-          destacada ? "text-indigo-700" : "text-slate-900"
-        }`}
-      >
-        {valor}
-      </p>
-      <p className="mt-2 text-sm font-medium text-slate-700">{label}</p>
-      <p className="mt-0.5 text-xs text-slate-500">{detalle}</p>
+      <div>
+        <p className="text-[14px] font-semibold text-ink-2">{label}</p>
+        <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-ink">
+          {valor}
+        </p>
+      </div>
+      <p className="mt-3 text-[13px] text-ink-3">{detalle}</p>
     </div>
   );
 }
 
-function Th({
-  children,
-  align = "right",
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-}) {
+function EsqueletoMetrica() {
   return (
-    <th
-      scope="col"
-      className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 ${
-        align === "left" ? "text-left" : "text-right"
-      }`}
+    <div
+      aria-hidden="true"
+      className="rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none"
     >
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return (
-    <td className="px-5 py-3.5 text-right tabular-nums text-slate-700">
-      {children}
-    </td>
+      <Esqueleto className="h-4 w-2/5" />
+      <Esqueleto className="mt-3 h-8 w-3/5" />
+      <Esqueleto className="mt-3 h-3.5 w-4/5" />
+    </div>
   );
 }

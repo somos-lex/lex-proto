@@ -1,36 +1,50 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+// Detalle de un trabajo, el mismo para las dos partes: qué sigue y quién lo hace
+// (riel y acciones), las sesiones, el pago protegido, lo contratado, quiénes
+// participan, las reseñas y el historial. Las acciones las decide el rol de la
+// persona en este trabajo, no una "vista".
+
+import { use, useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  obtenerTrabajo,
-  esTrabajoProyectoCerrado,
   esTrabajoClase,
+  esTrabajoProyectoCerrado,
   esTrabajoSalud,
+  listarHistorialTrabajo,
+  obtenerTrabajo,
   type TrabajoDetalleResponse,
+  type TrabajoHistorialResponse,
 } from "@/lib/trabajos";
-import { formatFecha, formatPrecio } from "@/lib/servicios";
 import type { RolEnTrabajo } from "@/lib/transicionesTrabajo";
 import { ApiError } from "@/lib/api";
+import { formatFecha } from "@/lib/servicios";
+import { usePendientes } from "@/lib/pendientes";
 import { useAuth } from "@/contexts/AuthContext";
 import { RequireRole } from "@/components/RequireRole";
-import EstadoBadge from "@/components/EstadoBadge";
-import { TipoBadge } from "@/components/TipoBadge";
-import { AccionesTrabajo } from "@/components/AccionesTrabajo";
+import { Boton, clasesBoton } from "@/components/Boton";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { ChipEstadoTrabajo } from "@/components/ds/Chip";
+import { Esqueleto, Vacio } from "@/components/ds/Estados";
+import { Fila } from "@/components/ds/Lista";
+import { PortadaMini } from "@/components/ds/Portada";
+import { Precio } from "@/components/ds/Precio";
+import { Riel } from "@/components/ds/Riel";
+import { AccionesTrabajo, accionesDeZona } from "@/components/AccionesTrabajo";
 import { DetalleProyectoCerrado } from "@/components/DetalleProyectoCerrado";
 import { DetalleClase } from "@/components/DetalleClase";
-import { DetalleSalud } from "@/components/DetalleSalud";
+import { DetalleSalud, FirmarConsentimiento } from "@/components/DetalleSalud";
 import { SesionesLista } from "@/components/SesionesLista";
 import { PagoProgreso } from "@/components/PagoProgreso";
 import { HistorialTrabajo } from "@/components/HistorialTrabajo";
 import { ResenasTrabajo } from "@/components/ResenasTrabajo";
-import { ErrorAlert } from "@/components/ui";
+import { Pagina, TituloSeccion } from "@/components/trabajo/Pagina";
+import { Toast } from "@/components/ds/Toast";
+import { mensajeDeError } from "@/components/trabajo/errores";
+import { grupoDe, nombreDe, pasosRiel, proximoPaso, rolEn, teToca } from "@/components/trabajo/estado";
 
-export default function TrabajoDetallePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function TrabajoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
     <RequireRole roles={["Cliente", "Estudiante"]}>
@@ -39,179 +53,308 @@ export default function TrabajoDetallePage({
   );
 }
 
+type Carga =
+  | { estado: "cargando" }
+  | { estado: "error"; mensaje: string; noEncontrado: boolean }
+  | { estado: "listo"; trabajo: TrabajoDetalleResponse; historial: TrabajoHistorialResponse[] | null };
+
+async function traer(id: number): Promise<Carga> {
+  try {
+    const [trabajo, historial] = await Promise.all([
+      obtenerTrabajo(id),
+      // El historial no frena la página: sin él, el riel se arma con lo que se sabe.
+      listarHistorialTrabajo(id).catch(() => null),
+    ]);
+    return { estado: "listo", trabajo, historial };
+  } catch (err) {
+    const noEncontrado = err instanceof ApiError && (err.status === 404 || err.status === 403);
+    return { estado: "error", mensaje: mensajeDeError(err), noEncontrado };
+  }
+}
+
 function TrabajoDetalle({ trabajoId }: { trabajoId: number }) {
   const { user } = useAuth();
-  const [trabajo, setTrabajo] = useState<TrabajoDetalleResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const cargar = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setTrabajo(await obtenerTrabajo(trabajoId));
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "No pudimos cargar el trabajo.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [trabajoId]);
+  const { recargar: recargarPendientes } = usePendientes();
+  const [carga, setCarga] = useState<Carga>({ estado: "cargando" });
+  const [toast, setToast] = useState<string | null>(null);
+  // Cambia después de cada acción para que las piezas que cargan solas (pago,
+  // sesiones, reseñas) vuelvan a pedir sus datos.
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    let vigente = true;
+    if (!Number.isInteger(trabajoId) || trabajoId <= 0) {
+      Promise.resolve().then(() => vigente && setCarga({ estado: "error", mensaje: "", noEncontrado: true }));
+    } else {
+      traer(trabajoId).then((c) => vigente && setCarga(c));
+    }
+    return () => {
+      vigente = false;
+    };
+  }, [trabajoId, version]);
 
-  if (loading) {
+  const reintentar = useCallback(() => {
+    setCarga({ estado: "cargando" });
+    setVersion((v) => v + 1);
+  }, []);
+
+  const alCambiar = useCallback(
+    (mensaje: string) => {
+      setToast(mensaje);
+      setVersion((v) => v + 1);
+      void recargarPendientes();
+    },
+    [recargarPendientes],
+  );
+
+  if (carga.estado === "cargando") return <EsqueletoDetalle />;
+
+  if (carga.estado === "error") {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-      </div>
+      <Pagina angosta>
+        <VolverA href="/panel/trabajos">Trabajos</VolverA>
+        <h1 className="sr-only">{carga.noEncontrado ? "Trabajo no encontrado" : "Trabajo"}</h1>
+        {carga.noEncontrado ? (
+          <Vacio
+            icono="inbox"
+            titulo="No encontramos este trabajo"
+            className="mt-4"
+            acciones={
+              <Link href="/panel/trabajos" className={clasesBoton({ variante: "secundario", tamano: "sm" })}>
+                Ver mis trabajos
+              </Link>
+            }
+          >
+            Puede que el link esté mal o que no participes en él: cada trabajo lo ven solo quien lo contrató y quien lo hace.
+          </Vacio>
+        ) : (
+          <Aviso
+            tono="danger"
+            titulo="No pudimos cargar el trabajo."
+            className="mt-4"
+            acciones={
+              <Boton variante="secundario" tamano="sm" onClick={reintentar}>
+                <Icono nombre="refresh" />
+                Reintentar
+              </Boton>
+            }
+          >
+            {carga.mensaje}
+          </Aviso>
+        )}
+      </Pagina>
     );
   }
 
-  if (error || !trabajo) {
+  const { trabajo, historial } = carga;
+  const rol = rolEn(trabajo, user?.usuarioId);
+
+  if (!rol) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        <ErrorAlert message={error ?? "Trabajo no encontrado."} />
-        <Link
-          href="/panel/trabajos"
-          className="mt-6 inline-block text-sm font-semibold text-indigo-700 hover:underline"
+      <Pagina angosta>
+        <VolverA href="/panel/trabajos">Trabajos</VolverA>
+        <h1 className="sr-only">Trabajo sin acceso</h1>
+        <Vacio
+          icono="inbox"
+          titulo="Este trabajo no es tuyo"
+          className="mt-4"
+          acciones={
+            <Link href="/panel/trabajos" className={clasesBoton({ variante: "secundario", tamano: "sm" })}>
+              Ver mis trabajos
+            </Link>
+          }
         >
-          ← Volver a mis trabajos
-        </Link>
-      </div>
+          Cada trabajo lo ven solo quien lo contrató y quien lo hace.
+        </Vacio>
+      </Pagina>
     );
   }
 
-  const rolUsuario: RolEnTrabajo | null =
-    user?.usuarioId === trabajo.clienteId
-      ? "Cliente"
-      : user?.usuarioId === trabajo.estudianteId
-        ? "Estudiante"
-        : null;
-
-  if (!rolUsuario) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-16 text-center">
-        <p className="text-slate-600">No tenés acceso a este trabajo.</p>
-        <Link
-          href="/panel/trabajos"
-          className="mt-4 inline-block text-sm font-semibold text-indigo-700 hover:underline"
-        >
-          ← Volver a mis trabajos
-        </Link>
-      </div>
-    );
-  }
-
+  const nombre = nombreDe(trabajo, rol);
   const tieneSesiones = trabajo.tipo === "Clase" || trabajo.tipo === "Salud";
+  const salud = esTrabajoSalud(trabajo) ? trabajo.detalle : null;
+  const consentimientoPendiente = !!salud && !salud.consentimientoFirmado;
+  const firmaPendienteMia =
+    consentimientoPendiente && rol === "Cliente" && (trabajo.estado === "Pendiente" || trabajo.estado === "Aceptado");
+  const hayPrincipal = accionesDeZona(trabajo, rol, "principal").length > 0 || firmaPendienteMia;
+  const hayProblemas = accionesDeZona(trabajo, rol, "problemas").length > 0;
+  const meToca = teToca(trabajo, rol);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6 lg:px-8">
-      <Link
-        href="/panel/trabajos"
-        className="inline-block text-sm text-slate-500 transition hover:text-indigo-700"
-      >
-        ← Volver a mis trabajos
-      </Link>
+    <>
+      <Pagina>
+        <VolverA href={`/panel/trabajos?como=${rol === "Cliente" ? "cliente" : "estudiante"}`}>
+          {rol === "Cliente" ? "Contrataciones" : "Trabajos recibidos"}
+        </VolverA>
 
-      {/* Encabezado */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <span className="text-xs font-medium text-slate-400">
-              Trabajo #{trabajo.id}
-            </span>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-              {trabajo.tituloSnapshot}
-            </h1>
-            <div className="mt-2">
-              <TipoBadge tipo={trabajo.tipo} />
+        <header className="mt-3 grid grid-cols-[56px_minmax(0,1fr)] items-start gap-x-4 gap-y-3 sm:grid-cols-[56px_minmax(0,1fr)_auto]">
+          <PortadaMini tipo={trabajo.tipo} tema={trabajo.tituloSnapshot} tamano={56} />
+          <div className="min-w-0">
+            <h1 className="text-title-1-mobile text-balance [overflow-wrap:anywhere] lg:text-title-1">{trabajo.tituloSnapshot}</h1>
+            <p className="mt-1.5 text-secondary text-ink-2">
+              {nombre}.{" "}
+              {rol === "Cliente"
+                ? `Contrataste a ${trabajo.estudianteNombre} el ${formatFecha(trabajo.fechaCreacion)}.`
+                : `Te contrató ${trabajo.clienteNombre} el ${formatFecha(trabajo.fechaCreacion)}.`}
+            </p>
+          </div>
+          <Precio monto={trabajo.precioAcordado} unidad="en total" className="col-start-2 sm:col-start-3 sm:justify-end sm:pt-2" />
+        </header>
+
+        <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+          <div className="contents xl:grid xl:gap-10">
+            {/* Próximo paso */}
+            <section aria-labelledby="titulo-proximo" className="order-1 xl:order-none">
+              <TituloSeccion id="titulo-proximo">Próximo paso</TituloSeccion>
+              <div className="grid gap-4 rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+                <Riel pasos={pasosRiel(trabajo, historial)} etiqueta={`Estado de ${nombre.toLowerCase()}`} />
+                <div className="grid justify-items-start gap-1.5">
+                  {/* Igual que en la lista: en marcha, el nodo actual ya dice el estado. */}
+                  {(grupoDe(trabajo, rol) !== "enMarcha" || trabajo.estado === "Disputa") && (
+                    <ChipEstadoTrabajo estado={trabajo.estado} teToca={meToca} />
+                  )}
+                  <p className="text-base leading-[1.5]">{proximoPaso(trabajo, rol, { consentimientoPendiente })}</p>
+                </div>
+                {salud && rol === "Estudiante" && trabajo.estado === "Pendiente" && (
+                  <Aviso tono="neutro">
+                    Antes de aceptar, revisá quién se atiende, el horario y el consentimiento que firmó {trabajo.clienteNombre}.
+                  </Aviso>
+                )}
+                {firmaPendienteMia && salud && <FirmarConsentimiento trabajo={trabajo} detalle={salud} onFirmado={alCambiar} />}
+                <AccionesTrabajo key={`p-${version}`} trabajo={trabajo} rolUsuario={rol} zona="principal" onAccionCompletada={alCambiar} />
+              </div>
+            </section>
+
+            {trabajo.estado === "Completado" && (
+              <div className="order-2 xl:order-none">
+                <ResenasTrabajo key={`r-${version}`} trabajo={trabajo} onEnviada={alCambiar} />
+              </div>
+            )}
+
+            {tieneSesiones && (
+              <div className="order-3 xl:order-none">
+                <SesionesLista key={`s-${version}`} trabajo={trabajo} rolUsuario={rol} conPrimario={!hayPrincipal} onCambio={alCambiar} />
+              </div>
+            )}
+
+            <section aria-labelledby="titulo-contratado" className="order-5 xl:order-none">
+              <TituloSeccion id="titulo-contratado">Lo que se contrató</TituloSeccion>
+              <div className="grid gap-5 rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+                {trabajo.descripcionSnapshot && (
+                  <p className="max-w-[68ch] text-base leading-[1.55] whitespace-pre-line">{trabajo.descripcionSnapshot}</p>
+                )}
+                {esTrabajoProyectoCerrado(trabajo) && <DetalleProyectoCerrado detalle={trabajo.detalle} />}
+                {esTrabajoClase(trabajo) && <DetalleClase detalle={trabajo.detalle} />}
+                {esTrabajoSalud(trabajo) && <DetalleSalud trabajo={trabajo} detalle={trabajo.detalle} rolUsuario={rol} />}
+              </div>
+            </section>
+
+            {historial && (
+              <div className="order-7 xl:order-none">
+                <HistorialTrabajo
+                  historial={historial}
+                  miUsuarioId={user?.usuarioId}
+                  estudianteId={trabajo.estudianteId}
+                  estudianteNombre={trabajo.estudianteNombre}
+                  clienteId={trabajo.clienteId}
+                  clienteNombre={trabajo.clienteNombre}
+                />
+              </div>
+            )}
+
+            {hayProblemas && (
+              <section aria-labelledby="titulo-problemas" className="order-8 xl:order-none">
+                <h2 id="titulo-problemas" className="text-title-3">
+                  ¿Algo no va bien?
+                </h2>
+                <p className="mt-1 mb-3 max-w-[62ch] text-secondary text-ink-2">
+                  {textoProblemas(trabajo.estado, rol, trabajo.estudianteNombre, trabajo.clienteNombre)}
+                </p>
+                <AccionesTrabajo key={`x-${version}`} trabajo={trabajo} rolUsuario={rol} zona="problemas" onAccionCompletada={alCambiar} />
+              </section>
+            )}
+          </div>
+
+          <aside aria-label="Pago y participantes" className="contents xl:sticky xl:top-24 xl:grid xl:gap-8">
+            <div className="order-4 xl:order-none">
+              <PagoProgreso key={`$-${version}`} trabajo={trabajo} rolUsuario={rol} />
             </div>
-          </div>
-          <EstadoBadge estado={trabajo.estado} />
+            <section aria-labelledby="titulo-quienes" className="order-6 xl:order-none">
+              <TituloSeccion id="titulo-quienes" como="h2">
+                Quiénes
+              </TituloSeccion>
+              <ul className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+                <Fila
+                  icono="cap"
+                  titulo={rol === "Estudiante" ? `${trabajo.estudianteNombre} (vos)` : trabajo.estudianteNombre}
+                  descripcion="Atiende"
+                  href={rol === "Cliente" ? `/estudiantes/${trabajo.estudianteId}` : undefined}
+                />
+                {salud && (
+                  <Fila icono="steth" titulo={salud.supervisorNombreSnapshot} descripcion={`Supervisa. Matrícula ${salud.supervisorMatriculaSnapshot}`} />
+                )}
+                <Fila
+                  icono="user"
+                  titulo={rol === "Cliente" ? `${trabajo.clienteNombre} (vos)` : trabajo.clienteNombre}
+                  descripcion="Contrató"
+                />
+              </ul>
+            </section>
+          </aside>
         </div>
-
-        <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-slate-500">Cliente</dt>
-            <dd className="font-medium text-slate-900">
-              {trabajo.clienteNombre}
-              {rolUsuario === "Cliente" && (
-                <span className="ml-1 text-xs text-indigo-600">(vos)</span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Estudiante</dt>
-            <dd className="font-medium text-slate-900">
-              {trabajo.estudianteNombre}
-              {rolUsuario === "Estudiante" && (
-                <span className="ml-1 text-xs text-indigo-600">(vos)</span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Precio</dt>
-            <dd className="font-bold text-slate-900">
-              {formatPrecio(trabajo.precioAcordado)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Creado</dt>
-            <dd className="font-medium text-slate-900">
-              {formatFecha(trabajo.fechaCreacion)}
-            </dd>
-          </div>
-        </dl>
-      </div>
-
-      {/* Acciones */}
-      <AccionesTrabajo
-        trabajo={trabajo}
-        rolUsuario={rolUsuario}
-        onAccionCompletada={cargar}
-      />
-
-      {/* Detalle por vertical */}
-      {esTrabajoProyectoCerrado(trabajo) && (
-        <DetalleProyectoCerrado detalle={trabajo.detalle} />
-      )}
-      {esTrabajoClase(trabajo) && <DetalleClase detalle={trabajo.detalle} />}
-      {esTrabajoSalud(trabajo) && (
-        <DetalleSalud
-          trabajo={trabajo}
-          detalle={trabajo.detalle}
-          rolUsuario={rolUsuario}
-          onCambio={cargar}
-        />
-      )}
-
-      {/* Sesiones (Clase y Salud) */}
-      {tieneSesiones && (
-        <SesionesLista
-          trabajoId={trabajo.id}
-          rolUsuario={rolUsuario}
-          onCambio={cargar}
-        />
-      )}
-
-      {/* Pago */}
-      <PagoProgreso trabajoId={trabajo.id} rolUsuario={rolUsuario} />
-
-      {/* Historial */}
-      <HistorialTrabajo
-        trabajoId={trabajo.id}
-        estudianteId={trabajo.estudianteId}
-        estudianteNombre={trabajo.estudianteNombre}
-        clienteId={trabajo.clienteId}
-        clienteNombre={trabajo.clienteNombre}
-      />
-
-      {/* Reseñas (solo si Completado) */}
-      {trabajo.estado === "Completado" && <ResenasTrabajo trabajo={trabajo} />}
-    </div>
+      </Pagina>
+      <Toast mensaje={toast} onCerrar={() => setToast(null)} conLateral />
+    </>
   );
 }
+
+function textoProblemas(estado: TrabajoDetalleResponse["estado"], rol: RolEnTrabajo, estudiante: string, cliente: string) {
+  const otra = rol === "Cliente" ? estudiante : cliente;
+  if (estado === "EnCurso" || estado === "Entregado")
+    return `Si no se puede seguir, podés cancelarlo (el pago vuelve a ${rol === "Cliente" ? "vos" : cliente}) o abrir una disputa si no te ponés de acuerdo con ${otra}.`;
+  return `Si no se puede hacer, cancelalo: el pago vuelve a ${rol === "Cliente" ? "vos" : cliente}.`;
+}
+
+function VolverA({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className={clasesBoton({ variante: "texto", tamano: "sm", className: "-ml-3 gap-1 text-ink-2" })}>
+      <Icono nombre="chev-r" className="size-5 rotate-180" />
+      {children}
+    </Link>
+  );
+}
+
+function EsqueletoDetalle() {
+  return (
+    <Pagina>
+      <div aria-busy="true" aria-label="Cargando el trabajo">
+        <Esqueleto className="h-11 w-40" />
+        <div className="mt-3 grid grid-cols-[56px_minmax(0,1fr)] gap-4">
+          <Esqueleto className="size-14 rounded-button" />
+          <div className="grid content-start gap-2.5 pt-1">
+            <Esqueleto className="h-8 w-3/4" />
+            <Esqueleto className="h-4 w-1/2" />
+          </div>
+        </div>
+        <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-3">
+            <Esqueleto className="h-6 w-36" />
+            <div className="grid gap-4 rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+              <Esqueleto className="h-[42px] w-full" />
+              <Esqueleto className="h-7 w-40 rounded-pill" />
+              <Esqueleto className="h-4 w-4/5" />
+              <Esqueleto className="h-12 w-48 rounded-button" />
+            </div>
+          </div>
+          <div className="grid content-start gap-4 rounded-card bg-surface p-5 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+            <Esqueleto className="h-5 w-32" />
+            <Esqueleto className="h-8 w-36" />
+            <Esqueleto className="h-2 w-full rounded-pill" />
+            <Esqueleto className="h-4 w-4/5" />
+          </div>
+        </div>
+      </div>
+    </Pagina>
+  );
+}
+
