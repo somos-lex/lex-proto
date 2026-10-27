@@ -15,6 +15,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { clasesBoton } from "@/components/Boton";
+import { Vacio } from "@/components/ds/Estados";
 import type { Rol } from "@/lib/session";
 import type { Vista } from "@/lib/perfil";
 
@@ -43,7 +45,9 @@ export function RequireRole({
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.replace("/login");
+      // Vuelve a esta misma ruta después de iniciar sesión (login y registro respetan ?volver=).
+      const volver = window.location.pathname + window.location.search;
+      router.replace(`/login?volver=${encodeURIComponent(volver)}`);
     }
   }, [loading, isAuthenticated, router]);
 
@@ -57,26 +61,18 @@ export function RequireRole({
 
   if (loading || !isAuthenticated) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-accent" />
+      <div className="flex min-h-[40vh] items-center justify-center" aria-busy="true" aria-label="Cargando">
+        <div className="size-8 animate-spin rounded-full border-2 border-surface-3 border-t-accent motion-reduce:animate-none" />
       </div>
     );
   }
 
   if (!permitido) {
     return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <h1 className="text-xl font-bold text-foreground">Sin acceso</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Esta sección es solo para{" "}
-          {roles.join(" / ")}. Tu cuenta no tiene ese rol.
-        </p>
-        <Link
-          href="/"
-          className="mt-6 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover"
-        >
-          Ir a la vidriera
-        </Link>
+      <div className="mx-auto max-w-md px-4 py-16">
+        <Vacio icono="id" titulo="Esta sección no es para tu cuenta" acciones={<Link href="/" className={clasesBoton({ tamano: "sm" })}>Ir al catálogo</Link>}>
+          Es solo para cuentas de {roles.map((r) => r.toLowerCase()).join(" o ")}.
+        </Vacio>
       </div>
     );
   }

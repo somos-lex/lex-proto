@@ -183,4 +183,57 @@ public class ApiCliente
     public Task<HttpResponseMessage> RegistrarAsistenciaAsync(Actor estudiante, int practicaId, bool asistio) =>
         PostAsync($"/api/practicas/{practicaId}/asistencia", estudiante.Token,
             new { asistio, observaciones = "Registrado desde los tests." });
+
+    // --- Servicios ----------------------------------------------------------------
+
+    public static async Task<JsonElement> LeerJsonAsync(HttpResponseMessage response, HttpStatusCode esperado = HttpStatusCode.OK)
+    {
+        var cuerpo = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == esperado,
+            $"Se esperaba {(int)esperado} y vino {(int)response.StatusCode}: {cuerpo}");
+        return JsonDocument.Parse(cuerpo).RootElement.Clone();
+    }
+
+    public async Task<JsonElement> PublicarProyectoCerradoAsync(
+        Actor estudiante, int catalogoServicioId, int plazoEntregaDias = 15) =>
+        await LeerJsonAsync(await PostAsync("/api/servicios/proyecto-cerrado", estudiante.Token, new
+        {
+            titulo = "Proyecto de prueba",
+            descripcion = "Servicio de proyecto cerrado creado desde los tests.",
+            precio = 50000m,
+            catalogoServicioId,
+            plazoEntregaDias,
+            revisionesIncluidas = 2,
+            formatoEntrega = "Archivos"
+        }), HttpStatusCode.Created);
+
+    public async Task<JsonElement> PublicarClaseAsync(
+        Actor estudiante, string materia = "Álgebra", string modalidad = "Online",
+        int duracionMinutosSesion = 60, bool esPaquete = false, int? cantidadSesionesPaquete = null) =>
+        await LeerJsonAsync(await PostAsync("/api/servicios/clase", estudiante.Token, new
+        {
+            titulo = "Clase de prueba",
+            descripcion = "Clase creada desde los tests.",
+            precio = 8000m,
+            materia,
+            nivel = "Universitario",
+            modalidad,
+            duracionMinutosSesion,
+            esPaquete,
+            cantidadSesionesPaquete
+        }), HttpStatusCode.Created);
+
+    public async Task<JsonElement> PublicarSaludAsync(
+        Actor estudiante, int catalogoServicioId, int supervisorId,
+        string modalidad = "Consultorio", int duracionMinutosSesion = 45) =>
+        await LeerJsonAsync(await PostAsync("/api/servicios/salud", estudiante.Token, new
+        {
+            titulo = "Servicio de salud de prueba",
+            descripcion = "Servicio de salud creado desde los tests.",
+            precio = 12000m,
+            catalogoServicioId,
+            supervisorId,
+            modalidad,
+            duracionMinutosSesion
+        }), HttpStatusCode.Created);
 }

@@ -1,158 +1,173 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   listarMaterias,
   listarPracticasDisponibles,
   type FiltrosDisponibles,
+  type PracticaPublica,
 } from "@/lib/practicas";
 import type { TipoPaciente } from "@/lib/pacientes";
-import { PracticaCard } from "@/components/practicas/PracticaCard";
+import { Chip } from "@/components/ds/Chip";
+import { Aviso } from "@/components/ds/Aviso";
+import { Vacio, Esqueleto } from "@/components/ds/Estados";
+import { clasesBoton } from "@/components/Boton";
+import { TurnoBanco, claveDia, diaDeTurno } from "@/components/practicas/PracticaCard";
+import { FiltrosBanco } from "@/components/practicas/FiltrosBanco";
+import { VacioBanco } from "@/components/practicas/VacioBanco";
+import { ComoFuncionaBanco, ComparacionBanco } from "@/components/practicas/InfoBanco";
 
-// Banco de Turnos — explorar prácticas abiertas (Server Component).
+// Banco de Turnos: atención sin costo (Server Component).
 //
 // Los filtros viajan en la URL y el formulario es un GET plano: funciona sin JavaScript
-// y cada combinación de filtros es un link compartible.
+// y cada combinación de filtros es un link compartible. Sin turnos y sin filtros, no se
+// muestran filtros: no hay qué filtrar, y el vacío orienta con una acción por rol.
+
+type Params = { carreraId?: string; tipoPaciente?: string; desde?: string; hasta?: string };
 
 interface Props {
-  searchParams: Promise<{ carreraId?: string; tipoPaciente?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<Params>;
 }
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 // Un valor inválido en la URL se ignora en vez de reenviarlo al backend, que lo
 // rechazaría con 400.
-function parsearFiltros(p: Awaited<Props["searchParams"]>): FiltrosDisponibles {
+function parsearFiltros(p: Params): FiltrosDisponibles {
   const carreraId = Number.parseInt(p.carreraId ?? "", 10);
   return {
     carreraId: Number.isFinite(carreraId) && carreraId > 0 ? carreraId : undefined,
-    tipoPaciente:
-      p.tipoPaciente === "Humano" || p.tipoPaciente === "Animal"
-        ? (p.tipoPaciente as TipoPaciente)
-        : undefined,
+    tipoPaciente: p.tipoPaciente === "Humano" || p.tipoPaciente === "Animal" ? (p.tipoPaciente as TipoPaciente) : undefined,
     desde: p.desde && FECHA.test(p.desde) ? p.desde : undefined,
     hasta: p.hasta && FECHA.test(p.hasta) ? p.hasta : undefined,
   };
 }
 
 export default async function PracticasPage({ searchParams }: Props) {
-  const filtros = parsearFiltros(await searchParams);
+  const params = await searchParams;
+  const filtros = parsearFiltros(params);
 
-  const [practicas, materias] = await Promise.all([
-    listarPracticasDisponibles(filtros),
-    listarMaterias(),
-  ]);
+  return (
+    <div className="mx-auto max-w-lex px-4 md:px-6 lg:px-8">
+      <section aria-labelledby="t-banco" className="pt-5 lg:pt-10">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 id="t-banco" className="text-title-1-mobile lg:text-title-1">
+            Banco de Turnos
+          </h1>
+          <Chip tono="acento" icono="tag">
+            Atención sin costo
+          </Chip>
+        </div>
+        <p className="mt-2.5 max-w-[62ch] text-[17px] leading-[1.5] text-ink-2 lg:text-lead">
+          Estudiantes de Odontología, Medicina Veterinaria y Kinesiología publican turnos para las prácticas de sus
+          materias. Te inscribís sin costo, con vos, un familiar o tu mascota como paciente, y te atienden en la cátedra
+          con supervisión docente.
+        </p>
+      </section>
 
-  // Solo se ofrecen las carreras que tienen materias con práctica clínica.
-  const carreras = Array.from(
-    new Map(materias.map((m) => [m.carreraId, `${m.carreraNombre} (${m.institucionNombre})`])),
-  ).sort((a, b) => a[1].localeCompare(b[1], "es"));
+      <section aria-label="Turnos disponibles" className="mt-6">
+        <Suspense key={JSON.stringify(filtros)} fallback={<EsqueletoBanco />}>
+          <Turnos filtros={filtros} />
+        </Suspense>
+      </section>
+
+      <div className="mt-12 grid gap-10 lg:mt-16 lg:grid-cols-2 lg:gap-12">
+        <ComoFuncionaBanco />
+        <ComparacionBanco />
+      </div>
+    </div>
+  );
+}
+
+async function Turnos({ filtros }: { filtros: FiltrosDisponibles }) {
+  let practicas: PracticaPublica[];
+  let materias;
+  try {
+    [practicas, materias] = await Promise.all([listarPracticasDisponibles(filtros), listarMaterias()]);
+  } catch {
+    return (
+      <Aviso
+        tono="danger"
+        titulo="No pudimos cargar los turnos."
+        acciones={
+          <Link href="/practicas" className={clasesBoton({ variante: "secundario", tamano: "sm" })}>
+            Reintentar
+          </Link>
+        }
+      >
+        Puede ser un problema de conexión. Probá de nuevo en un momento.
+      </Aviso>
+    );
+  }
 
   const hayFiltros = Object.values(filtros).some((v) => v !== undefined);
 
+  // Vacío real: nadie publicó un turno. Sin filtros, porque no hay qué filtrar.
+  if (practicas.length === 0 && !hayFiltros) return <VacioBanco />;
+
+  // Solo las carreras que tienen materias con práctica clínica.
+  const carreras = Array.from(new Map(materias.map((m) => [m.carreraId, m.carreraNombre]))).sort((a, b) =>
+    a[1].localeCompare(b[1], "es"),
+  );
+  const resumen =
+    practicas.length === 0 ? "Ningún turno con estos filtros" : `${practicas.length} ${practicas.length === 1 ? "turno disponible" : "turnos disponibles"}`;
+
+  // Agrupados por día, como los movimientos de una app de pagos.
+  const porDia = new Map<string, PracticaPublica[]>();
+  for (const p of [...practicas].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio))) {
+    const clave = claveDia(p.fechaHoraInicio);
+    porDia.set(clave, [...(porDia.get(clave) ?? []), p]);
+  }
+
   return (
-    <div className="min-h-screen">
-      <section className="border-b border-slate-100 bg-gradient-to-b from-emerald-50/60 to-white">
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Banco de Turnos
-          </p>
-          <h1 className="mt-2 max-w-3xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Prácticas clínicas sin costo con estudiantes de la UNNE
-          </h1>
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Estudiantes de Odontología, Medicina Veterinaria y Kinesiología necesitan pacientes para
-            sus prácticas obligatorias. La atención se hace en la cátedra, bajo supervisión
-            docente, y no se cobra nada.
-          </p>
+    <>
+      <FiltrosBanco filtros={filtros} carreras={carreras} resumen={resumen} />
+      {practicas.length === 0 ? (
+        <Vacio
+          icono="filter"
+          titulo="No hay turnos con esos filtros"
+          className="mt-4"
+          acciones={
+            <Link href="/practicas" className={clasesBoton({ variante: "secundario", tamano: "sm" })}>
+              Limpiar filtros
+            </Link>
+          }
+        >
+          Probá con otra carrera o con un rango de fechas más amplio.
+        </Vacio>
+      ) : (
+        <div className="mt-4">
+          {[...porDia].map(([clave, turnos]) => (
+            <section key={clave} aria-labelledby={`dia-${clave}`}>
+              <h2 id={`dia-${clave}`} className="px-1 pt-5 pb-2 text-[15px] font-[650] text-ink-2">
+                {diaDeTurno(turnos[0].fechaHoraInicio)}
+              </h2>
+              <ul className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+                {turnos.map((p) => (
+                  <TurnoBanco key={p.id} practica={p} />
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
-      </section>
+      )}
+    </>
+  );
+}
 
-      <section className="mx-auto max-w-7xl px-6 py-6">
-        <form method="get" className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Carrera</span>
-            <select
-              name="carreraId"
-              defaultValue={filtros.carreraId ?? ""}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">Todas</option>
-              {carreras.map(([id, nombre]) => (
-                <option key={id} value={id}>
-                  {nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Paciente</span>
-            <select
-              name="tipoPaciente"
-              defaultValue={filtros.tipoPaciente ?? ""}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">Humano o animal</option>
-              <option value="Humano">Humano</option>
-              <option value="Animal">Animal</option>
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Desde</span>
-            <input
-              type="date"
-              name="desde"
-              defaultValue={filtros.desde}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Hasta</span>
-            <input
-              type="date"
-              name="hasta"
-              defaultValue={filtros.hasta}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-          <div className="flex items-end gap-2">
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-            >
-              Filtrar
-            </button>
-            {hayFiltros && (
-              <Link
-                href="/practicas"
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                Limpiar
-              </Link>
-            )}
+function EsqueletoBanco() {
+  return (
+    <div aria-busy="true" aria-label="Cargando turnos" className="grid gap-3">
+      <Esqueleto className="h-5 w-40" />
+      {[0, 1].map((i) => (
+        <div key={i} className="grid grid-cols-[56px_minmax(0,1fr)] gap-3.5 rounded-card bg-surface p-4 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+          <Esqueleto className="h-6 w-12" />
+          <div className="grid gap-2.5">
+            <Esqueleto className="h-4 w-1/2" />
+            <Esqueleto className="h-3.5 w-2/3" />
+            <Esqueleto className="h-3.5 w-3/5" />
           </div>
-        </form>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 pb-12">
-        {practicas.length === 0 ? (
-          <div className="rounded-lg border-2 border-dashed border-slate-200 py-16 text-center">
-            <p className="text-slate-600">No hay prácticas abiertas que coincidan con los filtros.</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Probá con otra carrera o un rango de fechas más amplio.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p className="mb-4 text-sm text-slate-500">
-              {practicas.length} práctica{practicas.length === 1 ? "" : "s"} buscando paciente
-            </p>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {practicas.map((p) => (
-                <PracticaCard key={p.id} practica={p} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
+        </div>
+      ))}
     </div>
   );
 }

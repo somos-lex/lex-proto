@@ -1,15 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatFechaHoraAR, formatHoraAR, obtenerPractica } from "@/lib/practicas";
+import { formatHoraAR, obtenerPractica } from "@/lib/practicas";
 import { ApiError } from "@/lib/api";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Carnet } from "@/components/ds/Credencial";
 import { EstadoPracticaBadge, SinCostoBadge, TipoPacienteBadge } from "@/components/practicas/Badges";
-import { InscripcionPanel } from "./InscripcionPanel";
+import { diaDeTurno, horaDeTurno } from "@/components/practicas/PracticaCard";
+import { ComoFuncionaBanco } from "@/components/practicas/InfoBanco";
+import { ListaDatos } from "@/components/publico/Datos";
+import { AsideInscripcion, HojaInscripcion } from "./InscripcionPanel";
 
-// Detalle de una práctica (Server Component). Los requisitos previos se muestran ANTES
-// de cualquier acción: la persona tiene que poder leerlos sin registrarse.
+// Ficha de un turno del Banco (Server Component). Los requisitos previos se muestran
+// ANTES de cualquier acción: la persona tiene que poder leerlos sin registrarse.
 //
-// El fetch lleva la sesión si existe: las partes ven también una práctica Cubierta o
-// Realizada; para cualquier otro, el backend responde 404 si ya no está abierta.
+// El fetch lleva la sesión si existe: las partes ven también un turno cubierto o
+// realizado; para cualquier otro, el backend responde 404 si ya no está abierto.
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -29,73 +35,102 @@ export default async function PracticaPage({ params }: Props) {
   }
 
   const p = detalle.practica;
+  const nombre = p.estudianteNombre.trim().split(/\s+/)[0];
+  const props = { detalle, nombre };
 
-  return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <Link href="/practicas" className="text-sm text-slate-500 transition hover:text-indigo-700">
-        ← Todas las prácticas
-      </Link>
-
-      <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <article className="lg:col-span-2">
-          <div className="flex flex-wrap gap-2">
-            <EstadoPracticaBadge estado={p.estado} />
-            <TipoPacienteBadge tipo={p.tipoPacienteRequerido} />
-            <SinCostoBadge />
-          </div>
-
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">{p.materiaNombre}</h1>
-          <p className="mt-1 text-slate-500">
-            {p.carreraNombre} · {p.institucionNombre}
-          </p>
-
-          <dl className="mt-6 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
-            <Dato label="Fecha y hora">
-              <span className="first-letter:uppercase">{formatFechaHoraAR(p.fechaHoraInicio)}</span>
-              <span className="text-slate-500"> a {formatHoraAR(p.fechaHoraFin)} ({p.duracionMinutos} min)</span>
-            </Dato>
-            <Dato label="Lugar">{p.lugar}</Dato>
-            <Dato label="Estudiante">
-              <Link href={`/estudiantes/${p.estudianteId}`} className="font-medium text-indigo-700 hover:underline">
-                {p.estudianteNombre}
-              </Link>
-            </Dato>
-            <Dato label="Paciente que se necesita">{p.tipoPacienteRequerido}</Dato>
-          </dl>
-
-          <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50/60 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800">
-              Requisitos previos
-            </h2>
-            <p className="mt-2 whitespace-pre-line text-sm text-amber-900">
-              {p.requisitosPrevios ?? "La práctica no tiene requisitos previos especiales."}
-            </p>
-          </section>
-
-          <section className="mt-6 text-sm text-slate-600">
-            <h2 className="font-semibold text-slate-900">Cómo funciona</h2>
-            <ol className="mt-2 list-decimal space-y-1 pl-5">
-              <li>Te inscribís con un paciente a tu cargo (vos mismo, un familiar o tu mascota).</li>
-              <li>El día y la hora indicados se encuentran en el lugar de la práctica.</li>
-              <li>La atención la hace el estudiante bajo supervisión docente de la cátedra.</li>
-              <li>No se cobra nada, ni a vos ni al estudiante.</li>
-            </ol>
-          </section>
-        </article>
-
-        <aside className="lg:col-span-1">
-          <InscripcionPanel detalle={detalle} />
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-function Dato({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 text-sm text-slate-800">{children}</dd>
+      <div className="mx-auto max-w-lex px-4 md:px-6 lg:px-8">
+        <nav aria-label="Estás en" className="mt-2 mb-2 flex items-center text-[15px] lg:mt-3 lg:mb-4">
+          <ol className="flex min-w-0 items-center">
+            <li className="flex items-center">
+              <Link href="/practicas" className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-control px-2 text-ink-2 no-underline hover:text-ink">
+                <Icono nombre="chev-r" className="size-4 rotate-180 lg:hidden" />
+                Banco de Turnos
+              </Link>
+              <Icono nombre="chev-r" className="hidden size-4 text-ink-3 lg:block" />
+            </li>
+            <li aria-current="page" className="hidden min-w-0 truncate px-2 text-ink lg:block">
+              {p.materiaNombre}
+            </li>
+          </ol>
+        </nav>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_384px] lg:items-start lg:gap-12">
+          <article className="min-w-0">
+            <ul className="flex flex-wrap gap-2" aria-label="En breve">
+              <li>
+                <SinCostoBadge />
+              </li>
+              <li>
+                <TipoPacienteBadge tipo={p.tipoPacienteRequerido} />
+              </li>
+              <li>
+                <EstadoPracticaBadge estado={p.estado} />
+              </li>
+            </ul>
+            <h1 className="mt-3.5 text-title-1-mobile text-balance lg:text-title-1">{p.materiaNombre}</h1>
+            <p className="mt-1.5 text-[17px] text-ink-2">
+              Turno para la práctica de la materia, de {p.carreraNombre}.
+            </p>
+
+            <section aria-labelledby="t-cuando" className="mt-8">
+              <h2 id="t-cuando" className="mb-3 text-title-2-mobile lg:text-title-2">
+                Cuándo y dónde
+              </h2>
+              <ListaDatos
+                className="gap-2.5 text-base"
+                datos={[
+                  {
+                    icono: "calendar",
+                    texto: `${diaDeTurno(p.fechaHoraInicio)}, de ${horaDeTurno(p.fechaHoraInicio)} a ${formatHoraAR(p.fechaHoraFin).replace(/^0(\d)/, "$1")} (${p.duracionMinutos} min)`,
+                  },
+                  { icono: "pin", texto: p.lugar },
+                  {
+                    icono: p.tipoPacienteRequerido === "Animal" ? "paw" : "user",
+                    texto: `El paciente es ${p.tipoPacienteRequerido === "Animal" ? "una mascota" : "una persona"}`,
+                  },
+                ]}
+              />
+            </section>
+
+            <Aviso tono="info" titulo="Requisitos previos." className="mt-6">
+              <span className="whitespace-pre-line">{p.requisitosPrevios ?? "Este turno no tiene requisitos especiales."}</span>
+            </Aviso>
+
+            <section aria-labelledby="t-quien" className="mt-9">
+              <h2 id="t-quien" className="mb-3 text-title-2-mobile lg:text-title-2">
+                Quién te atiende
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+                <Carnet nombre={p.estudianteNombre} carrera={p.carreraNombre} institucion={p.institucionNombre} />
+                <div className="grid content-start gap-1 rounded-card bg-surface-2 px-[22px] pt-5 pb-[22px]">
+                  <div className="mb-3.5 flex items-center gap-3">
+                    <span className="grid size-11 place-items-center rounded-control bg-surface text-ink">
+                      <Icono nombre="steth" className="size-6" />
+                    </span>
+                    <span className="text-[15px] font-semibold text-ink-2">Supervisa</span>
+                  </div>
+                  <p className="text-[19px] leading-[1.2] font-semibold text-ink">Un docente de la cátedra</p>
+                  <p className="text-[15px] leading-[1.4] text-ink-2">
+                    El turno es parte de la práctica de la materia y lo supervisa la cátedra.
+                  </p>
+                </div>
+              </div>
+              <Link href={`/estudiantes/${p.estudianteId}`} className="-ml-1 mt-2 inline-flex min-h-11 items-center gap-1 rounded-control px-1 font-semibold">
+                Ver el perfil de {nombre}
+                <Icono nombre="chev-r" className="size-[18px]" />
+              </Link>
+            </section>
+
+            <div className="mt-9">
+              <ComoFuncionaBanco />
+            </div>
+          </article>
+          <AsideInscripcion {...props} />
+        </div>
+      </div>
+      <HojaInscripcion {...props} />
     </div>
   );
 }

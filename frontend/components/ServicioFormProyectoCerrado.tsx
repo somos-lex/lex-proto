@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   crearServicioProyectoCerrado,
   actualizarServicioProyectoCerrado,
@@ -8,13 +8,12 @@ import {
   type FormatoEntrega,
   type ServicioDetalleResponse,
 } from "@/lib/servicios";
-import {
-  listarServiciosPermitidos,
-  type CatalogoServicioResponse,
-} from "@/lib/catalogo";
+import { listarServiciosPermitidos } from "@/lib/catalogo";
 import type { CarreraPortafolio } from "@/lib/portafolio";
 import { ApiError } from "@/lib/api";
-import { ErrorAlert, Field, Input, Select } from "@/components/ui";
+import { Field, Input, Select, Textarea } from "@/components/ui";
+import { HojaFormulario } from "@/components/panel/HojaFormulario";
+import { useCarga } from "@/components/panel/useCarga";
 
 const FORMATOS: FormatoEntrega[] = ["Archivos", "Link", "Ambos"];
 
@@ -38,7 +37,6 @@ export function ServicioFormProyectoCerrado({
   const [carreraId, setCarreraId] = useState<number>(
     carreras[0]?.carreraId ?? 0,
   );
-  const [catalogo, setCatalogo] = useState<CatalogoServicioResponse[]>([]);
   const [catalogoServicioId, setCatalogoServicioId] = useState<number>(
     detalle?.catalogoServicioId ?? 0,
   );
@@ -59,28 +57,15 @@ export function ServicioFormProyectoCerrado({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Catalogo de ProyectoCerrado disponible para la carrera + año elegidos.
-  useEffect(() => {
-    let cancelado = false;
-    if (!carreraId || anioCursado <= 0) {
-      setCatalogo([]);
-      return;
-    }
-    listarServiciosPermitidos(carreraId, anioCursado)
-      .then((entradas) => {
-        if (!cancelado)
-          setCatalogo(entradas.filter((e) => e.tipoServicio === "ProyectoCerrado"));
-      })
-      .catch((err) => {
-        if (!cancelado)
-          setError(
-            err instanceof ApiError ? err.message : "No pudimos cargar el catálogo.",
-          );
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [carreraId, anioCursado]);
+  // Catálogo de ProyectoCerrado disponible para la carrera + año elegidos.
+  const catalogoCarga = useCarga(
+    carreraId && anioCursado > 0 ? `catalogo-ProyectoCerrado-${carreraId}-${anioCursado}` : null,
+    () => listarServiciosPermitidos(carreraId, anioCursado),
+  );
+  const catalogo = useMemo(
+    () => (catalogoCarga.datos ?? []).filter((e) => e.tipoServicio === "ProyectoCerrado"),
+    [catalogoCarga.datos],
+  );
 
   const seleccionado = useMemo(
     () => catalogo.find((c) => c.id === catalogoServicioId),
@@ -136,6 +121,12 @@ export function ServicioFormProyectoCerrado({
     }
   }
 
+  const estadoCatalogo = catalogoCarga.error
+    ? { error: `No pudimos cargar el catálogo. ${catalogoCarga.error}` }
+    : catalogoCarga.datos && catalogo.length === 0
+      ? { ayuda: "Tu carrera no tiene entradas de esta vertical en el catálogo para tu año." }
+      : {};
+
   return (
     <FormShell
       titulo={editando ? "Editar proyecto cerrado" : "Publicar proyecto cerrado"}
@@ -164,13 +155,14 @@ export function ServicioFormProyectoCerrado({
         </Field>
       )}
 
-      <Field label="Servicio del catálogo" htmlFor="catalogo">
+      <Field label="Servicio del catálogo" htmlFor="catalogo" {...estadoCatalogo}>
         <Select
           id="catalogo"
+          disabled={catalogoCarga.cargando}
           value={catalogoServicioId}
           onChange={(e) => setCatalogoServicioId(Number(e.target.value))}
         >
-          <option value={0}>Elegí un servicio…</option>
+          <option value={0}>{catalogoCarga.cargando ? "Cargando el catálogo…" : "Elegí un servicio…"}</option>
           {catalogo.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
@@ -180,14 +172,7 @@ export function ServicioFormProyectoCerrado({
       </Field>
 
       {seleccionado && (
-        <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-          {seleccionado.descripcion}
-          {seleccionado.observaciones && (
-            <span className="mt-1 block text-slate-400">
-              {seleccionado.observaciones}
-            </span>
-          )}
-        </p>
+        <DetalleCatalogo descripcion={seleccionado.descripcion} observaciones={seleccionado.observaciones} />
       )}
 
       <Field label="Título" htmlFor="titulo">
@@ -201,22 +186,22 @@ export function ServicioFormProyectoCerrado({
       </Field>
 
       <Field label="Descripción" htmlFor="descripcion">
-        <textarea
+        <Textarea
           id="descripcion"
           rows={3}
           maxLength={1000}
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Contá qué incluye el servicio…"
-          className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-foreground shadow-sm outline-none transition placeholder:text-gray-400 focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-end gap-3">
         <Field label="Precio ($)" htmlFor="precio">
           <Input
             id="precio"
             type="number"
+            inputMode="numeric"
             min="1"
             step="any"
             required
@@ -229,6 +214,7 @@ export function ServicioFormProyectoCerrado({
           <Input
             id="plazo"
             type="number"
+            inputMode="numeric"
             min="1"
             step="1"
             required
@@ -239,11 +225,12 @@ export function ServicioFormProyectoCerrado({
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-end gap-3">
         <Field label="Revisiones incluidas" htmlFor="revisiones">
           <Input
             id="revisiones"
             type="number"
+            inputMode="numeric"
             min="0"
             step="1"
             value={revisionesIncluidas}
@@ -278,9 +265,10 @@ export function ServicioFormProyectoCerrado({
   );
 }
 
-// --- Shell de modal reutilizado por los tres forms de servicio ---
+// --- La hoja que comparten los tres formularios de servicio ---
 export function FormShell({
   titulo,
+  descripcion,
   onCerrar,
   onSubmit,
   submitting,
@@ -289,6 +277,7 @@ export function FormShell({
   children,
 }: {
   titulo: string;
+  descripcion?: React.ReactNode;
   onCerrar: () => void;
   onSubmit: (e: FormEvent) => void;
   submitting: boolean;
@@ -297,48 +286,26 @@ export function FormShell({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onCerrar}
+    <HojaFormulario
+      titulo={titulo}
+      descripcion={descripcion}
+      onCerrar={onCerrar}
+      onSubmit={onSubmit}
+      enviando={submitting}
+      error={error}
+      enviar={submitLabel}
     >
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between">
-          <h2 className="text-lg font-bold text-slate-900">{titulo}</h2>
-          <button
-            onClick={onCerrar}
-            aria-label="Cerrar"
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
-          </button>
-        </div>
+      <div className="grid gap-5">{children}</div>
+    </HojaFormulario>
+  );
+}
 
-        <form onSubmit={onSubmit} className="mt-5 space-y-4">
-          {error && <ErrorAlert message={error} />}
-          {children}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onCerrar}
-              className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {submitting ? "Guardando…" : submitLabel}
-            </button>
-          </div>
-        </form>
-      </div>
+/** La descripción de la entrada del catálogo elegida, para decidir con ella. */
+export function DetalleCatalogo({ descripcion, observaciones }: { descripcion: string; observaciones?: string | null }) {
+  return (
+    <div className="-mt-2 rounded-control bg-surface-2 px-4 py-3 text-[15px] leading-[1.45] text-ink-2">
+      <p>{descripcion}</p>
+      {observaciones && <p className="mt-1">{observaciones}</p>}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -11,24 +11,29 @@ import {
   type DetalleSalud,
 } from "@/lib/servicios";
 import { contratarSalud, firmarConsentimiento } from "@/lib/trabajos";
-import {
-  listarMisPacientes,
-  type PacienteResponse,
-} from "@/lib/pacientes";
+import { listarMisPacientes, type PacienteResponse } from "@/lib/pacientes";
 import { ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { SelectorSlots } from "@/components/SelectorSlots";
 import { PacienteForm } from "@/components/PacienteForm";
 import { ConsentimientoTexto } from "@/components/ConsentimientoTexto";
-import { ErrorAlert } from "@/components/ui";
+import { Field, Select, Textarea } from "@/components/ui";
+import { Boton, clasesBoton } from "@/components/Boton";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Esqueleto } from "@/components/ds/Estados";
+import {
+  CabeceraFlujo,
+  EsqueletoFlujo,
+  LayoutFlujo,
+  Paso,
+  ResumenContratar,
+  faltante,
+} from "@/components/publico/FlujoContratar";
 
 type SaludServicio = ServicioDetalleResponse & { detalle: DetalleSalud };
 
-export default function ContratarSaludPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function ContratarSaludPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
     <RequireRole roles={["Cliente"]} vista="Cliente">
@@ -37,13 +42,19 @@ export default function ContratarSaludPage({
   );
 }
 
+/** "Toby (mascota, perro)" o "Juana Pérez (persona)". */
+function etiquetaPaciente(p: PacienteResponse) {
+  if (p.tipo === "Animal") return `${p.nombreCompleto} (mascota${p.especie ? `, ${p.especie.toLowerCase()}` : ""})`;
+  return `${p.nombreCompleto} (persona)`;
+}
+
 function ContratarSalud({ servicioId }: { servicioId: number }) {
   const router = useRouter();
   const [servicio, setServicio] = useState<SaludServicio | null>(null);
-  const [cargando, setCargando] = useState(true);
   const [cargaError, setCargaError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
 
-  const [pacientes, setPacientes] = useState<PacienteResponse[]>([]);
+  const [pacientes, setPacientes] = useState<PacienteResponse[] | null>(null);
   const [pacienteId, setPacienteId] = useState<number>(0);
   const [formPaciente, setFormPaciente] = useState(false);
 
@@ -53,75 +64,79 @@ function ContratarSalud({ servicioId }: { servicioId: number }) {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  const cargarPacientes = useCallback(async () => {
-    try {
-      setPacientes(await listarMisPacientes());
-    } catch {
-      // no bloquea: se puede agregar uno nuevo
-    }
-  }, []);
-
   useEffect(() => {
     let cancelado = false;
     obtenerServicio(servicioId)
       .then((s) => {
         if (cancelado) return;
-        if (!esSalud(s)) {
-          setCargaError("Este servicio no es de tipo Salud.");
-          return;
-        }
-        setServicio(s);
+        if (!esSalud(s)) setCargaError("Este servicio no es de Salud.");
+        else setServicio(s);
       })
       .catch((err) => {
-        if (!cancelado)
-          setCargaError(
-            err instanceof ApiError
-              ? err.message
-              : "No pudimos cargar el servicio.",
-          );
-      })
-      .finally(() => {
-        if (!cancelado) setCargando(false);
+        if (!cancelado) setCargaError(err instanceof ApiError ? err.message : "No pudimos cargar el servicio.");
       });
-    cargarPacientes();
+    // Si no se pueden traer los pacientes no se bloquea: se puede agregar uno nuevo.
+    listarMisPacientes()
+      .then((p) => {
+        if (!cancelado) setPacientes(p);
+      })
+      .catch(() => {
+        if (!cancelado) setPacientes([]);
+      });
     return () => {
       cancelado = true;
     };
-  }, [servicioId, cargarPacientes]);
+  }, [servicioId, intento]);
 
-  if (cargando) {
+  if (cargaError)
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-      </div>
-    );
-  }
-
-  if (cargaError || !servicio) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-16">
-        <ErrorAlert message={cargaError ?? "Servicio no encontrado."} />
-        <Link
-          href="/"
-          className="mt-6 inline-block text-sm font-semibold text-indigo-700 hover:underline"
+      <div className="mx-auto max-w-lex px-4 py-10 md:px-6 lg:px-8">
+        <Aviso
+          tono="danger"
+          titulo="No pudimos abrir la contratación."
+          acciones={
+            <>
+              <Boton
+                variante="secundario"
+                tamano="sm"
+                onClick={() => {
+                  setCargaError(null);
+                  setIntento((n) => n + 1);
+                }}
+              >
+                Reintentar
+              </Boton>
+              <Link href="/" className={clasesBoton({ variante: "fantasma", tamano: "sm" })}>
+                Ir al catálogo
+              </Link>
+            </>
+          }
         >
-          ← Volver al catálogo
-        </Link>
+          {cargaError}
+        </Aviso>
       </div>
     );
-  }
 
-  const paciente = pacientes.find((p) => p.id === pacienteId) ?? null;
-  const listo = pacienteId > 0 && slotsElegidos.length === 1 && acepta;
+  if (!servicio) return <EsqueletoFlujo />;
+
+  const d = servicio.detalle;
+  const paciente = pacientes?.find((p) => p.id === pacienteId) ?? null;
+  const nombre = servicio.estudianteNombre.trim().split(/\s+/)[0];
+  const falta = faltante([
+    ...(paciente ? [] : ["elegir al paciente"]),
+    ...(slotsElegidos.length === 1 ? [] : ["elegir el horario"]),
+    ...(acepta ? [] : ["aceptar el consentimiento"]),
+  ]);
 
   function onPacienteCreado(p: PacienteResponse) {
-    setPacientes((prev) => [p, ...prev]);
+    setPacientes((prev) => [p, ...(prev ?? [])]);
     setPacienteId(p.id);
+    setAcepta(false);
     setFormPaciente(false);
   }
 
-  async function handleConfirmar() {
-    if (!listo || !servicio) return;
+  async function confirmar() {
+    if (falta || !servicio || enviando) return;
     setEnviando(true);
     setError(null);
     try {
@@ -139,149 +154,130 @@ function ContratarSalud({ servicioId }: { servicioId: number }) {
       }
       router.push(`/panel/trabajos/${trabajo.id}`);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "No pudimos confirmar la contratación.",
-      );
+      setError(err instanceof ApiError ? err.message : "No pudimos confirmar la contratación. Probá de nuevo.");
       setEnviando(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/servicios/${servicio.id}`}
-        className="mb-4 inline-block text-sm text-slate-500 transition hover:text-indigo-700"
+    <LayoutFlujo
+      cabecera={<CabeceraFlujo servicio={servicio} />}
+      resumen={
+        <ResumenContratar servicio={servicio}>
+          <Boton
+            tamano="lg"
+            bloque
+            onClick={confirmar}
+            aria-disabled={!!falta || undefined}
+            aria-describedby="estado-confirmar"
+            aria-busy={enviando || undefined}
+          >
+            {enviando && (
+              <span aria-hidden="true" className="size-[18px] animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />
+            )}
+            {enviando ? "Confirmando…" : "Firmar y pagar"}
+          </Boton>
+          <p id="estado-confirmar" className="mt-2.5 text-[15px] text-ink-2">
+            {falta ??
+              `Firmás el consentimiento y pagás ${formatPrecio(servicio.precio)}. LEX guarda el pago hasta que se hace la sesión.`}
+          </p>
+          {error && (
+            <Aviso tono="danger" className="mt-3">
+              {error}
+            </Aviso>
+          )}
+        </ResumenContratar>
+      }
+    >
+      <Paso n={1} titulo="Elegí al paciente" ayuda="La persona o la mascota que se va a atender.">
+        {pacientes === null ? (
+          <Esqueleto className="h-12 w-full max-w-md rounded-control" />
+        ) : (
+          <div className="grid gap-3 sm:flex sm:items-end">
+            {pacientes.length > 0 ? (
+              <div className="min-w-0 sm:max-w-md sm:flex-1">
+                <Field label="Paciente" htmlFor="paciente">
+                  <Select
+                    id="paciente"
+                    value={pacienteId}
+                    onChange={(e) => {
+                      setPacienteId(Number(e.target.value));
+                      setAcepta(false);
+                    }}
+                  >
+                    <option value={0}>Elegí un paciente</option>
+                    {pacientes.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {etiquetaPaciente(p)}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+            ) : (
+              <p className="text-[15px] text-ink-2">Todavía no cargaste a nadie. Agregá a la persona o la mascota que se va a atender.</p>
+            )}
+            <Boton variante="secundario" onClick={() => setFormPaciente(true)} className="justify-self-start">
+              <Icono nombre="plus" />
+              Agregar persona o mascota
+            </Boton>
+          </div>
+        )}
+      </Paso>
+
+      <Paso
+        n={2}
+        titulo="Elegí el horario"
+        ayuda={`La sesión dura ${d.duracionMinutosSesion} min. Los horarios están en hora de Argentina.`}
       >
-        ← Volver al servicio
-      </Link>
-
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-        Contratar servicio de salud
-      </h1>
-
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="font-semibold text-slate-900">{servicio.titulo}</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          por {servicio.estudianteNombre} · {servicio.detalle.catalogoServicioNombre}
-        </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Supervisa: {servicio.detalle.supervisorNombre} (Mat.{" "}
-          {servicio.detalle.supervisorMatricula}) · {servicio.detalle.modalidad}{" "}
-          · {servicio.detalle.duracionMinutosSesion} min
-        </p>
-        <p className="mt-2 text-lg font-bold text-slate-900">
-          {formatPrecio(servicio.precio)}
-        </p>
-      </div>
-
-      {/* Paso 1: paciente */}
-      <section className="mt-6">
-        <h3 className="text-sm font-semibold text-slate-900">
-          1. Elegí el paciente
-        </h3>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <select
-            value={pacienteId}
-            onChange={(e) => setPacienteId(Number(e.target.value))}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 sm:max-w-sm"
-          >
-            <option value={0}>Elegí un paciente…</option>
-            {pacientes.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombreCompleto} ({p.tipo})
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setFormPaciente(true)}
-            className="shrink-0 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            + Agregar nuevo paciente
-          </button>
-        </div>
-      </section>
-
-      {/* Paso 2: horario */}
-      <section className="mt-6">
-        <h3 className="mb-2 text-sm font-semibold text-slate-900">
-          2. Elegí el horario
-        </h3>
         <SelectorSlots
           estudianteId={servicio.estudianteId}
-          duracionMinutos={servicio.detalle.duracionMinutosSesion}
+          duracionMinutos={d.duracionMinutosSesion}
           cantidadRequerida={1}
           slotsElegidos={slotsElegidos}
           onCambiarSeleccion={setSlotsElegidos}
         />
-      </section>
+      </Paso>
 
-      {/* Paso 3: consentimiento */}
-      <section className="mt-6">
-        <h3 className="mb-2 text-sm font-semibold text-slate-900">
-          3. Consentimiento informado
-        </h3>
+      <Paso
+        n={3}
+        titulo="Leé y aceptá el consentimiento"
+        ayuda={`Lo firmás al contratar. ${nombre} lo ve antes de aceptar el trabajo.`}
+      >
         {paciente ? (
-          <ConsentimientoTexto servicio={servicio} paciente={paciente} />
+          <>
+            <ConsentimientoTexto servicio={servicio} paciente={paciente} />
+            <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 py-2 text-base">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-5 shrink-0 accent-accent"
+                checked={acepta}
+                onChange={(e) => setAcepta(e.target.checked)}
+              />
+              <span>Acepto el consentimiento informado y autorizo la realización de la práctica.</span>
+            </label>
+          </>
         ) : (
-          <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
-            Elegí un paciente para ver el consentimiento.
+          <p className="rounded-notice bg-surface-2 px-4 py-4 text-[15px] text-ink-2">
+            Elegí al paciente para ver el consentimiento: lleva su nombre.
           </p>
         )}
-        <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className="mt-0.5 accent-indigo-600"
-            checked={acepta}
-            disabled={!paciente}
-            onChange={(e) => setAcepta(e.target.checked)}
+      </Paso>
+
+      <Paso n={4} titulo="Contale lo que haga falta">
+        <Field label="Notas para el estudiante (opcional)" htmlFor="notas" ayuda={d.modalidad === "Consultorio" ? "Por ejemplo, alergias o medicación." : "Por ejemplo, alergias, medicación o cómo llegar si es a domicilio."}>
+          <Textarea
+            id="notas"
+            rows={3}
+            maxLength={500}
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            aria-describedby="notas-ayuda"
           />
-          <span>
-            Acepto el consentimiento informado y autorizo la realización de la
-            práctica.
-          </span>
-        </label>
-      </section>
+        </Field>
+      </Paso>
 
-      <div className="mt-6">
-        <label
-          htmlFor="notas"
-          className="mb-1.5 block text-sm font-medium text-slate-700"
-        >
-          Notas para el estudiante (opcional)
-        </label>
-        <textarea
-          id="notas"
-          rows={3}
-          maxLength={500}
-          value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-        />
-      </div>
-
-      {error && (
-        <div className="mt-4">
-          <ErrorAlert message={error} />
-        </div>
-      )}
-
-      <button
-        onClick={handleConfirmar}
-        disabled={!listo || enviando}
-        className="mt-6 w-full rounded-lg bg-indigo-600 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {enviando ? "Confirmando…" : "Confirmar contratación"}
-      </button>
-
-      {formPaciente && (
-        <PacienteForm
-          onCerrar={() => setFormPaciente(false)}
-          onExito={onPacienteCreado}
-        />
-      )}
-    </div>
+      {formPaciente && <PacienteForm onCerrar={() => setFormPaciente(false)} onExito={onPacienteCreado} />}
+    </LayoutFlujo>
   );
 }
