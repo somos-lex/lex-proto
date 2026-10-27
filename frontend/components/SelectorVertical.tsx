@@ -1,16 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  listarServiciosPermitidos,
-  type CatalogoServicioResponse,
-} from "@/lib/catalogo";
+// Qué tipo de servicio publicar. Proyecto cerrado y Salud se habilitan solo si
+// el catálogo cerrado tiene alguna entrada de esa vertical para las carreras
+// verificadas del estudiante (dado su año). Clase es de texto libre: alcanza
+// con una carrera verificada. Lo que no se puede elegir dice por qué.
+
+import { listarServiciosPermitidos } from "@/lib/catalogo";
 import type { CarreraPortafolio } from "@/lib/portafolio";
 import type { TipoServicio } from "@/lib/servicios";
+import { Icono, type NombreIcono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Cargando, Esqueleto } from "@/components/ds/Estados";
+import { Tesela } from "@/components/ds/Lista";
+import { HojaFormulario } from "@/components/panel/HojaFormulario";
+import { ErrorDeCarga } from "@/components/panel/Reintentar";
+import { useCarga } from "@/components/panel/useCarga";
 
-// Modal de eleccion de vertical. ProyectoCerrado y Salud se habilitan solo si el catalogo
-// cerrado tiene alguna entrada de esa vertical para las carreras verificadas del estudiante
-// (dado su año). Clase es catalogo libre: habilitada con tener una carrera verificada.
+const OPCIONES: { vertical: TipoServicio; titulo: string; descripcion: string; icono: NombreIcono }[] = [
+  { vertical: "ProyectoCerrado", titulo: "Proyecto cerrado", descripcion: "Un trabajo definido, con plazo de entrega.", icono: "briefcase" },
+  { vertical: "Clase", titulo: "Clases", descripcion: "Sesiones con turno, de la materia que elijas.", icono: "cap" },
+  { vertical: "Salud", titulo: "Salud", descripcion: "Prácticas supervisadas por un profesional matriculado.", icono: "steth" },
+];
+
 export function SelectorVertical({
   carreras,
   anioCursado,
@@ -22,140 +33,62 @@ export function SelectorVertical({
   onCerrar: () => void;
   onSeleccionar: (vertical: TipoServicio) => void;
 }) {
-  const [cargando, setCargando] = useState(true);
-  const [tiposPermitidos, setTiposPermitidos] = useState<Set<TipoServicio>>(
-    new Set(),
+  const tieneCarrera = carreras.length > 0 && anioCursado > 0;
+  // La unión de las verticales del catálogo entre todas las carreras verificadas.
+  const permitidas = useCarga(
+    tieneCarrera ? `permitidas-${carreras.map((c) => c.carreraId).join(",")}-${anioCursado}` : null,
+    async () => {
+      const listas = await Promise.all(carreras.map((c) => listarServiciosPermitidos(c.carreraId, anioCursado)));
+      return new Set(listas.flat().map((e) => e.tipoServicio));
+    },
   );
 
-  useEffect(() => {
-    let cancelado = false;
-    if (carreras.length === 0 || anioCursado <= 0) {
-      setCargando(false);
-      return;
-    }
-    // Union de tipos de catalogo disponibles entre todas las carreras verificadas.
-    Promise.all(
-      carreras.map((c) => listarServiciosPermitidos(c.carreraId, anioCursado)),
-    )
-      .then((listas) => {
-        if (cancelado) return;
-        const tipos = new Set<TipoServicio>();
-        for (const entradas of listas)
-          for (const e of entradas) tipos.add(e.tipoServicio);
-        setTiposPermitidos(tipos);
-      })
-      .catch(() => {
-        // Si falla la carga, PC/Salud quedan deshabilitados (conservador).
-      })
-      .finally(() => {
-        if (!cancelado) setCargando(false);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, [carreras, anioCursado]);
-
-  const tieneCarrera = carreras.length > 0;
-  const opciones: {
-    vertical: TipoServicio;
-    titulo: string;
-    descripcion: string;
-    habilitado: boolean;
-  }[] = [
-    {
-      vertical: "ProyectoCerrado",
-      titulo: "Proyecto cerrado",
-      descripcion: "Trabajos definidos con plazo de entrega.",
-      habilitado: tiposPermitidos.has("ProyectoCerrado"),
-    },
-    {
-      vertical: "Clase",
-      titulo: "Clases / Tutorías",
-      descripcion: "Sesiones agendadas de aprendizaje.",
-      habilitado: tieneCarrera,
-    },
-    {
-      vertical: "Salud",
-      titulo: "Salud",
-      descripcion: "Prácticas supervisadas por profesional matriculado.",
-      habilitado: tiposPermitidos.has("Salud"),
-    },
-  ];
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onCerrar}
+    <HojaFormulario
+      titulo="¿Qué querés publicar?"
+      descripcion="Proyecto cerrado y Salud dependen del catálogo de tu carrera y tu año."
+      onCerrar={onCerrar}
     >
-      <div
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              ¿Qué tipo de servicio querés publicar?
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Elegí la vertical. Algunas dependen de que tu carrera esté en el
-              catálogo.
-            </p>
+      {!tieneCarrera ? (
+        <Aviso tono="warn" titulo="Todavía no podés publicar:">
+          hace falta una carrera verificada por LEX. Mirá cómo va en Perfil y verificación.
+        </Aviso>
+      ) : permitidas.cargando ? (
+        <Cargando etiqueta="Revisando qué podés publicar">
+          <div className="grid gap-2">
+            {OPCIONES.map((o) => (
+              <Esqueleto key={o.vertical} className="h-[76px] rounded-card" />
+            ))}
           </div>
-          <button
-            onClick={onCerrar}
-            aria-label="Cerrar"
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
-          </button>
-        </div>
-
-        {!tieneCarrera ? (
-          <p className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Necesitás al menos una carrera vinculada y verificada para publicar
-            servicios.
-          </p>
-        ) : (
-          <div className="mt-6 space-y-3">
-            {opciones.map((op) => {
-              const deshabilitado = !op.habilitado || cargando;
-              return (
+        </Cargando>
+      ) : permitidas.error ? (
+        <ErrorDeCarga que="No pudimos revisar el catálogo de tu carrera." motivo={permitidas.error} onReintentar={permitidas.reintentar} />
+      ) : (
+        <ul className="grid gap-2">
+          {OPCIONES.map((o) => {
+            const habilitada = o.vertical === "Clase" || !!permitidas.datos?.has(o.vertical);
+            return (
+              <li key={o.vertical}>
                 <button
-                  key={op.vertical}
                   type="button"
-                  disabled={deshabilitado}
-                  onClick={() => onSeleccionar(op.vertical)}
-                  title={
-                    !cargando && !op.habilitado
-                      ? "Tu carrera aún no está incluida en el catálogo para este vertical."
-                      : undefined
-                  }
-                  className={`w-full rounded-xl border p-4 text-left transition ${
-                    deshabilitado
-                      ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
-                      : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/40"
-                  }`}
+                  disabled={!habilitada}
+                  onClick={() => onSeleccionar(o.vertical)}
+                  className="flex min-h-[76px] w-full items-center gap-3.5 rounded-card bg-surface px-4 py-3 text-left shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-surface-2 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:shadow-none"
                 >
-                  <span className="block font-semibold text-slate-900">
-                    {op.titulo}
-                  </span>
-                  <span className="mt-0.5 block text-sm text-slate-500">
-                    {op.descripcion}
-                  </span>
-                  {!cargando && !op.habilitado && (
-                    <span className="mt-1.5 block text-xs text-amber-700">
-                      Tu carrera aún no está incluida en el catálogo para este
-                      vertical.
+                  <Tesela icono={o.icono} />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block text-base leading-[1.35] font-semibold ${habilitada ? "text-ink" : "text-ink-2"}`}>{o.titulo}</span>
+                    <span className="block text-[15px] leading-[1.4] text-ink-2">
+                      {habilitada ? o.descripcion : "Tu carrera no tiene servicios de esta vertical en el catálogo, o no para tu año."}
                     </span>
-                  )}
+                  </span>
+                  {habilitada && <Icono nombre="chev-r" className="size-5 text-ink-3" />}
                 </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </HojaFormulario>
   );
 }
