@@ -5,9 +5,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  /* Al cerrar la Fase 4, descomentá la línea siguiente: borra la paleta por defecto y cualquier
-     slate, gray, indigo, rose o red que haya quedado deja de compilar. */
-  /* --color-*: initial; */
+  --color-*: initial;
   --color-canvas: #F6F5F8;
   --color-surface: #FFFFFF;
   --color-surface-2: #EFEEF2;
