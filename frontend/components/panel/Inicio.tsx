@@ -108,7 +108,10 @@ function Saludo({
           </h1>
           {esEstudiante &&
             (portafolio.cargando ? (
-              <Esqueleto className="mt-2 h-4 w-72 max-w-full" />
+              <div className="mt-1 grid gap-1">
+                <Esqueleto className="h-4 w-60 max-w-full" />
+                <Esqueleto className="h-4 w-36 max-w-full" />
+              </div>
             ) : carrera ? (
               <CredencialLinea carrera={carrera} anio={portafolio.datos?.anioCursado ?? null} />
             ) : null)}
@@ -181,7 +184,10 @@ function ProximoPaso({ uid, carga, esEstudiante }: { uid: number; carga: Carga<v
 
       {cargando ? (
         <Cargando etiqueta="Cargando tus trabajos">
-          <EsqueletoPaso />
+          <div className="grid gap-3">
+            <EsqueletoPaso />
+            <EsqueletoPaso />
+          </div>
         </Cargando>
       ) : p.error ? (
         <ErrorDeCarga
@@ -285,18 +291,19 @@ function PasoTrabajo({ t, uid }: { t: TrabajoResponse; uid: number }) {
 
 function EsqueletoPaso() {
   return (
-    <div className="grid gap-5 rounded-card bg-surface px-4 py-5 shadow-[0_0_0_1px_var(--color-line)] md:px-5 dark:shadow-none">
+    <div className="grid gap-4 rounded-card bg-surface px-4 py-5 shadow-[0_0_0_1px_var(--color-line)] md:px-5 dark:shadow-none">
       <div className="flex gap-3.5">
         <Esqueleto className="size-11 shrink-0 rounded-control" />
         <div className="grid flex-1 content-start gap-2.5 pt-1">
           <Esqueleto className="h-4 w-3/5" />
+          <Esqueleto className="h-3.5 w-full" />
           <Esqueleto className="h-3.5 w-4/5" />
         </div>
       </div>
-      <Esqueleto className="h-4 w-full" />
-      <div className="flex flex-wrap justify-between gap-3">
-        <Esqueleto className="h-7 w-40 rounded-pill" />
-        <Esqueleto className="h-11 w-44 rounded-control max-sm:w-full" />
+      <Esqueleto className="h-10 w-full" />
+      <div className="flex flex-col gap-3">
+        <Esqueleto className="h-7 w-32 rounded-pill" />
+        <Esqueleto className="h-11 w-full rounded-control" />
       </div>
     </div>
   );
@@ -313,8 +320,8 @@ function TuVerificacion({ nombre, portafolio }: { nombre: string; portafolio: Ca
       </h2>
       {portafolio.cargando ? (
         <Cargando etiqueta="Cargando tu verificación">
-          <Esqueleto className="h-[196px] rounded-card" />
-          <Esqueleto className="mt-3 h-[132px] rounded-card" />
+          <Esqueleto className="h-[226px] rounded-card" />
+          <Esqueleto className="mt-3 h-[182px] rounded-card" />
         </Cargando>
       ) : portafolio.error ? (
         <ErrorDeCarga que="No pudimos cargar tu verificación." motivo={portafolio.error} onReintentar={portafolio.reintentar} />
