@@ -28,6 +28,10 @@ Reembolsar acepta `Retenido`, `EnDisputa` o `ParcialmenteLiberado`, y devuelve e
 
 Los métodos de negocio de `PagoService` no llaman a `SaveChanges` ni abren transacción propia: solo dejan los cambios en el `DbContext`. El llamador (contratación o máquina de estados) cierra la unidad de trabajo con un único `SaveChanges`, así el trabajo y su pago se commitean en la misma transacción implícita, o no se commitea ninguno.
 
+### Concurrencia optimista
+
+`Pago` y `Trabajo` usan la columna de sistema `xmin` de Postgres como token de concurrencia (`UseXminAsConcurrencyToken` en `AppDbContext.OnModelCreating`): no agrega columna propia ni pide migración de schema. Si dos escrituras concurrentes sobre la misma fila chocan (ej. cliente y estudiante resolviendo el mismo trabajo a la vez), `AppDbContext.SaveChangesAsync` traduce el `DbUpdateConcurrencyException` a `ConflictException` → **409**, en vez de dejar que una pise a la otra en silencio.
+
 ## Comisión LEX
 
 - Configurable en `appsettings.json` como `Lex:PorcentajeComision` (default 10).

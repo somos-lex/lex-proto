@@ -641,6 +641,12 @@ namespace Lex.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("trabajo_id");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("TrabajoId")
@@ -1162,6 +1168,12 @@ namespace Lex.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("titulo_snapshot");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
