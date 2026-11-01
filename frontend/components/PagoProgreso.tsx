@@ -1,8 +1,7 @@
 "use client";
 
 // El pago protegido de un trabajo: cuánto se pagó, cuánto va al estudiante y
-// cuánto es la comisión de LEX, en qué está y el libro de movimientos. Nunca
-// "escrow": el concepto es pago protegido.
+// cuánto es la comisión de LEX, en qué está y el libro de movimientos.
 
 import { useCallback, useEffect, useState } from "react";
 import {
