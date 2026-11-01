@@ -12,6 +12,11 @@ public interface ITrabajoService
     Task<TrabajoResponse> CancelarAsync(int usuarioId, int idTrabajo, string? motivo);
     Task<TrabajoResponse> DisputarAsync(int usuarioId, int idTrabajo, string motivo);
 
+    // Resolucion arbitrada por Admin de un trabajo en Disputa. favorCliente=true reembolsa
+    // el remanente retenido y cancela; false libera el remanente y completa. No pasa por
+    // PartesAutorizadas: el admin no es parte del trabajo.
+    Task<TrabajoResponse> ResolverDisputaAsync(int adminUsuarioId, int idTrabajo, bool favorCliente, string motivo);
+
     // Cierre de Clase/Salud disparado por la ultima sesion marcada. No pasa por la maquina
     // de estados ni toca el escrow: la plata ya se libero fraccion a fraccion.
     Task<TrabajoResponse> CompletarPorSesionesAsync(int usuarioId, int idTrabajo);

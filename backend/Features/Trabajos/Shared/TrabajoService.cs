@@ -53,6 +53,28 @@ public class TrabajoService : ITrabajoService
         return TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Disputa, motivo);
     }
 
+    // Resolucion de una disputa por un Admin: no es parte del trabajo, asi que no pasa por
+    // PartesAutorizadas/ParteDe. favorCliente reembolsa el remanente retenido (Cancelado);
+    // en contra del cliente libera el remanente al estudiante (Completado). No revierte
+    // fracciones ya liberadas antes de la disputa (limitacion conocida, ver README_PAGOS.md).
+    public async Task<TrabajoResponse> ResolverDisputaAsync(int adminUsuarioId, int idTrabajo, bool favorCliente, string motivo)
+    {
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new BadRequestException("Debe indicar el motivo de la resolución.");
+
+        var trabajo = await _db.Trabajos.FirstOrDefaultAsync(t => t.Id == idTrabajo)
+            ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
+
+        if (trabajo.Estado != EstadoTrabajo.Disputa)
+            throw new BadRequestException($"El trabajo no está en disputa (estado actual: {trabajo.Estado}).");
+
+        var destino = favorCliente ? EstadoTrabajo.Cancelado : EstadoTrabajo.Completado;
+        await AplicarTransicionAsync(trabajo, destino, adminUsuarioId, motivo);
+
+        await _db.SaveChangesAsync();
+        return await MapBaseAsync(idTrabajo);
+    }
+
     // Cierra un trabajo de Clase/Salud cuyo escrow ya se fue liberando sesion a sesion.
     // No pasa por la maquina de estados porque no hay transicion EnCurso -> Completado
     // declarada: en estos verticales el completado no lo pide nadie, lo dispara la ultima
