@@ -1,0 +1,91 @@
+{
+  "usuarioId": 10,
+  "nombreCompleto": "Sofía Benítez",
+  "bio": "Estudiante de Odontología en la UNNE. Me especializo en diseño gráfico y en control odontológico general.",
+  "anioCursado": 4,
+  "calificacionPromedio": 4.8,
+  "trabajosCompletados": 12,
+  "carreras": [
+    {
+      "carreraId": 1,
+      "carrera": "Odontología",
+      "institucion": "Universidad Nacional del Nordeste (UNNE)",
+      "estadoVerificacion": "Verificado"
+    }
+  ],
+  "servicios": [
+    {
+      "id": 1,
+      "estudianteId": 10,
+      "estudianteNombre": "Sofía Benítez",
+      "estudianteCalificacion": 4.8,
+      "titulo": "Diseño de identidad visual para marcas nuevas",
+      "descripcion": "Armo tu logo, paleta de colores y un manual breve de marca, con dos rondas de revisión incluidas.",
+      "precio": 45000,
+      "activo": true,
+      "fechaPublicacion": "2026-08-01T12:00:00Z",
+      "imagenUrl": null,
+      "tipo": "ProyectoCerrado",
+      "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+      "supervisor": null,
+      "tema": "Identidad de marca",
+      "condiciones": { "duracionMinutosSesion": null, "modalidad": null, "plazoEntregaDias": 10, "esPaquete": null, "cantidadSesionesPaquete": null }
+    },
+    {
+      "id": 2,
+      "estudianteId": 10,
+      "estudianteNombre": "Sofía Benítez",
+      "estudianteCalificacion": 4.8,
+      "titulo": "Clases de Química orgánica para el CBC",
+      "descripcion": "Clases particulares de Química orgánica, con ejercicios de examen y guías propias.",
+      "precio": 8000,
+      "activo": true,
+      "fechaPublicacion": "2026-08-05T12:00:00Z",
+      "imagenUrl": null,
+      "tipo": "Clase",
+      "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+      "supervisor": null,
+      "tema": "Química orgánica",
+      "condiciones": { "duracionMinutosSesion": 60, "modalidad": "Online", "plazoEntregaDias": null, "esPaquete": false, "cantidadSesionesPaquete": null }
+    },
+    {
+      "id": 3,
+      "estudianteId": 10,
+      "estudianteNombre": "Sofía Benítez",
+      "estudianteCalificacion": 4.8,
+      "titulo": "Control odontológico general",
+      "descripcion": "Control y limpieza con supervisión de un odontólogo matriculado, en consultorio o a domicilio.",
+      "precio": 6000,
+      "activo": true,
+      "fechaPublicacion": "2026-08-10T12:00:00Z",
+      "imagenUrl": null,
+      "tipo": "Salud",
+      "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+      "supervisor": { "nombre": "Dr. Raúl Giménez", "matricula": "MP 3321" },
+      "tema": "Control odontológico",
+      "condiciones": { "duracionMinutosSesion": 40, "modalidad": "Ambas", "plazoEntregaDias": null, "esPaquete": null, "cantidadSesionesPaquete": null }
+    }
+  ],
+  "resenas": [
+    {
+      "id": 1,
+      "trabajoId": 100,
+      "autorUsuarioId": 20,
+      "autorNombre": "Diego Ramírez",
+      "receptorUsuarioId": 10,
+      "puntaje": 5,
+      "comentario": "Muy prolija y puntual. Recomendable.",
+      "fecha": "2026-07-10T15:00:00Z"
+    },
+    {
+      "id": 2,
+      "trabajoId": 101,
+      "autorUsuarioId": 21,
+      "autorNombre": "Laura Esquina",
+      "receptorUsuarioId": 10,
+      "puntaje": 4,
+      "comentario": "Buena comunicación durante todo el trabajo.",
+      "fecha": "2026-07-20T15:00:00Z"
+    }
+  ]
+}

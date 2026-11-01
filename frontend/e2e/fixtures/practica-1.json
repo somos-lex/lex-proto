@@ -1,0 +1,24 @@
+{
+  "practica": {
+    "id": 1,
+    "materiaId": 1,
+    "materiaNombre": "Clínica Odontológica II",
+    "carreraId": 1,
+    "carreraNombre": "Odontología",
+    "institucionNombre": "Universidad Nacional del Nordeste (UNNE)",
+    "estudianteId": 10,
+    "estudianteNombre": "Sofía Benítez",
+    "fechaHoraInicio": "2026-09-14T13:00:00Z",
+    "fechaHoraFin": "2026-09-14T13:40:00Z",
+    "duracionMinutos": 40,
+    "lugar": "Cátedra de Clínica Odontológica, Facultad de Odontología UNNE",
+    "tipoPacienteRequerido": "Humano",
+    "requisitosPrevios": "Traer documento de identidad.",
+    "estado": "Publicada"
+  },
+  "inscripcion": null,
+  "fechaCreacion": "2026-08-20T10:00:00Z",
+  "fechaCancelacion": null,
+  "motivoCancelacion": null,
+  "codigoConstancia": null
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "id": 100,
+    "servicioId": 1,
+    "clienteId": 20,
+    "clienteNombre": "Diego Ramírez",
+    "estudianteId": 10,
+    "estudianteNombre": "Sofía Benítez",
+    "tituloSnapshot": "Diseño de identidad visual para marcas nuevas",
+    "descripcionSnapshot": "Armo tu logo, paleta de colores y un manual breve de marca.",
+    "precioAcordado": 45000,
+    "estado": "Completado",
+    "tipo": "ProyectoCerrado",
+    "fechaCreacion": "2026-07-01T10:00:00Z",
+    "fechaInicio": "2026-07-02T10:00:00Z",
+    "fechaFin": "2026-07-15T10:00:00Z"
+  },
+  {
+    "id": 101,
+    "servicioId": 2,
+    "clienteId": 21,
+    "clienteNombre": "Laura Esquina",
+    "estudianteId": 10,
+    "estudianteNombre": "Sofía Benítez",
+    "tituloSnapshot": "Clases de Química orgánica para el CBC",
+    "descripcionSnapshot": "Clases particulares de Química orgánica.",
+    "precioAcordado": 8000,
+    "estado": "Pendiente",
+    "tipo": "Clase",
+    "fechaCreacion": "2026-08-25T09:00:00Z",
+    "fechaInicio": null,
+    "fechaFin": null
+  }
+]
