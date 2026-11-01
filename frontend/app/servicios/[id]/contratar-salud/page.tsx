@@ -88,6 +88,12 @@ function ContratarSalud({ servicioId }: { servicioId: number }) {
     };
   }, [servicioId, intento]);
 
+  // "use client": sin metadata de Next. El título real llega recién con el
+  // servicio, así que antes queda el de la raíz (ver RequireRole y EsqueletoFlujo).
+  useEffect(() => {
+    if (servicio) document.title = `Contratar: ${servicio.titulo} — LEX`;
+  }, [servicio]);
+
   if (cargaError)
     return (
       <div className="mx-auto max-w-lex px-4 py-10 md:px-6 lg:px-8">

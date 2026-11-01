@@ -98,6 +98,13 @@ function TrabajoDetalle({ trabajoId }: { trabajoId: number }) {
     setVersion((v) => v + 1);
   }, []);
 
+  // "use client": sin metadata de Next, así que sin esto el título queda el de
+  // la raíz en cualquier estado (cargando, error o listo).
+  useEffect(() => {
+    if (carga.estado === "listo") document.title = `${carga.trabajo.tituloSnapshot} — LEX`;
+    else if (carga.estado === "error") document.title = `${carga.noEncontrado ? "Trabajo no encontrado" : "Trabajo"} — LEX`;
+  }, [carga]);
+
   const alCambiar = useCallback(
     (mensaje: string) => {
       setToast(mensaje);

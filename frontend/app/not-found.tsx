@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { clasesBoton } from "@/components/Boton";
 import { Tesela } from "@/components/ds/Lista";
+
+export const metadata: Metadata = {
+  title: "Página no encontrada — LEX",
+};
 
 export default function NotFound() {
   return (
