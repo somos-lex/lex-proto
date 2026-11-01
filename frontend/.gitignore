@@ -13,6 +13,12 @@
 # testing
 /coverage
 
+# playwright: resultados y reporte son artefactos de cada corrida; las
+# capturas base (e2e/tests/**/*-snapshots/) SÍ se versionan.
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/blob-report/
+
 # next.js
 /.next/
 /out/

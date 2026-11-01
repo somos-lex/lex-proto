@@ -1,0 +1,24 @@
+{
+  "id": 1,
+  "estudianteId": 10,
+  "estudianteNombre": "Sofía Benítez",
+  "estudianteCalificacion": 4.8,
+  "titulo": "Diseño de identidad visual para marcas nuevas",
+  "descripcion": "Armo tu logo, paleta de colores y un manual breve de marca, con dos rondas de revisión incluidas. Trabajo con referencias que me compartas y una llamada inicial para entender tu proyecto.",
+  "precio": 45000,
+  "activo": true,
+  "fechaPublicacion": "2026-08-01T12:00:00Z",
+  "imagenUrl": null,
+  "tipo": "ProyectoCerrado",
+  "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+  "supervisor": null,
+  "tema": "Identidad de marca",
+  "condiciones": { "duracionMinutosSesion": null, "modalidad": null, "plazoEntregaDias": 10, "esPaquete": null, "cantidadSesionesPaquete": null },
+  "detalle": {
+    "catalogoServicioId": 5,
+    "catalogoServicioNombre": "Identidad de marca",
+    "plazoEntregaDias": 10,
+    "revisionesIncluidas": 2,
+    "formatoEntrega": "Archivos"
+  }
+}

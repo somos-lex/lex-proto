@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "trabajoId": 100,
+    "autorUsuarioId": 20,
+    "autorNombre": "Diego Ramírez",
+    "receptorUsuarioId": 10,
+    "puntaje": 5,
+    "comentario": "Muy prolija y puntual. Recomendable.",
+    "fecha": "2026-07-10T15:00:00Z"
+  },
+  {
+    "id": 2,
+    "trabajoId": 101,
+    "autorUsuarioId": 21,
+    "autorNombre": "Laura Esquina",
+    "receptorUsuarioId": 10,
+    "puntaje": 4,
+    "comentario": "Buena comunicación durante todo el trabajo.",
+    "fecha": "2026-07-20T15:00:00Z"
+  }
+]

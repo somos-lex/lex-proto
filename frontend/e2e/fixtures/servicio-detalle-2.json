@@ -1,0 +1,25 @@
+{
+  "id": 2,
+  "estudianteId": 10,
+  "estudianteNombre": "Sofía Benítez",
+  "estudianteCalificacion": 4.8,
+  "titulo": "Clases de Química orgánica para el CBC",
+  "descripcion": "Clases particulares de Química orgánica, con ejercicios de examen y guías propias. Pensadas para quienes están preparando el final o un parcial.",
+  "precio": 8000,
+  "activo": true,
+  "fechaPublicacion": "2026-08-05T12:00:00Z",
+  "imagenUrl": null,
+  "tipo": "Clase",
+  "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+  "supervisor": null,
+  "tema": "Química orgánica",
+  "condiciones": { "duracionMinutosSesion": 60, "modalidad": "Online", "plazoEntregaDias": null, "esPaquete": false, "cantidadSesionesPaquete": null },
+  "detalle": {
+    "materia": "Química orgánica",
+    "nivel": "Universitario",
+    "modalidad": "Online",
+    "duracionMinutosSesion": 60,
+    "esPaquete": false,
+    "cantidadSesionesPaquete": null
+  }
+}
