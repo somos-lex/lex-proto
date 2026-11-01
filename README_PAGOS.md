@@ -11,18 +11,18 @@ El `Pago` dice *cuánto* y *en qué estado está*; el libro de `MovimientoPago` 
 
 1. **Contratación**: se crea `Pago(Retenido)` + `MovimientoPago(Retencion, monto_total)`.
 2. **Completado**: se crean `MovimientoPago(LiberacionEstudiante, monto_a_estudiante)` + `MovimientoPago(ComisionLex, monto_comision)` → `Pago(Liberado)`.
-3. **Cancelado**: si el escrow seguía sin resolverse, se crea `MovimientoPago(Reembolso, monto_total)` → `Pago(Reembolsado)`.
+3. **Cancelado**: si el escrow seguía con saldo retenido, se crea `MovimientoPago(Reembolso, remanente)` → `Pago(Reembolsado)`.
 4. **Disputa**: `Pago(EnDisputa)`. Sin movimiento contable: la plata no se mueve, solo queda congelada hasta la resolución.
 
 En Clase y Salud el paso 2 no ocurre de una vez: cada sesión libera su fracción (ver abajo).
 
 Liberar acepta un pago en `Retenido`, `EnDisputa` o `ParcialmenteLiberado`. `EnDisputa` entra porque la máquina de estados habilita `Disputa → Completado`: resolver una disputa tiene que poder cerrar el escrow.
 
-Reembolsar solo acepta `Retenido` o `EnDisputa`: devuelve el **total** al cliente, así que exige que no se le haya pagado nada al estudiante todavía. Un `ParcialmenteLiberado` no se puede reembolsar por esta vía.
+Reembolsar acepta `Retenido`, `EnDisputa` o `ParcialmenteLiberado`, y devuelve el **remanente** (lo que todavía no se le pagó a nadie), no el `MontoTotal`: lo ya liberado al estudiante/comisión no se revierte por esta vía. En un pago `Retenido` el remanente es el total, así que el comportamiento de siempre no cambia.
 
-### Liberación total = liberación del remanente
+### Liberación y reembolso del remanente
 
-`LiberarPagoTotalAsync` no libera `MontoAEstudiante` a ciegas: calcula lo que falta según el libro de movimientos y libera eso. En un trabajo sin sesiones el remanente es el total y el comportamiento es el de siempre; en uno que venía liberando por sesión, cierra solo lo que quedaba.
+`LiberarPagoTotalAsync` y `ReembolsarPagoAsync` no operan sobre `MontoAEstudiante`/`MontoTotal` a ciegas: calculan lo que falta según el libro de movimientos (`RemanenteAsync`) y liberan/reembolsan eso. En un trabajo sin sesiones el remanente es el total y el comportamiento es el de siempre; en uno que venía liberando por sesión, cada una cierra solo lo que quedaba.
 
 ### Atomicidad
 
@@ -78,7 +78,7 @@ El divisor es `CantidadSesionesTotales` **vigente**, no el original: si se cance
 ## Reservado para futuro
 
 - `MovimientoPago.ReferenciaExterna`: para guardar el `payment_id` de Mercado Pago (fase futura).
-- `TipoMovimientoPago.Ajuste`: para correcciones manuales del admin (interfaz admin pendiente). Es lo que haría falta para revertir fracciones ya liberadas al resolver una disputa en contra del estudiante: hoy `Disputa → Cancelado` reembolsaría de más si ya se liberó algo, por eso reembolsar rechaza los pagos `ParcialmenteLiberado`.
+- `TipoMovimientoPago.Ajuste`: para correcciones manuales del admin (interfaz admin pendiente). Es lo que haría falta para revertir fracciones **ya liberadas** al resolver una disputa en contra del estudiante: `Disputa → Cancelado` reembolsa el remanente retenido, pero no recupera lo que ya se le pagó al estudiante en sesiones previas.
 - `MovimientoPago.TrabajoHistorialId`: traza opcional del asiento a la transición de estado que lo originó.
 
 ## Endpoints
