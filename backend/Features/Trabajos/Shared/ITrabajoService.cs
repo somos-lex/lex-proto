@@ -16,8 +16,10 @@ public interface ITrabajoService
     // de estados ni toca el escrow: la plata ya se libero fraccion a fraccion.
     Task<TrabajoResponse> CompletarPorSesionesAsync(int usuarioId, int idTrabajo);
 
-    // Consultas unificadas (agnosticas a la vertical).
-    Task<IReadOnlyList<TrabajoResponse>> ListarAsync(TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId);
+    // Consultas unificadas (agnosticas a la vertical). Un usuario no-Admin solo puede ver
+    // los trabajos donde participa: clienteId/estudianteId se ignoran si no es Admin.
+    Task<IReadOnlyList<TrabajoResponse>> ListarAsync(
+        int usuarioId, bool esAdmin, TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId);
     Task<TrabajoDetalleResponse> ObtenerDetalleAsync(int usuarioId, int idTrabajo);
     Task<IReadOnlyList<TrabajoResponse>> ListarMiosAsync(int usuarioId);
     Task<IReadOnlyList<TrabajoHistorialResponse>> ListarHistorialAsync(int usuarioId, int idTrabajo);

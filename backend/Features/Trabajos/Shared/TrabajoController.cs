@@ -60,7 +60,7 @@ public class TrabajoController : ControllerBase
 
     // --- Consultas unificadas -----------------------------------------------
 
-    /// <summary>Listado unificado de trabajos con filtros. Devuelve el DTO base (sin detalle por vertical).</summary>
+    /// <summary>Listado unificado de trabajos con filtros. Admin ve todo; cualquier otro usuario solo ve los suyos (cliente_id/estudiante_id se ignoran).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<TrabajoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar(
@@ -69,7 +69,8 @@ public class TrabajoController : ControllerBase
         [FromQuery(Name = "cliente_id")] int? clienteId,
         [FromQuery(Name = "estudiante_id")] int? estudianteId)
     {
-        return Ok(await _trabajos.ListarAsync(tipo, estado, clienteId, estudianteId));
+        return Ok(await _trabajos.ListarAsync(
+            User.GetUsuarioId(), User.IsInRole("Admin"), tipo, estado, clienteId, estudianteId));
     }
 
     /// <summary>Trabajos donde participa el usuario autenticado (como estudiante o cliente).</summary>
