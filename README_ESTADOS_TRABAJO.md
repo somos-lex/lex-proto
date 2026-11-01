@@ -5,7 +5,7 @@
 - **Pendiente**: recién contratado, esperando aceptación del estudiante.
 - **Aceptado**: estudiante confirmó. Aún no arrancó el trabajo.
 - **Cancelado**: alguna de las partes canceló antes de completar. Puede requerir reembolso.
-- **Disputa**: conflicto no resuelto. Requiere intervención de admin.
+- **Disputa**: conflicto no resuelto. Lo resuelve un Admin con `POST /api/admin/trabajos/{id}/resolver-disputa` (`{ favorA: "Cliente" | "Estudiante", motivo }`): a favor del cliente reembolsa el remanente retenido y cancela; a favor del estudiante libera el remanente y completa. No revierte fracciones ya liberadas antes de la disputa (ver `README_PAGOS.md`).
 
 ## Por vertical
 
@@ -55,6 +55,7 @@ Cualquier transición no listada por la state machine se rechaza con HTTP 400.
 | completar | cliente |
 | cancelar | cliente o estudiante |
 | disputar | cliente o estudiante |
+| resolver-disputa | Admin (no es parte del trabajo; solo válido desde Disputa, por fuera de esta tabla) |
 
 ## Efecto en Pago y en la agenda por cada transición
 
@@ -66,7 +67,7 @@ Cualquier transición no listada por la state machine se rechaza con HTTP 400.
 | iniciar | Sin efecto | Sin efecto |
 | entregar | Sin efecto | Sin efecto |
 | completar | Crea 2 MovimientoPago (LiberacionEstudiante + ComisionLex) → Pago(Liberado) | Sin efecto |
-| cancelar | Si el escrow seguía sin resolverse (Retenido o EnDisputa) → MovimientoPago(Reembolso) → Pago(Reembolsado). Si el trabajo no tenía pago, la cancelación procede igual. | Sin efecto sobre los turnos ya agendados |
+| cancelar | Si el escrow seguía con saldo retenido (Retenido, EnDisputa o ParcialmenteLiberado) → MovimientoPago(Reembolso) por el remanente → Pago(Reembolsado). Si el trabajo no tenía pago, la cancelación procede igual. | Cancela las sesiones Pendientes y sus turnos (Reservado/Confirmado), liberando la agenda |
 | disputar | Pago pasa a EnDisputa (sin movimiento contable, dinero congelado) | Sin efecto |
 | cancelar turno | Sin efecto inmediato en el pago | Turno(Cancelado) + Sesión(Cancelada) + decrementa CantidadSesionesTotales. Si llega a 0, se cancela el trabajo entero por esta misma tabla (fila `cancelar`), con su reembolso. Si las sesiones que quedan ya se dieron, el trabajo se completa y libera el remanente. |
 | marcar sesión como Realizada o NoAsistio | Crea 2 MovimientoPago (LiberacionEstudiante + ComisionLex) por fracción. Última sesión → Pago(Liberado). Antes → Pago(ParcialmenteLiberado) | Sesión pasa a Realizada o NoAsistio. Turno pasa a Realizado o Ausente. Trabajo.SesionesCompletadas +1. Primera sesión → Trabajo.Estado = EnCurso. Última sesión → Trabajo.Estado = Completado. |
@@ -79,6 +80,6 @@ Desde Hito 2 Parte 3, `POST /api/trabajos/{id}/completar` **está bloqueado para
 
 Esto deja **`Entregado` sin uso en Clase y Salud**. La descripción de arriba ("Entregado: todas las sesiones del paquete fueron realizadas") describe un momento que ahora **es** el Completado: con liberación fraccionada, la plata ya se fue liberando sesión a sesión y no hay una confirmación posterior del cliente que esperar. `Entregado` sigue vivo y es obligatorio en ProyectoCerrado.
 
-`completar` y `cancelar` aceptan un pago en Retenido o en EnDisputa, porque ambas transiciones son alcanzables desde Disputa.
+`completar` acepta un pago en Retenido, EnDisputa o ParcialmenteLiberado (libera el remanente); `cancelar` acepta los mismos tres estados y reembolsa el remanente retenido, no el total. Ambas transiciones son alcanzables desde Disputa.
 
 Ver `README_PAGOS.md` para detalles del modelo de pagos y `README_TURNOS.md` para el sistema de turnos y sesiones.
