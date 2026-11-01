@@ -19,9 +19,10 @@ public class PagoService : IPagoService
     private static readonly EstadoPago[] EstadosLiberables =
         { EstadoPago.Retenido, EstadoPago.EnDisputa, EstadoPago.ParcialmenteLiberado };
 
-    // Reembolsar devuelve el total al cliente, asi que exige que no se haya pagado nada
-    // todavia: ParcialmenteLiberado queda afuera a proposito (ver README_PAGOS.md).
-    private static readonly EstadoPago[] EstadosReembolsables = { EstadoPago.Retenido, EstadoPago.EnDisputa };
+    // Reembolsar devuelve el remanente retenido (no el total): lo ya liberado al
+    // estudiante/comision no se toca. Por eso ParcialmenteLiberado tambien es reembolsable.
+    private static readonly EstadoPago[] EstadosReembolsables =
+        { EstadoPago.Retenido, EstadoPago.EnDisputa, EstadoPago.ParcialmenteLiberado };
 
     public PagoService(AppDbContext db, IOptions<LexOptions> opciones)
     {
@@ -187,8 +188,11 @@ public class PagoService : IPagoService
 
     private static decimal Redondear(decimal monto) => Math.Round(monto, 2, MidpointRounding.AwayFromZero);
 
-    // Devuelve el total al cliente. A diferencia de liberar, tolera que no haya escrow:
-    // un trabajo anterior a esta integracion se tiene que poder cancelar igual.
+    // Devuelve al cliente lo que todavia esta retenido (el remanente, no el total): si el
+    // trabajo venia liberando por sesion, lo ya pagado al estudiante/comision no se revierte
+    // por esta via (haria falta un asiento de Ajuste, pendiente de la interfaz de admin).
+    // A diferencia de liberar, tolera que no haya escrow: un trabajo anterior a esta
+    // integracion se tiene que poder cancelar igual.
     public async Task ReembolsarPagoAsync(int idTrabajo, string motivo)
     {
         var pago = await _db.Pagos.FirstOrDefaultAsync(p => p.TrabajoId == idTrabajo);
@@ -198,14 +202,18 @@ public class PagoService : IPagoService
         if (!EstadosReembolsables.Contains(pago.Estado))
             throw new InvalidOperationException($"No se puede reembolsar un pago en estado {pago.Estado}.");
 
-        _db.MovimientosPago.Add(new MovimientoPago
-        {
-            PagoId = pago.Id,
-            Tipo = TipoMovimientoPago.Reembolso,
-            Monto = pago.MontoTotal,
-            Descripcion = $"Reembolso al cliente por cancelación del trabajo: {motivo}",
-            FechaMovimiento = DateTime.UtcNow
-        });
+        var (aEstudiante, comision) = await RemanenteAsync(pago);
+        var remanente = aEstudiante + comision;
+
+        if (remanente > 0)
+            _db.MovimientosPago.Add(new MovimientoPago
+            {
+                PagoId = pago.Id,
+                Tipo = TipoMovimientoPago.Reembolso,
+                Monto = remanente,
+                Descripcion = $"Reembolso al cliente por cancelación del trabajo: {motivo}",
+                FechaMovimiento = DateTime.UtcNow
+            });
 
         pago.Estado = EstadoPago.Reembolsado;
     }
