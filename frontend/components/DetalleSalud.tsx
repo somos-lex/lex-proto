@@ -194,7 +194,11 @@ export function FirmarConsentimiento({
           <span>Acepto el consentimiento y autorizo la práctica.</span>
         </label>
         {faltaAceptar && (
-          <p id={`firma-error-${trabajo.id}`} className="-mt-2 flex items-start gap-1.5 text-[14px] font-medium text-danger">
+          <p
+            id={`firma-error-${trabajo.id}`}
+            role="alert"
+            className="-mt-2 flex items-start gap-1.5 text-[14px] font-medium text-danger"
+          >
             <Icono nombre="alert-circle" className="size-[18px]" />
             Marcá la casilla para poder firmar.
           </p>
