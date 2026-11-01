@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { listarServicios, type TipoServicio } from "@/lib/servicios";
 import ServiceCard from "@/components/ServiceCard";
@@ -17,6 +18,19 @@ interface Props {
 }
 
 const POR_PAGINA = 12;
+
+export const metadata: Metadata = {
+  title: "LEX — Servicios de estudiantes verificados del NEA",
+  description:
+    "Encontrá estudiantes universitarios del NEA con la carrera verificada para tu proyecto, tu clase o tu práctica de salud, con pago protegido.",
+  openGraph: {
+    title: "LEX — Servicios de estudiantes verificados del NEA",
+    description: "Proyectos, clases y prácticas de salud de estudiantes con la carrera verificada por LEX.",
+    siteName: "LEX",
+    locale: "es_AR",
+    type: "website",
+  },
+};
 
 // Un `?tipo=` desconocido se ignora (se muestran todos), en vez de reenviarlo al
 // backend, que rechazaria un valor de enum invalido con 400.

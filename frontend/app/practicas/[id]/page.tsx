@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatHoraAR, obtenerPractica } from "@/lib/practicas";
@@ -19,6 +20,26 @@ import { AsideInscripcion, HojaInscripcion } from "./InscripcionPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const practicaId = Number.parseInt(id, 10);
+  if (Number.isNaN(practicaId)) return {};
+
+  try {
+    const detalle = await obtenerPractica(practicaId);
+    const p = detalle.practica;
+    const titulo = `${p.materiaNombre} — Banco de Turnos — LEX`;
+    const descripcion = `Turno sin costo de ${p.materiaNombre}, de ${p.carreraNombre}, con supervisión docente en LEX.`;
+    return {
+      title: titulo,
+      description: descripcion,
+      openGraph: { title: titulo, description: descripcion, siteName: "LEX", locale: "es_AR", type: "website" },
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default async function PracticaPage({ params }: Props) {

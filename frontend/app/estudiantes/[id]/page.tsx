@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { obtenerPortafolio } from "@/lib/portafolio";
 import { ApiError } from "@/lib/api";
@@ -14,6 +15,26 @@ import { CLASES_GRILLA } from "@/components/publico/EsqueletoServicio";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const estudianteId = Number.parseInt(id, 10);
+  if (Number.isNaN(estudianteId)) return {};
+
+  try {
+    const portafolio = await obtenerPortafolio(estudianteId);
+    const titulo = `${portafolio.nombreCompleto} — LEX`;
+    const descripcion =
+      portafolio.bio?.slice(0, 160) || `Perfil de ${portafolio.nombreCompleto} en LEX, con sus servicios y reseñas.`;
+    return {
+      title: titulo,
+      description: descripcion,
+      openGraph: { title: titulo, description: descripcion, siteName: "LEX", locale: "es_AR", type: "profile" },
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default async function PortafolioPage({ params }: Props) {
