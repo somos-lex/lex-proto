@@ -164,11 +164,15 @@ public class TrabajoService : ITrabajoService
             }
         }
 
-        // Un trabajo cancelado no puede dejar turnos reservados/confirmados colgando: le
-        // bloquean la agenda al estudiante para siempre. Se cancelan directo sobre el
-        // DbContext (no via ITurnoService) para no crear una dependencia circular, ya que
-        // TurnoService depende de ITrabajoService.
-        if (destino == EstadoTrabajo.Cancelado)
+        // Un trabajo cancelado o completado no puede dejar turnos reservados/confirmados
+        // colgando: le bloquean la agenda al estudiante para un trabajo que ya cerró. El
+        // caso de Completado es el de ResolverDisputaAsync a favor del estudiante, que
+        // puede cerrar el trabajo con sesiones del paquete todavía sin dar: en el cierre
+        // normal (ultima sesion marcada, o ProyectoCerrado sin sesiones) esto es un no-op,
+        // porque no quedan sesiones Pendiente. Se opera directo sobre el DbContext (no via
+        // ITurnoService) para no crear una dependencia circular, ya que TurnoService
+        // depende de ITrabajoService.
+        if (destino is EstadoTrabajo.Cancelado or EstadoTrabajo.Completado)
             await LiberarTurnosPendientesAsync(trabajo.Id);
 
         trabajo.Historiales.Add(new TrabajoHistorial
