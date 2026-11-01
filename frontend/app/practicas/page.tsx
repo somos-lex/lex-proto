@@ -168,20 +168,22 @@ async function Turnos({ filtros }: { filtros: FiltrosDisponibles }) {
   );
 }
 
+// El alto se mide contra el vacío real del Banco (sin turnos publicados): acá
+// no hay catálogo poblado contra el que medir, así que esta es la forma más
+// común de la sección en la base real y la que evita que el pie se corra.
 function EsqueletoBanco() {
   return (
-    <div aria-busy="true" aria-label="Cargando turnos" className="grid gap-3">
-      <Esqueleto className="h-5 w-40" />
-      {[0, 1].map((i) => (
-        <div key={i} className="grid grid-cols-[56px_minmax(0,1fr)] gap-3.5 rounded-card bg-surface p-4 shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
-          <Esqueleto className="h-6 w-12" />
-          <div className="grid gap-2.5">
-            <Esqueleto className="h-4 w-1/2" />
-            <Esqueleto className="h-3.5 w-2/3" />
-            <Esqueleto className="h-3.5 w-3/5" />
-          </div>
-        </div>
-      ))}
+    <div aria-busy="true" aria-label="Cargando turnos" className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+      <div className="grid justify-items-start gap-3 px-5 pt-6 pb-5">
+        <Esqueleto className="size-11 rounded-control" />
+        <Esqueleto className="h-5 w-56 max-w-full" />
+        <Esqueleto className="h-4 w-full max-w-md" />
+        <Esqueleto className="h-4 w-4/5 max-w-md" />
+      </div>
+      <div className="grid gap-px border-t border-line">
+        <Esqueleto className="h-[173px] rounded-none" />
+        <Esqueleto className="h-[194px] rounded-none" />
+      </div>
     </div>
   );
 }
