@@ -6,14 +6,9 @@
 // operativo. Así no hay parpadeo ni error de hidratación (ver la guía
 // "preventing-flash-before-hydration" de Next).
 //
-// OSCURO_HABILITADO queda en false hasta cerrar la Fase 4 del rediseño: las
-// pantallas que todavía no migraron al sistema usan colores fijos de claro
-// (bg-white, text-gray-900…) y en oscuro quedarían mezcladas. Mientras tanto,
-// todo se ve en claro y el control "Apariencia" no se muestra.
-
 export type Apariencia = "sistema" | "claro" | "oscuro";
 
-export const OSCURO_HABILITADO = false;
+export const OSCURO_HABILITADO = true;
 
 export const CLAVE_APARIENCIA = "lex-apariencia";
 export const EVENTO_APARIENCIA = "lex-apariencia";
