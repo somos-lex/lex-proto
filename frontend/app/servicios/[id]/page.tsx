@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obtenerServicio } from "@/lib/servicios";
@@ -13,6 +14,25 @@ import { AsideContratacion, HojaContratacion } from "./PanelContratacion";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const servicioId = Number.parseInt(id, 10);
+  if (Number.isNaN(servicioId)) return {};
+
+  try {
+    const servicio = await obtenerServicio(servicioId);
+    const titulo = `${servicio.titulo} — LEX`;
+    const descripcion = servicio.descripcion.slice(0, 160);
+    return {
+      title: titulo,
+      description: descripcion,
+      openGraph: { title: titulo, description: descripcion, siteName: "LEX", locale: "es_AR", type: "website" },
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default async function ServicioPage({ params }: Props) {

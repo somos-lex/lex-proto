@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   listarMaterias,
@@ -27,6 +28,19 @@ type Params = { carreraId?: string; tipoPaciente?: string; desde?: string; hasta
 interface Props {
   searchParams: Promise<Params>;
 }
+
+export const metadata: Metadata = {
+  title: "Banco de Turnos — LEX",
+  description:
+    "Turnos sin costo para prácticas clínicas supervisadas de Odontología, Medicina Veterinaria y Kinesiología en el NEA.",
+  openGraph: {
+    title: "Banco de Turnos — LEX",
+    description: "Turnos sin costo para prácticas clínicas supervisadas en el NEA.",
+    siteName: "LEX",
+    locale: "es_AR",
+    type: "website",
+  },
+};
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 

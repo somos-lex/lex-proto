@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { FormularioCodigo } from "./FormularioCodigo";
 
@@ -7,6 +8,18 @@ import { FormularioCodigo } from "./FormularioCodigo";
 interface Props {
   searchParams: Promise<{ codigo?: string }>;
 }
+
+export const metadata: Metadata = {
+  title: "Verificar una constancia — LEX",
+  description: "Confirmá que una constancia del Banco de Turnos la emitió LEX, con el código que figura en ella.",
+  openGraph: {
+    title: "Verificar una constancia — LEX",
+    description: "Confirmá que una constancia del Banco de Turnos la emitió LEX.",
+    siteName: "LEX",
+    locale: "es_AR",
+    type: "website",
+  },
+};
 
 export default async function VerificarConstanciaPage({ searchParams }: Props) {
   const { codigo } = await searchParams;

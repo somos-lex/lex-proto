@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MarcoAcceso, rutaSegura } from "@/components/publico/Acceso";
 import { FormularioRegistro } from "./FormularioRegistro";
 
@@ -8,6 +9,18 @@ import { FormularioRegistro } from "./FormularioRegistro";
 interface Props {
   searchParams: Promise<{ volver?: string; como?: string }>;
 }
+
+export const metadata: Metadata = {
+  title: "Crear cuenta — LEX",
+  description: "Creá tu cuenta en LEX para publicar servicios como estudiante o contratar como cliente.",
+  openGraph: {
+    title: "Crear cuenta — LEX",
+    description: "Creá tu cuenta en LEX.",
+    siteName: "LEX",
+    locale: "es_AR",
+    type: "website",
+  },
+};
 
 export default async function RegistroPage({ searchParams }: Props) {
   const { volver, como } = await searchParams;
