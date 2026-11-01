@@ -5,34 +5,29 @@
 
 import { Chip, type TonoChip } from "@/components/ds/Chip";
 import type { NombreIcono } from "@/components/Icono";
-import {
-  ESTADO_INSCRIPCION_META,
-  ESTADO_PRACTICA_META,
-  type EstadoInscripcion,
-  type EstadoPractica,
-} from "@/lib/practicas";
+import type { EstadoInscripcion, EstadoPractica } from "@/lib/practicas";
 import type { TipoPaciente } from "@/lib/pacientes";
 
-const PRACTICA: Record<EstadoPractica, { tono: TonoChip; icono: NombreIcono }> = {
-  Publicada: { tono: "neutro", icono: "clock" },
-  Cubierta: { tono: "neutro", icono: "user" },
-  Realizada: { tono: "ok", icono: "check-circle" },
-  Cancelada: { tono: "neutro", icono: "x" },
-  Vencida: { tono: "neutro", icono: "alert" },
+const PRACTICA: Record<EstadoPractica, { etiqueta: string; tono: TonoChip; icono: NombreIcono }> = {
+  Publicada: { etiqueta: "Buscando paciente", tono: "neutro", icono: "clock" },
+  Cubierta: { etiqueta: "Paciente inscripto", tono: "neutro", icono: "user" },
+  Realizada: { etiqueta: "Realizada", tono: "ok", icono: "check-circle" },
+  Cancelada: { etiqueta: "Cancelada", tono: "neutro", icono: "x" },
+  Vencida: { etiqueta: "Vencida sin paciente", tono: "neutro", icono: "alert" },
 };
 
-const INSCRIPCION: Record<EstadoInscripcion, { tono: TonoChip; icono: NombreIcono }> = {
-  Inscripta: { tono: "neutro", icono: "check" },
-  Asistio: { tono: "ok", icono: "check-circle" },
-  NoAsistio: { tono: "neutro", icono: "alert" },
-  Cancelada: { tono: "neutro", icono: "x" },
+const INSCRIPCION: Record<EstadoInscripcion, { etiqueta: string; tono: TonoChip; icono: NombreIcono }> = {
+  Inscripta: { etiqueta: "Inscripta", tono: "neutro", icono: "check" },
+  Asistio: { etiqueta: "Asistió", tono: "ok", icono: "check-circle" },
+  NoAsistio: { etiqueta: "No asistió", tono: "neutro", icono: "alert" },
+  Cancelada: { etiqueta: "Cancelada", tono: "neutro", icono: "x" },
 };
 
 export function EstadoPracticaBadge({ estado }: { estado: EstadoPractica }) {
   const e = PRACTICA[estado];
   return (
     <Chip tono={e.tono} icono={e.icono}>
-      {ESTADO_PRACTICA_META[estado].etiqueta}
+      {e.etiqueta}
     </Chip>
   );
 }
@@ -41,7 +36,7 @@ export function EstadoInscripcionBadge({ estado }: { estado: EstadoInscripcion }
   const e = INSCRIPCION[estado];
   return (
     <Chip tono={e.tono} icono={e.icono}>
-      {ESTADO_INSCRIPCION_META[estado].etiqueta}
+      {e.etiqueta}
     </Chip>
   );
 }

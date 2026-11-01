@@ -283,15 +283,6 @@ export function eliminarServicioSalud(id: number): Promise<void> {
 
 // --- Helpers de presentacion ---
 
-export function tipoBadgeClasses(tipo: TipoServicio): string {
-  const map: Record<TipoServicio, string> = {
-    ProyectoCerrado: "bg-indigo-100 text-indigo-800",
-    Clase: "bg-emerald-100 text-emerald-800",
-    Salud: "bg-rose-100 text-rose-800",
-  };
-  return map[tipo];
-}
-
 export function tipoEtiqueta(tipo: TipoServicio): string {
   const map: Record<TipoServicio, string> = {
     ProyectoCerrado: "Proyecto cerrado",

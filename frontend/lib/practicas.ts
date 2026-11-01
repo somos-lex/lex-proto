@@ -276,17 +276,3 @@ export function fechaARDe(ms: number): string {
   return new Date(ms - OFFSET_AR_MS).toISOString().slice(0, 10);
 }
 
-export const ESTADO_PRACTICA_META: Record<EstadoPractica, { etiqueta: string; clase: string }> = {
-  Publicada: { etiqueta: "Buscando paciente", clase: "bg-sky-50 text-sky-700 ring-sky-200" },
-  Cubierta: { etiqueta: "Paciente inscripto", clase: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  Realizada: { etiqueta: "Realizada", clase: "bg-slate-100 text-slate-700 ring-slate-200" },
-  Cancelada: { etiqueta: "Cancelada", clase: "bg-rose-50 text-rose-700 ring-rose-200" },
-  Vencida: { etiqueta: "Vencida sin paciente", clase: "bg-amber-50 text-amber-700 ring-amber-200" },
-};
-
-export const ESTADO_INSCRIPCION_META: Record<EstadoInscripcion, { etiqueta: string; clase: string }> = {
-  Inscripta: { etiqueta: "Inscripta", clase: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  Asistio: { etiqueta: "Asistió", clase: "bg-slate-100 text-slate-700 ring-slate-200" },
-  NoAsistio: { etiqueta: "No asistió", clase: "bg-amber-50 text-amber-700 ring-amber-200" },
-  Cancelada: { etiqueta: "Cancelada", clase: "bg-rose-50 text-rose-700 ring-rose-200" },
-};
