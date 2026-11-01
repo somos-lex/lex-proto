@@ -90,20 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const credsRef = useRef<{ email: string; password: string } | null>(null);
 
   // Al montar, restauramos sesión + identidad + vista persistidas (sobreviven al refresh).
+  // La restauración se difiere a un microtask: leer las cookies es síncrono, pero
+  // aplicar los cuatro setState en el cuerpo del efecto dispara renders en cascada
+  // (react-hooks/set-state-in-effect). El efecto sigue corriendo una sola vez al
+  // montar; solo cambia cuándo se confirman los cambios de estado.
   useEffect(() => {
-    const u = getStoredUser();
-    const id = getStoredIdentidad<Identidad>();
-    setUser(u);
-    setIdentidad(id);
+    Promise.resolve().then(() => {
+      const u = getStoredUser();
+      const id = getStoredIdentidad<Identidad>();
+      setUser(u);
+      setIdentidad(id);
 
-    const vistas = vistasDisponiblesDe(id);
-    const persistida = getStoredVista() as Vista | null;
-    setVistaActiva(
-      persistida && vistas.includes(persistida)
-        ? persistida
-        : vistaPorDefecto(id),
-    );
-    setLoading(false);
+      const vistas = vistasDisponiblesDe(id);
+      const persistida = getStoredVista() as Vista | null;
+      setVistaActiva(
+        persistida && vistas.includes(persistida)
+          ? persistida
+          : vistaPorDefecto(id),
+      );
+      setLoading(false);
+    });
   }, []);
 
   // Login crudo contra la API (sin tocar identidad/vista). Reusado por login/refresh.
