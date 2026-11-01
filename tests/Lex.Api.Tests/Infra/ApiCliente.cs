@@ -291,4 +291,9 @@ public class ApiCliente
 
     public async Task<PagoDetalleResponse> ObtenerDetallePagoAsync(Actor actor, int idPago) =>
         await LeerAsync<PagoDetalleResponse>(await GetAsync($"/api/pagos/{idPago}", actor.Token));
+
+    // --- Admin ---------------------------------------------------------------------
+
+    public Task<HttpResponseMessage> ResolverDisputaAsync(Actor admin, int idTrabajo, string favorA, string motivo) =>
+        PostAsync($"/api/admin/trabajos/{idTrabajo}/resolver-disputa", admin.Token, new { favorA, motivo });
 }
