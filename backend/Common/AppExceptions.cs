@@ -20,3 +20,9 @@ public class BadRequestException : Exception
 {
     public BadRequestException(string message) : base(message) { }
 }
+
+/// <summary>Conflicto de concurrencia (otro cambio piso el mismo registro) -> 409.</summary>
+public class ConflictException : Exception
+{
+    public ConflictException(string message, Exception? innerException = null) : base(message, innerException) { }
+}

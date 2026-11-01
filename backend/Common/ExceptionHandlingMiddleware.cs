@@ -28,6 +28,7 @@ public class ExceptionHandlingMiddleware
                 BadRequestException => (StatusCodes.Status400BadRequest, ex.Message),
                 NotFoundException => (StatusCodes.Status404NotFound, ex.Message),
                 ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
+                ConflictException => (StatusCodes.Status409Conflict, ex.Message),
                 UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, ex.Message),
                 _ => (StatusCodes.Status500InternalServerError, "Ocurrio un error inesperado.")
             };
