@@ -142,6 +142,13 @@ public class TrabajoService : ITrabajoService
             }
         }
 
+        // Un trabajo cancelado no puede dejar turnos reservados/confirmados colgando: le
+        // bloquean la agenda al estudiante para siempre. Se cancelan directo sobre el
+        // DbContext (no via ITurnoService) para no crear una dependencia circular, ya que
+        // TurnoService depende de ITrabajoService.
+        if (destino == EstadoTrabajo.Cancelado)
+            await LiberarTurnosPendientesAsync(trabajo.Id);
+
         trabajo.Historiales.Add(new TrabajoHistorial
         {
             EstadoAnterior = anterior,
@@ -156,6 +163,24 @@ public class TrabajoService : ITrabajoService
             var perfil = await _db.PerfilesEstudiante.FirstOrDefaultAsync(p => p.UsuarioId == trabajo.EstudianteId);
             if (perfil is not null)
                 perfil.CantidadTrabajos += 1;
+        }
+    }
+
+    // Cancela las sesiones Pendientes del trabajo y sus turnos (Reservado/Confirmado),
+    // devolviendo esos horarios a la agenda del estudiante. No toca sesiones/turnos ya
+    // resueltos (Realizada/Cancelada/NoAsistio), asi que es seguro llamarla sobre un
+    // trabajo sin sesiones (ProyectoCerrado) o ya vacio de pendientes.
+    private async Task LiberarTurnosPendientesAsync(int idTrabajo)
+    {
+        var pendientes = await _db.Sesiones
+            .Include(s => s.Turno)
+            .Where(s => s.TrabajoId == idTrabajo && s.Estado == EstadoSesion.Pendiente)
+            .ToListAsync();
+
+        foreach (var sesion in pendientes)
+        {
+            sesion.Estado = EstadoSesion.Cancelada;
+            sesion.Turno.Estado = EstadoTurno.Cancelado;
         }
     }
 
