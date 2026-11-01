@@ -60,8 +60,14 @@ export function RequireRole({
   }, [loading, permitido, vista, vistaActiva, vistasDisponibles, cambiarVista]);
 
   if (loading || !isAuthenticated) {
+    // <main> es flex-1 dentro del body (pie siempre al fondo): si este
+    // estado mide menos que la pantalla, flex-1 lo estira igual para
+    // empujar el pie al borde inferior, y al llegar el contenido real
+    // (siempre más alto que una pantalla en el panel) el pie salta desde
+    // ahí hasta su lugar final. Con min-h-dvh, flex-1 nunca entra en juego:
+    // el pie ya arranca debajo de la pantalla, como en el resultado final.
     return (
-      <div className="flex min-h-[40vh] items-center justify-center" aria-busy="true" aria-label="Cargando">
+      <div className="flex min-h-dvh items-center justify-center" aria-busy="true" aria-label="Cargando">
         <div className="size-8 animate-spin rounded-full border-2 border-surface-3 border-t-accent motion-reduce:animate-none" />
       </div>
     );
