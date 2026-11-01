@@ -214,17 +214,27 @@ public class TrabajoService : ITrabajoService
 
     // --- Consultas unificadas ------------------------------------------------
     public async Task<IReadOnlyList<TrabajoResponse>> ListarAsync(
-        TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId)
+        int usuarioId, bool esAdmin, TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId)
     {
         var query = _db.Trabajos.AsNoTracking()
             .Include(t => t.Cliente).ThenInclude(c => c.Usuario)
             .Include(t => t.Estudiante).ThenInclude(e => e.Usuario)
             .AsQueryable();
 
-        if (clienteId is int cli)
-            query = query.Where(t => t.ClienteId == cli);
-        if (estudianteId is int est)
-            query = query.Where(t => t.EstudianteId == est);
+        if (esAdmin)
+        {
+            if (clienteId is int cli)
+                query = query.Where(t => t.ClienteId == cli);
+            if (estudianteId is int est)
+                query = query.Where(t => t.EstudianteId == est);
+        }
+        else
+        {
+            // Un usuario comun no decide el alcance con query params: solo ve lo suyo,
+            // sin importar que cliente_id/estudiante_id le mande a la query.
+            query = query.Where(t => t.ClienteId == usuarioId || t.EstudianteId == usuarioId);
+        }
+
         if (estado is EstadoTrabajo e)
             query = query.Where(t => t.Estado == e);
 
