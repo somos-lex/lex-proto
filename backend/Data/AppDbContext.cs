@@ -1,3 +1,4 @@
+using Lex.Api.Common;
 using Lex.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,24 @@ namespace Lex.Api.Data;
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    // Traduce un choque de concurrencia optimista (xmin, ver Pago/Trabajo en
+    // OnModelCreating) a un 409 con mensaje claro, en vez de dejar que
+    // DbUpdateConcurrencyException llegue cruda al middleware generico. Centralizado aca
+    // para que cubra cualquier service que escriba sobre esas entidades, sin repetir el
+    // try/catch en cada uno.
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConflictException(
+                "Otro cambio se aplicó sobre este registro mientras tanto; recargá y reintentá la operación.", ex);
+        }
+    }
 
     // --- Bloque 1: Identidad y roles ---
     public DbSet<Usuario> Usuarios => Set<Usuario>();
@@ -331,6 +350,19 @@ public class AppDbContext : DbContext
             .Property(t => t.Estado)
             .HasConversion<string>();
 
+        // Concurrencia optimista sobre la columna de sistema xmin de Postgres: no requiere
+        // columna ni migracion de schema propia. Dos transiciones concurrentes sobre el
+        // mismo trabajo (ej. cliente y estudiante cancelando/completando a la vez) chocan
+        // con DbUpdateConcurrencyException, que AppDbContext traduce a 409.
+        //
+        // UseXminAsConcurrencyToken esta obsoleto a favor de un uint + IsRowVersion() "a
+        // secas", pero probado: ese reemplazo genera un AddColumn("xmin", ...) real, que
+        // Postgres rechaza porque xmin es una columna de sistema reservada. Se usa el
+        // metodo de Npgsql a proposito, es el unico que deja el modelo sin pedir migracion.
+#pragma warning disable CS0618
+        modelBuilder.Entity<Trabajo>().UseXminAsConcurrencyToken();
+#pragma warning restore CS0618
+
         // Enums snapshot de cada vertical, persistidos como string.
         modelBuilder.Entity<TrabajoProyectoCerrado>()
             .Property(t => t.FormatoEntregaSnapshot)
@@ -383,6 +415,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Pago>()
             .Property(p => p.Estado)
             .HasConversion<string>();
+
+        // Mismo mecanismo de concurrencia optimista que Trabajo (ver comentario arriba):
+        // dos liberaciones/reembolsos concurrentes sobre el mismo pago chocan en vez de
+        // pisarse en silencio.
+#pragma warning disable CS0618
+        modelBuilder.Entity<Pago>().UseXminAsConcurrencyToken();
+#pragma warning restore CS0618
 
         // --- Libro de movimientos (asientos contables del pago) ---
         modelBuilder.Entity<MovimientoPago>().Property(m => m.Monto).HasPrecision(12, 2);

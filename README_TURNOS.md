@@ -154,6 +154,8 @@ El estudiante o cliente puede cancelar un turno individual futuro. Efectos:
 
 La cancelación del trabajo se delega en la máquina de estados (`ITrabajoService.CancelarAsync`), así queda registrada en el historial y el reembolso lo emite el mismo camino que cualquier otra cancelación.
 
+Esa delegación también vale al revés: cancelar un **trabajo** (no un turno puntual) cancela de paso sus sesiones `Pendiente` y los turnos `Reservado`/`Confirmado` que quedaban agendados, liberando esos horarios en la agenda del estudiante. Sin esto, un trabajo cancelado directamente (sin pasar antes por `POST /api/turnos/{id}/cancelar`) dejaba turnos vivos bloqueando la disponibilidad de un trabajo que ya no existe.
+
 **El pago NO se ajusta al cancelar sesiones individuales**. La distribución del pago se recalcula automáticamente en el momento de la liberación (Parte 3), dividiendo `MontoAEstudiante / CantidadSesionesTotales` con el valor vigente.
 
 Sin regla de anticipación en el prototipo — cualquier turno futuro se puede cancelar, hasta un minuto antes. Lo único que no se puede es cancelar hacia atrás: un turno que ya ocurrió responde 400.

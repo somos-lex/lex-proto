@@ -53,6 +53,28 @@ public class TrabajoService : ITrabajoService
         return TransicionarAsync(usuarioId, idTrabajo, EstadoTrabajo.Disputa, motivo);
     }
 
+    // Resolucion de una disputa por un Admin: no es parte del trabajo, asi que no pasa por
+    // PartesAutorizadas/ParteDe. favorCliente reembolsa el remanente retenido (Cancelado);
+    // en contra del cliente libera el remanente al estudiante (Completado). No revierte
+    // fracciones ya liberadas antes de la disputa (limitacion conocida, ver README_PAGOS.md).
+    public async Task<TrabajoResponse> ResolverDisputaAsync(int adminUsuarioId, int idTrabajo, bool favorCliente, string motivo)
+    {
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new BadRequestException("Debe indicar el motivo de la resolución.");
+
+        var trabajo = await _db.Trabajos.FirstOrDefaultAsync(t => t.Id == idTrabajo)
+            ?? throw new NotFoundException($"No existe el trabajo {idTrabajo}.");
+
+        if (trabajo.Estado != EstadoTrabajo.Disputa)
+            throw new BadRequestException($"El trabajo no está en disputa (estado actual: {trabajo.Estado}).");
+
+        var destino = favorCliente ? EstadoTrabajo.Cancelado : EstadoTrabajo.Completado;
+        await AplicarTransicionAsync(trabajo, destino, adminUsuarioId, motivo);
+
+        await _db.SaveChangesAsync();
+        return await MapBaseAsync(idTrabajo);
+    }
+
     // Cierra un trabajo de Clase/Salud cuyo escrow ya se fue liberando sesion a sesion.
     // No pasa por la maquina de estados porque no hay transicion EnCurso -> Completado
     // declarada: en estos verticales el completado no lo pide nadie, lo dispara la ultima
@@ -142,6 +164,17 @@ public class TrabajoService : ITrabajoService
             }
         }
 
+        // Un trabajo cancelado o completado no puede dejar turnos reservados/confirmados
+        // colgando: le bloquean la agenda al estudiante para un trabajo que ya cerró. El
+        // caso de Completado es el de ResolverDisputaAsync a favor del estudiante, que
+        // puede cerrar el trabajo con sesiones del paquete todavía sin dar: en el cierre
+        // normal (ultima sesion marcada, o ProyectoCerrado sin sesiones) esto es un no-op,
+        // porque no quedan sesiones Pendiente. Se opera directo sobre el DbContext (no via
+        // ITurnoService) para no crear una dependencia circular, ya que TurnoService
+        // depende de ITrabajoService.
+        if (destino is EstadoTrabajo.Cancelado or EstadoTrabajo.Completado)
+            await LiberarTurnosPendientesAsync(trabajo.Id);
+
         trabajo.Historiales.Add(new TrabajoHistorial
         {
             EstadoAnterior = anterior,
@@ -156,6 +189,24 @@ public class TrabajoService : ITrabajoService
             var perfil = await _db.PerfilesEstudiante.FirstOrDefaultAsync(p => p.UsuarioId == trabajo.EstudianteId);
             if (perfil is not null)
                 perfil.CantidadTrabajos += 1;
+        }
+    }
+
+    // Cancela las sesiones Pendientes del trabajo y sus turnos (Reservado/Confirmado),
+    // devolviendo esos horarios a la agenda del estudiante. No toca sesiones/turnos ya
+    // resueltos (Realizada/Cancelada/NoAsistio), asi que es seguro llamarla sobre un
+    // trabajo sin sesiones (ProyectoCerrado) o ya vacio de pendientes.
+    private async Task LiberarTurnosPendientesAsync(int idTrabajo)
+    {
+        var pendientes = await _db.Sesiones
+            .Include(s => s.Turno)
+            .Where(s => s.TrabajoId == idTrabajo && s.Estado == EstadoSesion.Pendiente)
+            .ToListAsync();
+
+        foreach (var sesion in pendientes)
+        {
+            sesion.Estado = EstadoSesion.Cancelada;
+            sesion.Turno.Estado = EstadoTurno.Cancelado;
         }
     }
 
@@ -189,17 +240,27 @@ public class TrabajoService : ITrabajoService
 
     // --- Consultas unificadas ------------------------------------------------
     public async Task<IReadOnlyList<TrabajoResponse>> ListarAsync(
-        TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId)
+        int usuarioId, bool esAdmin, TipoServicio? tipo, EstadoTrabajo? estado, int? clienteId, int? estudianteId)
     {
         var query = _db.Trabajos.AsNoTracking()
             .Include(t => t.Cliente).ThenInclude(c => c.Usuario)
             .Include(t => t.Estudiante).ThenInclude(e => e.Usuario)
             .AsQueryable();
 
-        if (clienteId is int cli)
-            query = query.Where(t => t.ClienteId == cli);
-        if (estudianteId is int est)
-            query = query.Where(t => t.EstudianteId == est);
+        if (esAdmin)
+        {
+            if (clienteId is int cli)
+                query = query.Where(t => t.ClienteId == cli);
+            if (estudianteId is int est)
+                query = query.Where(t => t.EstudianteId == est);
+        }
+        else
+        {
+            // Un usuario comun no decide el alcance con query params: solo ve lo suyo,
+            // sin importar que cliente_id/estudiante_id le mande a la query.
+            query = query.Where(t => t.ClienteId == usuarioId || t.EstudianteId == usuarioId);
+        }
+
         if (estado is EstadoTrabajo e)
             query = query.Where(t => t.Estado == e);
 

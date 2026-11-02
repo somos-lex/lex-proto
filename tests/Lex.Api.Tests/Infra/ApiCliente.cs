@@ -4,9 +4,16 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Lex.Api.Features.Auth;
+using Lex.Api.Features.Disponibilidad;
 using Lex.Api.Features.Materias;
 using Lex.Api.Features.Pacientes;
+using Lex.Api.Features.Pagos;
 using Lex.Api.Features.Practicas;
+using Lex.Api.Features.Servicios.Clase;
+using Lex.Api.Features.Sesiones;
+using Lex.Api.Features.Trabajos.Clase;
+using Lex.Api.Features.Trabajos.Shared;
+using Lex.Api.Features.Turnos;
 using Lex.Api.Domain.Enums;
 
 namespace Lex.Api.Tests.Infra;
@@ -236,4 +243,110 @@ public class ApiCliente
             modalidad,
             duracionMinutosSesion
         }), HttpStatusCode.Created);
+
+    // --- Clase: publicacion, disponibilidad, contratacion y sesiones ---------------
+
+    // Cualquier carrera verificada sirve para activar un estudiante: Clase no usa catalogo
+    // cerrado. Se resuelve desde una materia semilla en vez de hardcodear un id, porque los
+    // ids de carrera son identity y no estan fijos entre corridas.
+    public async Task<int> CarreraVerificableAsync() =>
+        (await MateriaAsync("Odontología", "Práctica Clínica Preventiva")).CarreraId;
+
+    public Task<HttpResponseMessage> CrearServicioClaseAsync(
+        Actor estudiante, string titulo, decimal precio, bool esPaquete, int? cantidadSesionesPaquete,
+        int duracionMinutosSesion = 60) =>
+        PostAsync("/api/servicios/clase", estudiante.Token, new
+        {
+            titulo,
+            descripcion = "Servicio de prueba creado por los tests de integración.",
+            precio,
+            materia = "Álgebra",
+            nivel = "Universitario",
+            modalidad = "Online",
+            duracionMinutosSesion,
+            esPaquete,
+            cantidadSesionesPaquete
+        });
+
+    public async Task<ServicioClaseResponse> CrearServicioClaseOkAsync(
+        Actor estudiante, decimal precio, bool esPaquete, int? cantidadSesionesPaquete,
+        int duracionMinutosSesion = 60, string titulo = "Clases de prueba") =>
+        await LeerAsync<ServicioClaseResponse>(
+            await CrearServicioClaseAsync(estudiante, titulo, precio, esPaquete, cantidadSesionesPaquete, duracionMinutosSesion),
+            HttpStatusCode.Created);
+
+    public async Task<BloqueDisponibilidadResponse> CrearDisponibilidadAsync(
+        Actor estudiante, DiaSemana dia, TimeOnly inicio, TimeOnly fin) =>
+        await LeerAsync<BloqueDisponibilidadResponse>(
+            await PostAsync("/api/disponibilidad", estudiante.Token, new CrearBloqueDisponibilidadRequest(dia, inicio, fin)),
+            HttpStatusCode.Created);
+
+    public async Task<List<SlotDisponibleResponse>> ListarSlotsDisponiblesAsync(
+        int estudianteId, DateOnly desde, DateOnly hasta, int duracionMinutos) =>
+        await LeerAsync<List<SlotDisponibleResponse>>(await GetAsync(
+            $"/api/turnos/disponibles/estudiante/{estudianteId}?desde={desde:yyyy-MM-dd}&hasta={hasta:yyyy-MM-dd}&duracion_minutos={duracionMinutos}"));
+
+    public Task<HttpResponseMessage> ContratarClaseAsync(Actor cliente, int servicioId, List<DateTime> slotsElegidos) =>
+        PostAsync("/api/trabajos/clase", cliente.Token, new { servicioId, slotsElegidos });
+
+    public async Task<TrabajoClaseResponse> ContratarClaseOkAsync(Actor cliente, int servicioId, List<DateTime> slotsElegidos) =>
+        await LeerAsync<TrabajoClaseResponse>(
+            await ContratarClaseAsync(cliente, servicioId, slotsElegidos), HttpStatusCode.Created);
+
+    public Task<HttpResponseMessage> AceptarTrabajoAsync(Actor estudiante, int idTrabajo) =>
+        PostAsync($"/api/trabajos/{idTrabajo}/aceptar", estudiante.Token);
+
+    public async Task<List<SesionResponse>> ListarSesionesAsync(Actor actor, int idTrabajo) =>
+        await LeerAsync<List<SesionResponse>>(
+            await GetAsync($"/api/trabajos/{idTrabajo}/sesiones", actor.Token));
+
+    public Task<HttpResponseMessage> MarcarSesionRealizadaAsync(Actor estudiante, int idSesion) =>
+        PostAsync($"/api/sesiones/{idSesion}/realizar", estudiante.Token, new { });
+
+    // --- Trabajos: transiciones y consultas -----------------------------------------
+
+    public Task<HttpResponseMessage> CancelarTrabajoAsync(Actor actor, int idTrabajo, string? motivo = null) =>
+        PostAsync($"/api/trabajos/{idTrabajo}/cancelar", actor.Token, new { motivo });
+
+    public Task<HttpResponseMessage> DisputarTrabajoAsync(Actor actor, int idTrabajo, string motivo) =>
+        PostAsync($"/api/trabajos/{idTrabajo}/disputar", actor.Token, new { motivo });
+
+    public Task<HttpResponseMessage> ListarTrabajosAsync(
+        Actor actor, int? clienteId = null, int? estudianteId = null) =>
+        GetAsync("/api/trabajos" + ArmarQuery(
+            ("cliente_id", clienteId?.ToString()), ("estudiante_id", estudianteId?.ToString())), actor.Token);
+
+    public async Task<TrabajoDetalleResponse> ObtenerTrabajoAsync(Actor actor, int idTrabajo) =>
+        await LeerAsync<TrabajoDetalleResponse>(await GetAsync($"/api/trabajos/{idTrabajo}", actor.Token));
+
+    private static string ArmarQuery(params (string Nombre, string? Valor)[] parametros)
+    {
+        var presentes = parametros.Where(p => p.Valor is not null).Select(p => $"{p.Nombre}={p.Valor}").ToList();
+        return presentes.Count == 0 ? "" : "?" + string.Join("&", presentes);
+    }
+
+    // --- Turnos ----------------------------------------------------------------------
+
+    public Task<HttpResponseMessage> CancelarTurnoAsync(Actor actor, int idTurno, string? motivo = null) =>
+        PostAsync($"/api/turnos/{idTurno}/cancelar", actor.Token, new { motivo });
+
+    public async Task<List<TurnoResponse>> ListarTurnosMiosAsync(Actor actor, EstadoTurno? estado = null) =>
+        await LeerAsync<List<TurnoResponse>>(
+            await GetAsync("/api/turnos/mios" + (estado is null ? "" : $"?estado={estado}"), actor.Token));
+
+    // --- Pagos -------------------------------------------------------------------------
+
+    public async Task<PagoResumenResponse> ObtenerPagoDelTrabajoAsync(Actor actor, int idTrabajo)
+    {
+        var pagos = await LeerAsync<List<PagoResumenResponse>>(await GetAsync("/api/pagos/mios", actor.Token));
+        return pagos.Single(p => p.TrabajoId == idTrabajo);
+    }
+
+    public async Task<PagoDetalleResponse> ObtenerDetallePagoAsync(Actor actor, int idPago) =>
+        await LeerAsync<PagoDetalleResponse>(await GetAsync($"/api/pagos/{idPago}", actor.Token));
+
+    // --- Admin ---------------------------------------------------------------------
+
+    public Task<HttpResponseMessage> ResolverDisputaAsync(Actor admin, int idTrabajo, string favorA, string motivo) =>
+        PostAsync($"/api/admin/trabajos/{idTrabajo}/resolver-disputa", admin.Token, new { favorA, motivo });
 }
