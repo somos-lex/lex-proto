@@ -10,7 +10,7 @@
 // Si hay cambios sin guardar, cerrar (Escape, el velo, la X o Cancelar) no
 // los tira: pide confirmación. Un toque en el velo sin cambios cierra.
 
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { Boton } from "@/components/Boton";
 import { Icono } from "@/components/Icono";
 import { Aviso } from "@/components/ds/Aviso";
@@ -41,27 +41,20 @@ export function HojaFormulario({
   error?: string | null;
   children: ReactNode;
 }) {
-  const { ref, cerrar } = useDialogoModal(true, onCerrar);
-  const idTitulo = useId();
   const [sucio, setSucio] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
-
-  // Escape: con cambios, primero pregunta. Se ataja en el keydown, antes de que
-  // el navegador pida cerrar (en un input de hora, Chrome manda un segundo
-  // pedido que no se puede cancelar), y también en "cancel", por si el pedido
-  // llega por otra vía (el botón Atrás de Android).
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    const alCancelar = (e: Event) => {
-      if (sucio && !confirmando) {
-        e.preventDefault();
-        setConfirmando(true);
-      }
-    };
-    d.addEventListener("cancel", alCancelar);
-    return () => d.removeEventListener("cancel", alCancelar);
-  }, [ref, sucio, confirmando]);
+  // Escape: con cambios, primero pregunta. Se ataja en el keydown (ver el <dialog>),
+  // antes de que el navegador pida cerrar (en un input de hora, Chrome manda un
+  // segundo pedido que no se puede cancelar), y también en "cancel" (el botón Atrás
+  // de Android), que el hook consulta con este tercer argumento.
+  const { ref, cerrar } = useDialogoModal(true, onCerrar, () => {
+    if (sucio && !confirmando) {
+      setConfirmando(true);
+      return true;
+    }
+    return false;
+  });
+  const idTitulo = useId();
 
   function intentarCerrar() {
     if (sucio) setConfirmando(true);
@@ -128,9 +121,9 @@ export function HojaFormulario({
           setConfirmando(true);
         }
       }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-scrim open:flex open:flex-col open:justify-end md:open:flex-row"
+      className="m-0 h-dvh max-h-none w-full max-w-none bg-transparent p-0 dialogo group/d open:flex open:flex-col open:justify-end md:open:flex-row"
     >
-      <div className="flex max-h-[92dvh] w-full flex-col rounded-t-sheet bg-surface text-ink shadow-sheet transition-transform duration-[280ms] ease-out starting:translate-y-full motion-reduce:transition-none md:h-full md:max-h-none md:w-[min(520px,100vw)] md:rounded-none md:rounded-l-sheet md:shadow-float md:starting:translate-x-full md:starting:translate-y-0">
+      <div className="flex max-h-[92dvh] w-full flex-col rounded-t-sheet bg-surface text-ink shadow-sheet transition-transform duration-[420ms] ease-panel group-data-[oculto]/d:translate-y-full group-data-[cerrando]/d:duration-[260ms] group-data-[cerrando]/d:ease-panel-salida md:group-data-[oculto]/d:translate-x-full md:group-data-[oculto]/d:translate-y-0 motion-reduce:transition-none md:h-full md:max-h-none md:w-[min(520px,100vw)] md:rounded-none md:rounded-l-sheet md:shadow-float">
         <span aria-hidden="true" className="mx-auto mt-2 block h-[5px] w-10 shrink-0 rounded-[3px] bg-line-strong md:hidden" />
         <div className="flex shrink-0 items-start gap-3 px-5 pt-3 pb-4 md:px-6 md:pt-6">
           <div className="min-w-0 flex-1">

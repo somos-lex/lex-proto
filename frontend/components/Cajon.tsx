@@ -31,9 +31,9 @@ export function Cajon({
       ref={ref}
       aria-label={etiqueta}
       onClick={alClickearVelo}
-      className="m-0 ml-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 outline-none backdrop:bg-scrim open:flex open:justify-end"
+      className="m-0 ml-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 outline-none dialogo group/d open:flex open:justify-end"
     >
-      <div className="flex h-full w-[min(88vw,360px)] flex-col overflow-y-auto rounded-l-sheet bg-surface px-3 pt-2.5 pb-7 text-ink shadow-float transition-transform duration-300 ease-out starting:translate-x-full motion-reduce:transition-none">
+      <div className="flex h-full w-[min(88vw,360px)] flex-col overflow-y-auto rounded-l-sheet bg-surface px-3 pt-2.5 pb-7 text-ink shadow-float transition-transform duration-[420ms] ease-panel group-data-[oculto]/d:translate-x-full group-data-[cerrando]/d:duration-[260ms] group-data-[cerrando]/d:ease-panel-salida motion-reduce:transition-none">
         <div className="mb-1.5 flex items-center gap-3 border-b border-line pt-1.5 pr-1 pb-3.5 pl-2">
           <div className="min-w-0 flex-1">{cabecera}</div>
           <button

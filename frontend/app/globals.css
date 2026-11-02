@@ -180,3 +180,28 @@
   :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 }
+
+/* Movimiento de los paneles (cajón, hoja, diálogo). Entran suave (arranque y frenado
+   parejos, sin que el movimiento se concentre al principio) y salen más corto y
+   directo. El mismo par de curvas rige el velo. useDialogoModal marca el <dialog>
+   con data-oculto (posición de reposo, fuera de pantalla) al abrir y al cerrar; data-cerrando
+   suma la salida más corta. Al abrir se lo quita pasados dos cuadros. */
+@theme {
+  --ease-panel: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-panel-salida: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@layer components {
+  dialog.dialogo::backdrop {
+    background: var(--color-scrim);
+    opacity: 1;
+    transition: opacity 420ms var(--ease-panel);
+  }
+  dialog.dialogo[data-oculto]::backdrop {
+    opacity: 0;
+  }
+  dialog.dialogo[data-cerrando]::backdrop {
+    transition-duration: 260ms;
+    transition-timing-function: var(--ease-panel-salida);
+  }
+}

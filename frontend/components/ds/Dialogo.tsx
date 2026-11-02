@@ -31,9 +31,9 @@ export function Dialogo({
       ref={ref}
       aria-labelledby={idTitulo}
       onClick={alClickearVelo}
-      className="m-0 mt-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 text-ink backdrop:bg-scrim open:flex open:flex-col open:justify-end sm:open:items-center sm:open:justify-center sm:open:p-6"
+      className="m-0 mt-auto h-dvh max-h-none w-full max-w-none bg-transparent p-0 text-ink dialogo group/d open:flex open:flex-col open:justify-end sm:open:items-center sm:open:justify-center sm:open:p-6"
     >
-      <div className="max-h-[88dvh] w-full overflow-y-auto rounded-t-sheet bg-surface px-5 pt-2 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-sheet transition-[translate,opacity] duration-[280ms] ease-out starting:translate-y-full motion-reduce:transition-none sm:max-w-[480px] sm:rounded-sheet sm:px-6 sm:pt-6 sm:pb-6 sm:shadow-float sm:starting:translate-y-3 sm:starting:opacity-0">
+      <div className="max-h-[88dvh] w-full overflow-y-auto rounded-t-sheet bg-surface px-5 pt-2 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-sheet transition-[translate,opacity] duration-[420ms] ease-panel group-data-[oculto]/d:translate-y-full group-data-[cerrando]/d:duration-[260ms] group-data-[cerrando]/d:ease-panel-salida sm:group-data-[oculto]/d:translate-y-3 sm:group-data-[oculto]/d:opacity-0 motion-reduce:transition-none sm:max-w-[480px] sm:rounded-sheet sm:px-6 sm:pt-6 sm:pb-6 sm:shadow-float">
         <span aria-hidden="true" className="mx-auto mb-2.5 block h-[5px] w-10 rounded-[3px] bg-line-strong sm:hidden" />
         <div className="mb-3 flex items-start gap-3">
           <h2 id={idTitulo} className="min-w-0 flex-1 pt-2 text-title-3 text-balance">
