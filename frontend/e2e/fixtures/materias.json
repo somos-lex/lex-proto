@@ -1,0 +1,4 @@
+[
+  { "id": 1, "nombre": "Clínica Odontológica II", "carreraId": 1, "carreraNombre": "Odontología", "institucionNombre": "Universidad Nacional del Nordeste (UNNE)", "anioMinimo": 3, "activa": true },
+  { "id": 2, "nombre": "Clínica de Pequeños Animales", "carreraId": 2, "carreraNombre": "Medicina Veterinaria", "institucionNombre": "Universidad Nacional del Nordeste (UNNE)", "anioMinimo": 4, "activa": true }
+]

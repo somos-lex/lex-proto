@@ -1,13 +1,19 @@
 "use client";
 
+// Elegir horarios de la agenda del estudiante para contratar una Clase o un servicio de
+// Salud. Mobile-first: la semana se navega con dos botones y los horarios van agrupados
+// por día, como botones de 44 px que se marcan (aria-pressed) con tilde y acento. Así
+// entra en 390 px sin la grilla de siete columnas.
+
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  listarSlotsDisponibles,
-  type SlotDisponibleResponse,
-} from "@/lib/turnos";
+import { listarSlotsDisponibles, type SlotDisponibleResponse } from "@/lib/turnos";
 import { ApiError } from "@/lib/api";
+import { Boton } from "@/components/Boton";
+import { Icono } from "@/components/Icono";
+import { Aviso } from "@/components/ds/Aviso";
+import { Esqueleto } from "@/components/ds/Estados";
 
 // --- Zona horaria (AR, UTC-3 fijo, igual que el backend) ---
 //
@@ -18,13 +24,7 @@ import { ApiError } from "@/lib/api";
 // backend, sin reconvertir: es exacto por construcción.
 function arDisplayDate(utcIso: string): Date {
   const s = new Date(new Date(utcIso).getTime() - 3 * 3600_000);
-  return new Date(
-    s.getUTCFullYear(),
-    s.getUTCMonth(),
-    s.getUTCDate(),
-    s.getUTCHours(),
-    s.getUTCMinutes(),
-  );
+  return new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), s.getUTCHours(), s.getUTCMinutes());
 }
 
 // Fecha AR de hoy (a medianoche local), para navegar semanas sin depender del timezone.
@@ -34,6 +34,28 @@ function hoyAr(): Date {
 }
 
 const SEMANAS_MAX = 4;
+
+function mayuscula(t: string) {
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** "Martes 27 de octubre". */
+export function diaLargo(d: Date) {
+  return mayuscula(format(d, "EEEE d 'de' MMMM", { locale: es }));
+}
+
+/** "Martes 27 de octubre, 9:00": un horario elegido, en hora argentina. */
+export function etiquetaSlot(iso: string) {
+  const d = arDisplayDate(iso);
+  return `${diaLargo(d)}, ${format(d, "H:mm")}`;
+}
+
+function tituloSemana(inicio: Date) {
+  const fin = addDays(inicio, 6);
+  return inicio.getMonth() === fin.getMonth()
+    ? `Semana del ${format(inicio, "d")} al ${format(fin, "d 'de' MMMM", { locale: es })}`
+    : `Semana del ${format(inicio, "d 'de' MMMM", { locale: es })} al ${format(fin, "d 'de' MMMM", { locale: es })}`;
+}
 
 export function SelectorSlots({
   estudianteId,
@@ -48,197 +70,191 @@ export function SelectorSlots({
   slotsElegidos: string[];
   onCambiarSeleccion: (slots: string[]) => void;
 }) {
-  const inicioSemanaHoy = useMemo(
-    () => startOfWeek(hoyAr(), { weekStartsOn: 1 }),
-    [],
-  );
+  const inicioSemanaHoy = useMemo(() => startOfWeek(hoyAr(), { weekStartsOn: 1 }), []);
   const [semanaInicio, setSemanaInicio] = useState<Date>(inicioSemanaHoy);
   const [slots, setSlots] = useState<SlotDisponibleResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [estado, setEstado] = useState<{ semana: string; error: string | null } | null>(null);
+  const [intento, setIntento] = useState(0);
 
-  const dias = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(semanaInicio, i)),
-    [semanaInicio],
-  );
+  const claveSemana = format(semanaInicio, "yyyy-MM-dd");
+  // Cargando mientras la respuesta en mano no es la de esta semana (o de este intento).
+  const cargando = estado?.semana !== `${claveSemana}#${intento}`;
+  const error = cargando ? null : estado?.error;
 
   useEffect(() => {
     let cancelado = false;
-    setLoading(true);
-    setError(null);
-    const desde = format(semanaInicio, "yyyy-MM-dd");
     const hasta = format(addDays(semanaInicio, 6), "yyyy-MM-dd");
-    listarSlotsDisponibles({ estudianteId, desde, hasta, duracionMinutos })
+    listarSlotsDisponibles({ estudianteId, desde: claveSemana, hasta, duracionMinutos })
       .then((data) => {
-        if (!cancelado) setSlots(data);
+        if (cancelado) return;
+        // Se descartan los que ya pasaron, por las dudas.
+        const ahora = Date.now();
+        setSlots(data.filter((x) => new Date(x.fechaHoraInicio).getTime() >= ahora));
+        setEstado({ semana: `${claveSemana}#${intento}`, error: null });
       })
       .catch((err) => {
-        if (!cancelado)
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : "No pudimos cargar la disponibilidad.",
-          );
-      })
-      .finally(() => {
-        if (!cancelado) setLoading(false);
+        if (cancelado) return;
+        setSlots([]);
+        setEstado({
+          semana: `${claveSemana}#${intento}`,
+          error: err instanceof ApiError ? err.message : "No pudimos cargar los horarios.",
+        });
       });
     return () => {
       cancelado = true;
     };
-  }, [estudianteId, duracionMinutos, semanaInicio]);
+  }, [estudianteId, duracionMinutos, semanaInicio, claveSemana, intento]);
 
-  // Slots por día (columna). Se filtran los que ya pasaron por las dudas.
-  const ahora = Date.now();
-  const slotsPorDia = useMemo(() => {
-    const mapa = new Map<string, { iso: string; hora: string }[]>();
-    for (const s of slots) {
-      if (new Date(s.fechaHoraInicio).getTime() < ahora) continue;
-      const display = arDisplayDate(s.fechaHoraInicio);
-      const key = format(display, "yyyy-MM-dd");
-      const lista = mapa.get(key) ?? [];
-      lista.push({ iso: s.fechaHoraInicio, hora: format(display, "HH:mm") });
-      mapa.set(key, lista);
+  // Slots por día, en orden.
+  const dias = useMemo(() => {
+    const mapa = new Map<string, { dia: Date; horas: { iso: string; hora: string }[] }>();
+    for (const s of [...slots].sort((a, b) => a.fechaHoraInicio.localeCompare(b.fechaHoraInicio))) {
+      const d = arDisplayDate(s.fechaHoraInicio);
+      const clave = format(d, "yyyy-MM-dd");
+      const grupo = mapa.get(clave) ?? { dia: d, horas: [] };
+      grupo.horas.push({ iso: s.fechaHoraInicio, hora: format(d, "H:mm") });
+      mapa.set(clave, grupo);
     }
-    return mapa;
-  }, [slots, ahora]);
+    return [...mapa.values()];
+  }, [slots]);
 
   const elegidos = new Set(slotsElegidos);
+  const completo = slotsElegidos.length >= cantidadRequerida;
 
-  function toggleSlot(iso: string) {
-    if (elegidos.has(iso)) {
-      onCambiarSeleccion(slotsElegidos.filter((s) => s !== iso));
-      return;
-    }
-    if (cantidadRequerida === 1) {
-      onCambiarSeleccion([iso]); // reemplaza
-      return;
-    }
-    if (slotsElegidos.length < cantidadRequerida) {
-      onCambiarSeleccion([...slotsElegidos, iso]);
-    }
+  function alternar(iso: string) {
+    if (elegidos.has(iso)) return onCambiarSeleccion(slotsElegidos.filter((s) => s !== iso));
+    if (cantidadRequerida === 1) return onCambiarSeleccion([iso]); // reemplaza
+    if (!completo) onCambiarSeleccion([...slotsElegidos, iso]);
   }
 
   const puedeAtras = semanaInicio.getTime() > inicioSemanaHoy.getTime();
-  const puedeAdelante =
-    semanaInicio.getTime() <
-    addDays(inicioSemanaHoy, SEMANAS_MAX * 7).getTime();
-
-  const finSemana = addDays(semanaInicio, 6);
-  const tituloSemana = `Semana del ${format(semanaInicio, "d", { locale: es })} al ${format(finSemana, "d 'de' MMMM", { locale: es })}`;
-
-  // Slots elegidos ordenados para el resumen del sidebar.
-  const resumen = [...slotsElegidos]
-    .sort()
-    .map((iso) => ({
-      iso,
-      etiqueta: format(arDisplayDate(iso), "EEE dd/MM HH:mm", { locale: es }),
-    }));
+  const puedeAdelante = semanaInicio.getTime() < addDays(inicioSemanaHoy, SEMANAS_MAX * 7).getTime();
+  const resumen = [...slotsElegidos].sort();
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
-      {/* Navegación de semana */}
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <button
-          type="button"
-          onClick={() => setSemanaInicio(addDays(semanaInicio, -7))}
+    <div className="overflow-hidden rounded-card bg-surface shadow-[0_0_0_1px_var(--color-line)] dark:shadow-none">
+      <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+        <Boton
+          variante="tonal"
+          tamano="sm"
+          aria-label="Semana anterior"
           disabled={!puedeAtras}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          onClick={() => setSemanaInicio(addDays(semanaInicio, -7))}
+          className="w-11 px-0"
         >
-          ← Semana anterior
-        </button>
-        <span className="text-sm font-semibold capitalize text-slate-900">
-          {tituloSemana}
-        </span>
-        <button
-          type="button"
-          onClick={() => setSemanaInicio(addDays(semanaInicio, 7))}
+          <Icono nombre="chev-r" className="size-5 rotate-180" />
+        </Boton>
+        <p className="min-w-0 flex-1 text-center text-[15px] leading-[1.35] font-semibold" aria-live="polite">
+          {tituloSemana(semanaInicio)}
+        </p>
+        <Boton
+          variante="tonal"
+          tamano="sm"
+          aria-label="Semana siguiente"
           disabled={!puedeAdelante}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          onClick={() => setSemanaInicio(addDays(semanaInicio, 7))}
+          className="w-11 px-0"
         >
-          Siguiente semana →
-        </button>
+          <Icono nombre="chev-r" className="size-5" />
+        </Boton>
       </div>
 
-      {/* Grilla de días */}
-      {loading ? (
-        <div className="p-8 text-center text-sm text-slate-400">
-          Cargando disponibilidad…
-        </div>
-      ) : error ? (
-        <div className="p-6 text-center text-sm text-rose-600">{error}</div>
-      ) : slotsPorDia.size === 0 ? (
-        <div className="p-8 text-center text-sm text-slate-500">
-          No hay disponibilidad en esta semana. Probá con otra.
-        </div>
-      ) : (
-        <div className="grid grid-cols-7 gap-1 overflow-x-auto p-3">
-          {dias.map((dia) => {
-            const key = format(dia, "yyyy-MM-dd");
-            const delDia = slotsPorDia.get(key) ?? [];
-            return (
-              <div key={key} className="min-w-[64px]">
-                <div className="mb-2 text-center">
-                  <div className="text-[11px] font-medium uppercase text-slate-400">
-                    {format(dia, "EEE", { locale: es })}
-                  </div>
-                  <div className="text-sm font-semibold text-slate-700">
-                    {format(dia, "d")}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  {delDia.length === 0 ? (
-                    <div className="text-center text-[11px] text-slate-300">
-                      —
-                    </div>
-                  ) : (
-                    delDia.map((s) => {
-                      const activo = elegidos.has(s.iso);
-                      return (
-                        <button
-                          key={s.iso}
-                          type="button"
-                          onClick={() => toggleSlot(s.iso)}
-                          className={`w-full rounded-md px-1 py-1.5 text-xs font-medium transition ${
-                            activo
-                              ? "bg-indigo-600 text-white"
-                              : "border border-slate-200 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50"
-                          }`}
-                        >
-                          {s.hora}
-                        </button>
-                      );
-                    })
-                  )}
+      <div className="px-4 py-4">
+        {cargando ? (
+          <div aria-busy="true" aria-label="Cargando horarios" className="grid gap-4">
+            {[0, 1].map((i) => (
+              <div key={i} className="grid gap-2">
+                <Esqueleto className="h-4 w-40" />
+                <div className="flex gap-2">
+                  <Esqueleto className="h-11 w-20 rounded-control" />
+                  <Esqueleto className="h-11 w-20 rounded-control" />
+                  <Esqueleto className="h-11 w-20 rounded-control" />
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : error ? (
+          <Aviso
+            tono="danger"
+            titulo="No pudimos cargar los horarios."
+            acciones={
+              <Boton variante="secundario" tamano="sm" onClick={() => setIntento((n) => n + 1)}>
+                Reintentar
+              </Boton>
+            }
+          >
+            {error}
+          </Aviso>
+        ) : dias.length === 0 ? (
+          <div className="grid justify-items-start gap-2.5">
+            <p className="text-[15px] text-ink-2">No quedan horarios libres esta semana.</p>
+            {puedeAdelante && (
+              <Boton variante="secundario" tamano="sm" onClick={() => setSemanaInicio(addDays(semanaInicio, 7))}>
+                Ver la semana siguiente
+              </Boton>
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {dias.map((d) => (
+              <section key={d.dia.toISOString()} aria-label={diaLargo(d.dia)}>
+                <h3 className="mb-2 text-[15px] font-[650] text-ink-2">{diaLargo(d.dia)}</h3>
+                <ul className="flex flex-wrap gap-2">
+                  {d.horas.map((s) => {
+                    const activo = elegidos.has(s.iso);
+                    const bloqueado = !activo && completo && cantidadRequerida > 1;
+                    return (
+                      <li key={s.iso}>
+                        <button
+                          type="button"
+                          aria-pressed={activo}
+                          aria-disabled={bloqueado || undefined}
+                          onClick={() => alternar(s.iso)}
+                          className={`inline-flex min-h-11 min-w-21 items-center justify-center gap-1.5 rounded-control px-3.5 text-base font-semibold ${
+                            activo
+                              ? "bg-accent text-on-accent hover:bg-accent-hover"
+                              : bloqueado
+                                ? "cursor-not-allowed bg-surface-2 text-ink-3"
+                                : "bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-surface-2"
+                          }`}
+                        >
+                          {activo && <Icono nombre="check" className="size-[18px]" />}
+                          {s.hora}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Resumen de selección */}
-      <div className="border-t border-slate-200 px-4 py-3">
-        <div className="text-sm font-semibold text-slate-700">
-          Horarios elegidos: {slotsElegidos.length} / {cantidadRequerida}
-        </div>
+      <div className="border-t border-line px-4 py-3">
+        <p className="text-[15px] font-semibold" aria-live="polite">
+          {cantidadRequerida === 1
+            ? slotsElegidos.length === 1
+              ? "Elegiste este horario"
+              : "Todavía no elegiste un horario"
+            : `Elegiste ${slotsElegidos.length} de ${cantidadRequerida} horarios`}
+        </p>
+        {completo && cantidadRequerida > 1 && (
+          <p className="text-[14px] text-ink-2">Para cambiar uno, quitalo y elegí otro.</p>
+        )}
         {resumen.length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {resumen.map((r) => (
-              <li
-                key={r.iso}
-                className="flex items-center justify-between gap-2 text-sm text-slate-600"
-              >
-                <span className="capitalize">{r.etiqueta}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onCambiarSeleccion(slotsElegidos.filter((s) => s !== r.iso))
-                  }
-                  className="text-xs font-medium text-rose-600 hover:underline"
+          <ul className="mt-1">
+            {resumen.map((iso) => (
+              <li key={iso} className="flex items-center justify-between gap-2 text-[15px]">
+                <span>{etiquetaSlot(iso)}</span>
+                <Boton
+                  variante="fantasma"
+                  tamano="sm"
+                  aria-label={`Quitar ${etiquetaSlot(iso)}`}
+                  onClick={() => onCambiarSeleccion(slotsElegidos.filter((s) => s !== iso))}
                 >
                   Quitar
-                </button>
+                </Boton>
               </li>
             ))}
           </ul>

@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "clienteResponsableId": 20,
+    "tipo": "Humano",
+    "nombreCompleto": "Diego Ramírez",
+    "esTitular": true,
+    "fechaNacimiento": "1990-03-14",
+    "dni": "32112233",
+    "especie": null,
+    "raza": null,
+    "contactoEmergenciaNombre": null,
+    "contactoEmergenciaTelefono": null,
+    "notasRelevantes": null
+  },
+  {
+    "id": 2,
+    "clienteResponsableId": 20,
+    "tipo": "Animal",
+    "nombreCompleto": "Rocky",
+    "esTitular": false,
+    "fechaNacimiento": "2021-05-01",
+    "dni": null,
+    "especie": "Perro",
+    "raza": "Labrador",
+    "contactoEmergenciaNombre": null,
+    "contactoEmergenciaTelefono": null,
+    "notasRelevantes": null
+  }
+]

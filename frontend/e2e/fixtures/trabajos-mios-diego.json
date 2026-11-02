@@ -1,0 +1,18 @@
+[
+  {
+    "id": 102,
+    "servicioId": 3,
+    "clienteId": 20,
+    "clienteNombre": "Diego Ramírez",
+    "estudianteId": 10,
+    "estudianteNombre": "Sofía Benítez",
+    "tituloSnapshot": "Control odontológico general",
+    "descripcionSnapshot": "Control y limpieza con supervisión de un odontólogo matriculado.",
+    "precioAcordado": 6000,
+    "estado": "Aceptado",
+    "tipo": "Salud",
+    "fechaCreacion": "2026-08-18T11:00:00Z",
+    "fechaInicio": "2026-08-19T11:00:00Z",
+    "fechaFin": null
+  }
+]

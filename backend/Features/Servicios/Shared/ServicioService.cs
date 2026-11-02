@@ -42,7 +42,7 @@ public class ServicioService : IServicioService
 
         return new PaginacionResponse<ServicioResponse>
         {
-            Items = servicios.Select(MapearComun).ToList(),
+            Items = await MapearAsync(servicios, ct),
             Total = total,
             Page = page,
             PageSize = pageSize,
@@ -57,7 +57,7 @@ public class ServicioService : IServicioService
             .OrderByDescending(s => s.FechaPublicacion)
             .ToListAsync();
 
-        return servicios.Select(MapearComun).ToList();
+        return await MapearAsync(servicios);
     }
 
     // Aplica los filtros comunes del catalogo. Devuelve el IQueryable sin materializar,
@@ -65,9 +65,7 @@ public class ServicioService : IServicioService
     private IQueryable<Servicio> ConstruirQuery(
         TipoServicio? tipo, int? carreraId, int? estudianteId, bool? activo)
     {
-        var query = _db.Servicios.AsNoTracking()
-            .Include(s => s.Estudiante).ThenInclude(e => e.Usuario)
-            .AsQueryable();
+        var query = ConDatosDeTarjeta(_db.Servicios.AsNoTracking());
 
         // Por defecto, el catalogo publico muestra solo los activos.
         query = query.Where(s => s.Activo == (activo ?? true));
@@ -94,12 +92,11 @@ public class ServicioService : IServicioService
 
     public async Task<ServicioDetalleResponse> ObtenerAsync(int id)
     {
-        var servicio = await _db.Servicios.AsNoTracking()
-            .Include(s => s.Estudiante).ThenInclude(e => e.Usuario)
+        var servicio = await ConDatosDeTarjeta(_db.Servicios.AsNoTracking())
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new NotFoundException($"No existe el servicio {id}.");
 
-        var comun = MapearComun(servicio);
+        var comun = (await MapearAsync(new[] { servicio })).Single();
         var detalle = await ObtenerDetalleAsync(servicio);
 
         return new ServicioDetalleResponse
@@ -115,9 +112,85 @@ public class ServicioService : IServicioService
             EstudianteId = comun.EstudianteId,
             EstudianteNombre = comun.EstudianteNombre,
             EstudianteCalificacion = comun.EstudianteCalificacion,
+            Credencial = comun.Credencial,
+            Supervisor = comun.Supervisor,
+            Tema = comun.Tema,
+            Condiciones = comun.Condiciones,
             Detalle = detalle
         };
     }
+
+    // Lo que necesita la tarjeta (D5): el estudiante, y el catalogo y el supervisor de las
+    // subclases. Con TPT, el Include sobre una navegacion de la subclase va con un cast.
+    private static IQueryable<Servicio> ConDatosDeTarjeta(IQueryable<Servicio> query) => query
+        .Include(s => s.Estudiante).ThenInclude(e => e.Usuario)
+        .Include(s => (s as ServicioProyectoCerrado)!.CatalogoServicio)
+        .Include(s => (s as ServicioSalud)!.CatalogoServicio)
+        .Include(s => (s as ServicioSalud)!.Supervisor);
+
+    private async Task<List<ServicioResponse>> MapearAsync(
+        IReadOnlyList<Servicio> servicios, CancellationToken ct = default)
+    {
+        var credenciales = await CredencialesAsync(servicios, ct);
+        return servicios.Select(s => MapearComun(s, credenciales.GetValueOrDefault(s.Id))).ToList();
+    }
+
+    // La credencial muestra siempre una carrera VERIFICADA del estudiante. En Proyecto
+    // cerrado y Salud, una de las habilitadas para la entrada del catalogo (la que lo dejo
+    // publicar); si el catalogo cambio despues y ya ninguna lo esta, otra verificada. En
+    // Clase, que es de catalogo libre, la primera verificada. Sin ninguna verificada, null:
+    // la tarjeta no puede decir "Carrera verificada por LEX".
+    // Son dos consultas por pagina, no una por servicio.
+    private async Task<Dictionary<int, CredencialEstudianteResponse>> CredencialesAsync(
+        IReadOnlyList<Servicio> servicios, CancellationToken ct)
+    {
+        var estudiantes = servicios.Select(s => s.EstudianteId).Distinct().ToList();
+        var verificadas = await _db.EstudianteCarreras.AsNoTracking()
+            .Where(ec => estudiantes.Contains(ec.EstudianteId)
+                      && ec.EstadoVerificacion == EstadoVerificacion.Verificado)
+            .OrderBy(ec => ec.CarreraId)
+            .Select(ec => new
+            {
+                ec.EstudianteId,
+                ec.CarreraId,
+                Carrera = ec.Carrera.Nombre,
+                Institucion = ec.Carrera.Institucion.Nombre
+            })
+            .ToListAsync(ct);
+
+        var catalogos = servicios.Select(CatalogoDe).OfType<int>().Distinct().ToList();
+        var habilitaciones = await _db.CatalogoServicioCarreras.AsNoTracking()
+            .Where(cc => catalogos.Contains(cc.CatalogoServicioId))
+            .Select(cc => new { cc.CatalogoServicioId, cc.CarreraId })
+            .ToListAsync(ct);
+
+        var resultado = new Dictionary<int, CredencialEstudianteResponse>();
+        foreach (var s in servicios)
+        {
+            var delEstudiante = verificadas.Where(v => v.EstudianteId == s.EstudianteId).ToList();
+            var habilitadas = CatalogoDe(s) is int catalogo
+                ? habilitaciones.Where(h => h.CatalogoServicioId == catalogo).Select(h => h.CarreraId).ToHashSet()
+                : null;
+            var elegida = (habilitadas is null ? null : delEstudiante.FirstOrDefault(v => habilitadas.Contains(v.CarreraId)))
+                          ?? delEstudiante.FirstOrDefault();
+            if (elegida is null) continue;
+
+            resultado[s.Id] = new CredencialEstudianteResponse
+            {
+                Carrera = elegida.Carrera,
+                Institucion = elegida.Institucion,
+                AnioCursado = s.Estudiante.AnioCursado
+            };
+        }
+        return resultado;
+    }
+
+    private static int? CatalogoDe(Servicio s) => s switch
+    {
+        ServicioProyectoCerrado pc => pc.CatalogoServicioId,
+        ServicioSalud sa => sa.CatalogoServicioId,
+        _ => null
+    };
 
     // El bloque polimorfico: trae los campos propios de la vertical concreta.
     private async Task<object?> ObtenerDetalleAsync(Servicio servicio) => servicio switch
@@ -162,8 +235,36 @@ public class ServicioService : IServicioService
     };
 
     // Mapeo de los campos comunes. La vertical se deriva de la subclase concreta.
-    private static ServicioResponse MapearComun(Servicio s) => new()
+    private static ServicioResponse MapearComun(Servicio s, CredencialEstudianteResponse? credencial) => new()
     {
+        Credencial = credencial,
+        Supervisor = s is ServicioSalud { Supervisor: { } sup }
+            ? new SupervisorResumenResponse { Nombre = sup.NombreCompleto, Matricula = sup.Matricula }
+            : null,
+        Tema = s switch
+        {
+            ServicioProyectoCerrado pc => pc.CatalogoServicio?.Nombre,
+            ServicioSalud sa => sa.CatalogoServicio?.Nombre,
+            ServicioClase c => c.Materia,
+            _ => null
+        },
+        Condiciones = s switch
+        {
+            ServicioProyectoCerrado pc => new CondicionesServicioResponse { PlazoEntregaDias = pc.PlazoEntregaDias },
+            ServicioClase c => new CondicionesServicioResponse
+            {
+                DuracionMinutosSesion = c.DuracionMinutosSesion,
+                Modalidad = c.Modalidad.ToString(),
+                EsPaquete = c.EsPaquete,
+                CantidadSesionesPaquete = c.CantidadSesionesPaquete
+            },
+            ServicioSalud sa => new CondicionesServicioResponse
+            {
+                DuracionMinutosSesion = sa.DuracionMinutosSesion,
+                Modalidad = sa.Modalidad.ToString()
+            },
+            _ => null
+        },
         Id = s.Id,
         Titulo = s.Titulo,
         Descripcion = s.Descripcion,

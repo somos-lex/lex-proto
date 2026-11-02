@@ -1,134 +1,208 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { VISTA_META, type Vista } from "@/lib/perfil";
-import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
+// Encabezado y menú (componentes "Encabezado" y "Cajon" del sistema de diseño).
+//
+// - Sin selector de vistas (D2): con sesión, el menú agrupa "Como estudiante" y
+//   "Como cliente" según los roles reales de la identidad.
+// - Mobile: el botón "Menú" abre el cajón con el árbol completo (D4). Con sesión
+//   se suma la barra inferior del panel. El árbol vive en lib/navegacion.ts y lo
+//   comparte el lateral del panel.
+// - Escritorio: navegación pública arriba; con sesión, el mismo cajón detrás del
+//   botón de la cuenta.
+// - El contador cuenta los trabajos donde te toca actuar (lib/pendientes.ts).
 
-// Ítems de navbar por vista. Solo enlazamos a páginas que existen hoy.
-const NAV_POR_VISTA: Record<Vista, { href: string; label: string }[]> = {
-  Cliente: [
-    { href: "/", label: "Explorar servicios" },
-    { href: "/panel/trabajos", label: "Mis trabajos" },
-    { href: "/panel/pacientes", label: "Mis pacientes" },
-    { href: "/practicas", label: "Prácticas clínicas" },
-    { href: "/panel/inscripciones", label: "Mis inscripciones" },
-  ],
-  Estudiante: [
-    { href: "/panel/servicios", label: "Mis servicios" },
-    { href: "/panel/disponibilidad", label: "Disponibilidad" },
-    { href: "/panel/trabajos", label: "Mis trabajos" },
-    { href: "/panel/practicas", label: "Mis prácticas" },
-  ],
-  Agencia: [
-    { href: "/panel/agencia", label: "Panel de agencia" },
-    { href: "/", label: "Explorar servicios" },
-  ],
-};
+import { Suspense, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMenu } from "@/contexts/MenuContext";
+import { OSCURO_HABILITADO } from "@/lib/apariencia";
+import { usePendientes } from "@/lib/pendientes";
+import {
+  NAV_PUBLICA,
+  credencialCorta,
+  esItemActual,
+  iniciales,
+  seccionesDe,
+  type ItemMenu,
+  type SeccionMenu,
+} from "@/lib/navegacion";
+import { ActivarEstudianteModal } from "@/components/ActivarEstudianteModal";
+import { Cajon } from "@/components/Cajon";
+import { ControlApariencia } from "@/components/ControlApariencia";
+import { Icono, type NombreIcono } from "@/components/Icono";
+import { Contador } from "@/components/ds/Chip";
+import { clasesBoton } from "@/components/Boton";
 
 export function Navbar() {
-  const {
-    isAuthenticated,
-    user,
-    identidad,
-    logout,
-    loading,
-    vistaActiva,
-    vistasDisponibles,
-  } = useAuth();
+  const { isAuthenticated, user, identidad, roles, logout, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const pendientes = usePendientes();
   const [modalEstudiante, setModalEstudiante] = useState(false);
+  // El estado del cajón vive en MenuContext: también lo abre la barra inferior.
+  const { abierto, abrir, cerrar } = useMenu();
 
   function handleLogout() {
+    cerrar();
     logout();
     router.push("/");
   }
 
-  // CTA "¿Sos estudiante?": Cliente Particular que aún no es estudiante.
   const mostrarCtaEstudiante =
     !!identidad && identidad.puedeActivarEstudiante && !identidad.esEstudiante;
 
-  const items = vistaActiva ? NAV_POR_VISTA[vistaActiva] : [];
+  const secciones = isAuthenticated ? seccionesDe(roles, identidad) : [];
+  const credencial = credencialCorta(identidad);
+  const cuentas = { estudiante: pendientes.comoEstudiante.length, cliente: pendientes.comoCliente.length };
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/80 backdrop-blur">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-20 border-b border-line bg-canvas">
+        <div className="mx-auto flex h-15 max-w-lex items-center gap-1.5 px-4 md:px-6 lg:h-17 lg:gap-2 lg:px-8">
           <Link
             href="/"
-            className="text-2xl font-extrabold tracking-tight text-foreground"
+            aria-label="LEX, inicio"
+            className="-ml-2 inline-flex min-h-11 min-w-11 items-center rounded-control px-2 text-[19px] font-[760] tracking-[0.04em] text-ink no-underline"
           >
-            LEX<span className="text-accent">.</span>
+            LEX
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            {loading ? (
-              <div className="h-9 w-32 animate-pulse rounded-lg bg-gray-100" />
-            ) : isAuthenticated ? (
-              <>
-                {items.map((item) => (
-                  <Link
-                    key={item.href + item.label}
-                    href={item.href}
-                    className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent sm:inline"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-
-                {mostrarCtaEstudiante && (
-                  <button
-                    onClick={() => setModalEstudiante(true)}
-                    className="rounded-lg border border-accent/30 bg-accent-soft/60 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent-soft"
-                  >
-                    ¿Sos estudiante? Ofrecé tus servicios
-                  </button>
-                )}
-
-                {vistasDisponibles.length > 1 && vistaActiva && (
-                  <ViewSwitcher />
-                )}
-
-                <span className="hidden text-sm text-gray-600 lg:inline">
-                  Hola,{" "}
-                  <span className="font-semibold text-foreground">
-                    {user?.nombreCompleto}
-                  </span>
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          <nav aria-label="Principal" className="ml-7 hidden gap-0.5 lg:flex">
+            {NAV_PUBLICA.map((item) => {
+              const actual = item.activo(pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={actual ? "page" : undefined}
+                  className={`flex min-h-11 items-center rounded-control px-3.5 font-[550] no-underline hover:bg-surface-2 hover:text-ink ${
+                    actual ? "bg-surface-2 text-ink" : "text-ink-2"
+                  }`}
                 >
-                  Cerrar sesión
-                </button>
-              </>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {loading ? (
+              <div className="h-11 w-28 animate-pulse rounded-control bg-surface-2" aria-hidden="true" />
+            ) : isAuthenticated ? (
+              <button
+                type="button"
+                onClick={abrir}
+                aria-expanded={abierto}
+                aria-haspopup="dialog"
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface-2 py-0 pr-3.5 pl-1.5 text-[15px] font-semibold text-ink hover:bg-surface-3"
+              >
+                <span className="grid size-8 place-items-center rounded-full bg-surface text-[13px] font-[650]" aria-hidden="true">
+                  {iniciales(user?.nombreCompleto)}
+                </span>
+                Menú
+                {pendientes.total > 0 && (
+                  <Contador n={pendientes.total} etiqueta={`${pendientes.total} donde te toca actuar`} />
+                )}
+              </button>
             ) : (
               <>
-                <Link
-                  href="/practicas"
-                  className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent sm:inline"
-                >
-                  Prácticas clínicas
+                <Link href="/login" className={clasesBoton({ variante: "texto", tamano: "sm" })}>
+                  Ingresar
                 </Link>
-                <Link
-                  href="/login"
-                  className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-accent"
+                {/* El hidden va en un contenedor: en el mismo elemento competiría con el inline-flex del botón. */}
+                <span className="hidden lg:inline-flex">
+                  <Link href="/registro" className={clasesBoton({ variante: "fuerte", tamano: "sm" })}>
+                    Crear cuenta
+                  </Link>
+                </span>
+                <button
+                  type="button"
+                  onClick={abrir}
+                  aria-expanded={abierto}
+                  aria-haspopup="dialog"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-control bg-surface-2 pr-3 pl-3.5 text-[15px] font-semibold text-ink hover:bg-surface-3 lg:hidden"
                 >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  href="/registro"
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-hover"
-                >
-                  Crear cuenta
-                </Link>
+                  <Icono nombre="menu" className="size-5.5" />
+                  Menú
+                </button>
               </>
             )}
           </div>
-        </nav>
+        </div>
       </header>
+
+      <Cajon
+        abierto={abierto}
+        onCerrar={cerrar}
+        etiqueta="Menú"
+        cabecera={
+          isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-2 text-[15px] font-[650]" aria-hidden="true">
+                {iniciales(user?.nombreCompleto)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{user?.nombreCompleto}</p>
+                {credencial && <p className="truncate text-secondary text-ink-2">{credencial}</p>}
+              </div>
+            </div>
+          ) : (
+            <span className="text-[19px] font-[760] tracking-[0.04em]">LEX</span>
+          )
+        }
+      >
+        {isAuthenticated ? (
+          <nav aria-label="Menú de la cuenta">
+            {mostrarCtaEstudiante && (
+              <>
+                <TituloSeccion>Como estudiante</TituloSeccion>
+                <ItemBoton
+                  icono="cap"
+                  onClick={() => {
+                    cerrar();
+                    setModalEstudiante(true);
+                  }}
+                >
+                  Ofrecé tus servicios
+                </ItemBoton>
+              </>
+            )}
+            {/* useSearchParams necesita Suspense en las páginas estáticas: mientras tanto,
+                se marca el actual solo por pathname. */}
+            <Suspense fallback={<Secciones secciones={secciones} pathname={pathname} params={null} cuentas={cuentas} onNavegar={cerrar} />}>
+              <SeccionesConParams secciones={secciones} pathname={pathname} cuentas={cuentas} onNavegar={cerrar} />
+            </Suspense>
+            <TituloSeccion>Cuenta</TituloSeccion>
+            {OSCURO_HABILITADO && <ControlApariencia />}
+            <ItemBoton icono="logout" onClick={handleLogout}>
+              Cerrar sesión
+            </ItemBoton>
+          </nav>
+        ) : (
+          <nav aria-label="Menú">
+            <ul>
+              {NAV_PUBLICA.map((it) => (
+                <li key={it.href}>
+                  <ItemLink
+                    item={{ href: it.href, label: it.label, icono: it.href === "/" ? "compass" : "calendar" }}
+                    actual={it.activo(pathname)}
+                    onNavegar={cerrar}
+                  />
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 grid gap-2 px-1">
+              <Link href="/registro" onClick={cerrar} className={clasesBoton({ variante: "fuerte", bloque: true })}>
+                Crear cuenta
+              </Link>
+              <Link href="/login" onClick={cerrar} className={clasesBoton({ variante: "secundario", bloque: true })}>
+                Ingresar
+              </Link>
+            </div>
+          </nav>
+        )}
+      </Cajon>
 
       {modalEstudiante && (
         <ActivarEstudianteModal onClose={() => setModalEstudiante(false)} />
@@ -137,74 +211,95 @@ export function Navbar() {
   );
 }
 
-// Dropdown para cambiar de vista cuando el usuario tiene más de una (ej. Cliente+Estudiante).
-function ViewSwitcher() {
-  const { vistaActiva, vistasDisponibles, cambiarVista } = useAuth();
-  const router = useRouter();
-  const [abierto, setAbierto] = useState(false);
+interface PropsSecciones {
+  secciones: SeccionMenu[];
+  pathname: string;
+  cuentas: { estudiante: number; cliente: number };
+  onNavegar: () => void;
+}
 
-  function seleccionar(v: Vista) {
-    setAbierto(false);
-    if (v === vistaActiva) return;
-    cambiarVista(v);
-    // Llevamos al inicio de la vista elegida para evitar quedar en un panel ajeno.
-    router.push(v === "Estudiante" ? "/panel/servicios" : "/");
-  }
+function SeccionesConParams(props: PropsSecciones) {
+  const params = useSearchParams();
+  return <Secciones {...props} params={params} />;
+}
 
+function Secciones({ secciones, pathname, params, cuentas, onNavegar }: PropsSecciones & { params: URLSearchParams | null }) {
   return (
-    <div className="relative">
-      <button
-        onClick={() => setAbierto((a) => !a)}
-        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-accent/40"
-      >
-        <span className="text-gray-400">Vista:</span>
-        {vistaActiva ? VISTA_META[vistaActiva].label : ""}
-        <svg
-          className={`h-4 w-4 text-gray-400 transition ${abierto ? "rotate-180" : ""}`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
-
-      {abierto && (
-        <>
-          {/* Capa para cerrar al hacer click afuera */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setAbierto(false)}
-          />
-          <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-            {vistasDisponibles.map((v) => (
-              <button
-                key={v}
-                onClick={() => seleccionar(v)}
-                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-50 ${
-                  v === vistaActiva
-                    ? "font-semibold text-accent"
-                    : "text-gray-700"
-                }`}
-              >
-                {VISTA_META[v].label}
-                {v === vistaActiva && (
-                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </button>
+    <>
+      {secciones.map((s, i) => (
+        <div key={s.titulo ?? `sin-titulo-${i}`}>
+          {s.titulo && <TituloSeccion>{s.titulo}</TituloSeccion>}
+          <ul>
+            {s.items.map((it) => (
+              <li key={it.href + it.label}>
+                <ItemLink
+                  item={it}
+                  actual={esItemActual(it.href, pathname, params)}
+                  contador={it.pendientes ? cuentas[it.pendientes] : 0}
+                  onNavegar={onNavegar}
+                />
+              </li>
             ))}
-          </div>
-        </>
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function TituloSeccion({ children }: { children: ReactNode }) {
+  return <p className="px-3 pt-4 pb-1.5 text-label text-ink-2">{children}</p>;
+}
+
+const ITEM =
+  "flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-base no-underline";
+
+function ItemLink({
+  item,
+  actual,
+  contador = 0,
+  onNavegar,
+}: {
+  item: ItemMenu;
+  actual: boolean;
+  contador?: number;
+  onNavegar: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavegar}
+      aria-current={actual ? "page" : undefined}
+      className={`${ITEM} ${
+        actual
+          ? "bg-accent-soft font-[620] text-on-accent-soft"
+          : "font-medium text-ink hover:bg-surface-2"
+      }`}
+    >
+      <Icono nombre={item.icono} className={`size-5.5 ${actual ? "" : "text-ink-2"}`} />
+      {item.label}
+      {contador > 0 && (
+        <span className="ml-auto">
+          <Contador n={contador} etiqueta={`${contador} donde te toca actuar`} />
+        </span>
       )}
-    </div>
+    </Link>
+  );
+}
+
+function ItemBoton({
+  icono,
+  onClick,
+  children,
+}: {
+  icono: NombreIcono;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick} className={`${ITEM} font-medium text-ink hover:bg-surface-2`}>
+      <Icono nombre={icono} className="size-5.5 text-ink-2" />
+      {children}
+    </button>
   );
 }

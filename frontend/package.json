@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "node e2e/scripts/run-visual.mjs",
+    "test:e2e:update": "node e2e/scripts/run-visual.mjs --update-snapshots",
+    "test:e2e:real": "node e2e/scripts/run-real.mjs"
   },
   "dependencies": {
     "date-fns": "^4.4.0",
@@ -15,10 +18,12 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "^4.14.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",

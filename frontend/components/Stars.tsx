@@ -1,43 +1,28 @@
 "use client";
 
-// Iconografía de calificación reutilizable.
+// Calificación (pieza "calif" de la tarjeta del sistema de diseño): la estrella va en
+// `star` y el número en `ink`. Sin "Sin reseñas" (F3-4): con cero reseñas no se
+// muestra nada, para no castigar a quien recién empieza.
 
 import { useState } from "react";
+import { formatCalificacion } from "@/components/publico/presentacion";
 
 function StarIcon({ className = "" }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M9.05 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.54 1.118l-3.366-2.446a1 1 0 00-1.176 0l-3.366 2.446c-.784.57-1.838-.196-1.539-1.118l1.286-3.957a1 1 0 00-.363-1.118L2.354 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className={`shrink-0 ${className}`}>
+      <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" />
     </svg>
   );
 }
 
-/** Calificación compacta: una estrella + número. Para tarjetas y encabezados. */
-export function RatingBadge({
-  value,
-  className = "",
-}: {
-  value: number;
-  className?: string;
-}) {
-  if (!value || value <= 0) {
-    return (
-      <span className={`text-xs font-medium text-gray-400 ${className}`}>
-        Sin calificación
-      </span>
-    );
-  }
+/** Calificación compacta: una estrella y el promedio ("4,0"). Nada si no hay reseñas. */
+export function RatingBadge({ value, className = "" }: { value: number; className?: string }) {
+  if (!value || value <= 0) return null;
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`}>
-      <StarIcon className="h-4 w-4 text-amber-400" />
-      <span className="text-sm font-semibold text-foreground">
-        {value.toFixed(1)}
-      </span>
+    <span className={`inline-flex items-center gap-1 text-[14px] font-semibold whitespace-nowrap text-ink tabular-nums ${className}`}>
+      <StarIcon className="size-4 text-star" />
+      {formatCalificacion(value)}
+      <span className="sr-only"> de 5 en reseñas</span>
     </span>
   );
 }
@@ -45,19 +30,15 @@ export function RatingBadge({
 /** Fila de 5 estrellas, rellenas según el puntaje (1-5). Para reseñas. */
 export function StarsRow({ value }: { value: number }) {
   return (
-    <span className="inline-flex" aria-label={`${value} de 5`}>
+    <span className="inline-flex" role="img" aria-label={`${value} de 5`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <StarIcon
-          key={i}
-          className={`h-4 w-4 ${i <= value ? "text-amber-400" : "text-gray-200"}`}
-        />
+        <StarIcon key={i} className={`size-4 ${i <= value ? "text-star" : "text-line-strong"}`} />
       ))}
     </span>
   );
 }
 
-/** Selector de puntaje interactivo (1-5). Doradas al pasar/seleccionar, con
- *  previsualización en hover. Para dejar una reseña. */
+/** Selector de puntaje (1-5) para dejar una reseña. Cada estrella es un objetivo de 44 px. */
 export function StarsInput({
   value,
   onChange,
@@ -71,11 +52,7 @@ export function StarsInput({
   const mostrado = hover || value;
 
   return (
-    <div
-      className="inline-flex items-center gap-1"
-      role="radiogroup"
-      aria-label="Puntaje"
-    >
+    <div className="inline-flex items-center" role="radiogroup" aria-label="Puntaje">
       {[1, 2, 3, 4, 5].map((i) => (
         <button
           key={i}
@@ -89,13 +66,9 @@ export function StarsInput({
           onFocus={() => !disabled && setHover(i)}
           onBlur={() => setHover(0)}
           onClick={() => onChange(i)}
-          className="rounded p-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed"
+          className="grid size-11 place-items-center rounded-control disabled:cursor-not-allowed"
         >
-          <StarIcon
-            className={`h-8 w-8 transition ${
-              i <= mostrado ? "text-amber-400" : "text-gray-200 hover:text-amber-200"
-            }`}
-          />
+          <StarIcon className={`size-8 transition-colors ${i <= mostrado ? "text-star" : "text-line-strong"}`} />
         </button>
       ))}
     </div>

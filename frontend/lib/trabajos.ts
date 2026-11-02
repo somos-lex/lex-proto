@@ -122,52 +122,6 @@ export function esTrabajoSalud(
   return t.tipo === "Salud" && t.detalle !== null;
 }
 
-// --- Metadata de estados (presentacion) ---
-
-export interface EstadoMeta {
-  etiqueta: string;
-  descripcion: string;
-  clases: string; // clases Tailwind para el badge
-}
-
-export const ESTADO_META: Record<EstadoTrabajo, EstadoMeta> = {
-  Pendiente: {
-    etiqueta: "Pendiente",
-    descripcion: "Esperando aceptación del estudiante",
-    clases: "bg-amber-100 text-amber-800",
-  },
-  Aceptado: {
-    etiqueta: "Aceptado",
-    descripcion: "El estudiante confirmó, aún no arrancó",
-    clases: "bg-blue-100 text-blue-800",
-  },
-  EnCurso: {
-    etiqueta: "En curso",
-    descripcion: "Trabajo activo",
-    clases: "bg-indigo-100 text-indigo-800",
-  },
-  Entregado: {
-    etiqueta: "Entregado",
-    descripcion: "Estudiante entregó, cliente debe confirmar",
-    clases: "bg-purple-100 text-purple-800",
-  },
-  Completado: {
-    etiqueta: "Completado",
-    descripcion: "Trabajo finalizado, pago liberado",
-    clases: "bg-emerald-100 text-emerald-800",
-  },
-  Cancelado: {
-    etiqueta: "Cancelado",
-    descripcion: "Cancelado antes de completar",
-    clases: "bg-slate-100 text-slate-800",
-  },
-  Disputa: {
-    etiqueta: "En disputa",
-    descripcion: "Conflicto activo, requiere resolución",
-    clases: "bg-rose-100 text-rose-800",
-  },
-};
-
 // --- Listado y detalle ---
 
 export function listarMisTrabajos(): Promise<TrabajoResponse[]> {

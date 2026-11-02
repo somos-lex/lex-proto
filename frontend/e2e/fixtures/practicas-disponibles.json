@@ -1,0 +1,36 @@
+[
+  {
+    "id": 1,
+    "materiaId": 1,
+    "materiaNombre": "Clínica Odontológica II",
+    "carreraId": 1,
+    "carreraNombre": "Odontología",
+    "institucionNombre": "Universidad Nacional del Nordeste (UNNE)",
+    "estudianteId": 10,
+    "estudianteNombre": "Sofía Benítez",
+    "fechaHoraInicio": "2026-09-14T13:00:00Z",
+    "fechaHoraFin": "2026-09-14T13:40:00Z",
+    "duracionMinutos": 40,
+    "lugar": "Cátedra de Clínica Odontológica, Facultad de Odontología UNNE",
+    "tipoPacienteRequerido": "Humano",
+    "requisitosPrevios": "Traer documento de identidad.",
+    "estado": "Publicada"
+  },
+  {
+    "id": 2,
+    "materiaId": 2,
+    "materiaNombre": "Clínica de Pequeños Animales",
+    "carreraId": 2,
+    "carreraNombre": "Medicina Veterinaria",
+    "institucionNombre": "Universidad Nacional del Nordeste (UNNE)",
+    "estudianteId": 11,
+    "estudianteNombre": "Florencia Acosta",
+    "fechaHoraInicio": "2026-09-16T15:00:00Z",
+    "fechaHoraFin": "2026-09-16T15:30:00Z",
+    "duracionMinutos": 30,
+    "lugar": "Hospital Veterinario UNNE",
+    "tipoPacienteRequerido": "Animal",
+    "requisitosPrevios": null,
+    "estado": "Publicada"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "id": 3,
+  "estudianteId": 10,
+  "estudianteNombre": "Sofía Benítez",
+  "estudianteCalificacion": 4.8,
+  "titulo": "Control odontológico general",
+  "descripcion": "Control y limpieza con supervisión de un odontólogo matriculado, en consultorio o a domicilio.",
+  "precio": 6000,
+  "activo": true,
+  "fechaPublicacion": "2026-08-10T12:00:00Z",
+  "imagenUrl": null,
+  "tipo": "Salud",
+  "credencial": { "carrera": "Odontología", "institucion": "Universidad Nacional del Nordeste (UNNE)", "anioCursado": 4 },
+  "supervisor": { "nombre": "Dr. Raúl Giménez", "matricula": "MP 3321" },
+  "tema": "Control odontológico",
+  "condiciones": { "duracionMinutosSesion": 40, "modalidad": "Ambas", "plazoEntregaDias": null, "esPaquete": null, "cantidadSesionesPaquete": null },
+  "detalle": {
+    "catalogoServicioId": 8,
+    "catalogoServicioNombre": "Control odontológico",
+    "supervisorId": 99,
+    "supervisorNombre": "Dr. Raúl Giménez",
+    "supervisorMatricula": "MP 3321",
+    "modalidad": "Ambas",
+    "duracionMinutosSesion": 40
+  }
+}

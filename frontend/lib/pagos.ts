@@ -1,4 +1,4 @@
-// Tipos + helpers del escrow. Espejan PagoResumenResponse / PagoDetalleResponse.
+// Tipos + helpers del pago protegido. Espejan PagoResumenResponse / PagoDetalleResponse.
 // El backend serializa Estado y TipoTrabajo como string.
 //
 // Ojo: resumen y detalle NO comparten shape. El resumen trae `rolUsuario` (el rol del

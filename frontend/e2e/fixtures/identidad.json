@@ -1,0 +1,23 @@
+{
+  "sofia": {
+    "roles": ["Estudiante", "Cliente"],
+    "tipoCliente": "Particular",
+    "esEstudiante": true,
+    "puedeActivarEstudiante": false,
+    "carreras": [
+      {
+        "carreraId": 1,
+        "carrera": "Odontología",
+        "institucion": "Universidad Nacional del Nordeste (UNNE)",
+        "estadoVerificacion": "Verificado"
+      }
+    ]
+  },
+  "diego": {
+    "roles": ["Cliente"],
+    "tipoCliente": "Particular",
+    "esEstudiante": false,
+    "puedeActivarEstudiante": true,
+    "carreras": []
+  }
+}
